@@ -90,3 +90,8 @@ Thumbs.db
 *.g.dart
 *.freezed.dart
 *.mocks.dart
+
+# Documentation files (exclude setup/guide docs, keep README.md)
+PERMISSIONS_SETUP.md
+QUICK_START.md
+SETUP_STATUS.md
