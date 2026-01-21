@@ -1,38 +1,73 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/home_screen.dart';
-import 'utils/theme.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-void main() {
+import 'bloc/document/document_bloc.dart';
+import 'bloc/document/document_event.dart';
+import 'bloc/ocr/ocr_bloc.dart';
+import 'bloc/search/search_bloc.dart';
+import 'repositories/document_repository.dart';
+import 'services/ocr_service.dart';
+import 'services/ad_service.dart';
+import 'utils/theme.dart';
+import 'screens/home_screen.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set preferred orientations
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // Initialize AdMob
+  await AdService().initialize();
 
-  runApp(const KhmerScanApp());
+  runApp(const MyApp());
 }
 
-class KhmerScanApp extends StatelessWidget {
-  const KhmerScanApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KhmerScan',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const HomeScreen(),
+    // Create repository
+    final documentRepository = DocumentRepository();
+    final ocrService = OCRService();
+
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider.value(value: documentRepository),
+        RepositoryProvider.value(value: ocrService),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => DocumentBloc(
+              repository: documentRepository,
+            )..add(const LoadDocuments()),
+          ),
+          BlocProvider(
+            create: (context) => OCRBloc(
+              ocrService: ocrService,
+              documentRepository: documentRepository,
+            ),
+          ),
+          BlocProvider(
+            create: (context) => SearchBloc(
+              repository: documentRepository,
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          title: 'KhmerScan',
+          theme: AppTheme.lightTheme,
+          home: const HomeScreen(),
+          debugShowCheckedModeBanner: false,
+        ),
+      ),
     );
   }
 }

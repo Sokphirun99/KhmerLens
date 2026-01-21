@@ -9,6 +9,8 @@ class DocumentGridCard extends StatelessWidget {
   final Document document;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onDelete;
+  final VoidCallback? onShare;
   final String? thumbnailPath;
   final int index;
   final bool isDeleting;
@@ -18,6 +20,8 @@ class DocumentGridCard extends StatelessWidget {
     required this.document,
     this.onTap,
     this.onLongPress,
+    this.onDelete,
+    this.onShare,
     this.thumbnailPath,
     this.index = 0,
     this.isDeleting = false,
@@ -133,6 +137,9 @@ class DocumentGridCard extends StatelessWidget {
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
                       ),
                     ],
@@ -213,6 +220,9 @@ class DocumentGridCard extends StatelessWidget {
                   ? FontWeight.w600
                   : FontWeight.normal,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
           ),
         ),
       ],

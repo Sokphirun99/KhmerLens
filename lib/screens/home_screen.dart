@@ -1,23 +1,24 @@
-import 'dart:io';
-
+// screens/home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:uuid/uuid.dart';
-
+import '../bloc/document/document_bloc.dart';
+import '../bloc/document/document_event.dart';
+import '../bloc/document/document_state.dart';
 import '../models/document.dart';
 import '../models/document_category.dart';
-import '../services/database_service.dart';
-import '../services/storage_service.dart';
-import '../utils/helpers.dart';
+import '../services/ad_service.dart';
+import '../utils/constants.dart';
 import '../widgets/document_grid_card.dart';
-import '../widgets/modern_document_card.dart';
 import 'camera_screen.dart';
 import 'document_detail_screen.dart';
-import 'document_search_delegate.dart';
+import 'search_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,38 +28,32 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final DatabaseService _dbService = DatabaseService();
-  final StorageService _storageService = StorageService();
-
-  DocumentCategory? _selectedCategory;
-  List<Document> _documents = [];
-  bool _isLoading = true;
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
   int _scansCount = 0;
-  String? _deletingDocumentId;
-  bool _isGridView = true;
+  DocumentCategory? _selectedCategory;
 
   @override
   void initState() {
     super.initState();
-    _loadDocuments();
+    _loadBannerAd();
   }
 
-  Future<void> _loadDocuments() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final docs = await _dbService.getAllDocuments(
-        category: _selectedCategory,
-      );
-
-      setState(() {
-        _documents = docs;
-        _isLoading = false;
+  void _loadBannerAd() {
+    _bannerAd = AdService().createBannerAd()
+      ..load().then((_) {
+        if (mounted) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        }
       });
-    } catch (e) {
-      debugPrint('Error loading documents: $e');
-      setState(() => _isLoading = false);
-    }
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
   }
 
   Future<void> _processNewDocument(String imagePath) async {
@@ -72,50 +67,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final documentId = const Uuid().v4();
 
-      // Save image to storage
-      final savedPath = await _storageService.saveImage(File(imagePath));
-
       // Create document
       final document = Document(
         id: documentId,
-        title: '${category.nameKhmer} - ${Helpers.formatDate(DateTime.now())}',
+        title: '${category.nameKhmer} - ${_formatDate(DateTime.now())}',
         category: category,
-        imagePath: savedPath,
+        imagePath: imagePath, // Will be updated by repository
         createdAt: DateTime.now(),
       );
 
-      // Save to database
-      await _dbService.insertDocument(document);
+      if (!mounted) return;
 
-      // Close loading
-      if (mounted) Navigator.pop(context);
+      // Create document using BLoC
+      context.read<DocumentBloc>().add(
+            CreateDocument(
+              document: document,
+              imagePath: imagePath,
+            ),
+          );
 
-      // Reload documents
-      await _loadDocuments();
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('បានរក្សាទុកឯកសារដោយជោគជ័យ'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-
-      // Track scans for ad display (Week 5)
+      // Show interstitial ad every 3 scans
       _scansCount++;
-      // if (_scansCount % 3 == 0) {
-      //   AdService().showInterstitialAd();
-      // }
+      if (_scansCount % AppConstants.scansBeforeInterstitial == 0) {
+        AdService().showInterstitialAd();
+      }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('កំហុស: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     }
@@ -132,13 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
             children: DocumentCategory.values.map((category) {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: category.color.withValues(alpha: 0.3),
-                  ),
-                ),
                 child: ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
@@ -168,12 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
             }).toList(),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('បោះបង់'),
-          ),
-        ],
       ),
     );
   }
@@ -182,16 +149,16 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(
+      builder: (context) => const Center(
         child: Card(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                const Text('កំពុងរក្សាទុក...'),
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('កំពុងរក្សាទុក...'),
               ],
             ),
           ),
@@ -200,274 +167,161 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _deleteDocument(Document document) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('លុបឯកសារ'),
-        content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('បោះបង់'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('លុប'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        // Trigger card delete animation
-        setState(() => _deletingDocumentId = document.id);
-
-        // Show Lottie delete animation dialog
-        _showDeleteAnimationDialog();
-
-        // Wait for card animation
-        await Future.delayed(const Duration(milliseconds: 300));
-
-        // Actually delete
-        await _storageService.deleteImage(document.imagePath);
-        await _dbService.deleteDocument(document.id);
-
-        // Remove from local list
-        setState(() {
-          _documents.removeWhere((d) => d.id == document.id);
-          _deletingDocumentId = null;
-        });
-
-        // Close animation dialog and show success
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('បានលុបឯកសារ'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } catch (e) {
-        setState(() => _deletingDocumentId = null);
-        if (mounted) {
-          Navigator.pop(context); // Close animation dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('កំហុស: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void _showDeleteAnimationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (context) => Center(
-        child: Card(
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Lottie.asset(
-                  'assets/animations/delete.json',
-                  width: 120,
-                  height: 120,
-                  repeat: false,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'កំពុងលុប...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openDocumentDetail(Document document) async {
-    final deleted = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DocumentDetailScreen(document: document),
-      ),
-    );
-
-    // Reload if document was deleted or modified
-    if (deleted == true || mounted) {
-      _loadDocuments();
-    }
-  }
-
-  Future<void> _shareDocument(Document document) async {
-    try {
-      final file = XFile(document.imagePath);
-      await Share.shareXFiles(
-        [file],
-        text: document.title,
-        subject: document.title,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Share error: $e')),
-        );
-      }
-    }
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: RefreshIndicator(
-        onRefresh: _loadDocuments,
-        child: CustomScrollView(
-          slivers: [
-            // Modern large app bar
-            SliverAppBar.large(
-              expandedHeight: 120,
-              floating: true,
-              pinned: true,
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  'KhmerScan',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold,
-                  ),
+      body: CustomScrollView(
+        slivers: [
+          // Modern app bar
+          SliverAppBar.large(
+            expandedHeight: 120,
+            floating: true,
+            pinned: true,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                'KhmerScan',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
                 ),
-                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
               ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () async {
-                    final result = await showSearch<Document?>(
-                      context: context,
-                      delegate: DocumentSearchDelegate(),
-                    );
-                    if (result != null) {
-                      _loadDocuments();
-                    }
-                  },
-                ),
-                // Grid/List toggle
-                IconButton(
-                  icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) => ScaleTransition(
-                      scale: animation,
-                      child: child,
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchScreen(),
                     ),
-                    child: Icon(
-                      _isGridView ? Icons.view_list : Icons.grid_view,
-                      key: ValueKey(_isGridView),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+
+          // Category chips
+          SliverToBoxAdapter(
+            child: Container(
+              height: 60,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _buildCategoryChip('ទាំងអស់', null, Icons.apps),
+                  ...DocumentCategory.values.map(
+                    (cat) => _buildCategoryChip(
+                      cat.nameKhmer,
+                      cat,
+                      cat.icon,
                     ),
                   ),
-                  onPressed: () {
-                    setState(() => _isGridView = !_isGridView);
-                  },
-                  tooltip: _isGridView ? 'List view' : 'Grid view',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: () {
-                    // TODO: Navigate to settings (Week 4)
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
+                ],
+              ),
             ),
+          ),
 
-            // Category filter chips
+          // Documents grid - BLoC Consumer
+          BlocConsumer<DocumentBloc, DocumentState>(
+            listener: (context, state) {
+              // Handle document created
+              if (state is DocumentCreated) {
+                Navigator.pop(context); // Close loading
+
+                // Navigate to detail for OCR
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DocumentDetailScreen(
+                      document: state.document,
+                    ),
+                  ),
+                );
+              }
+
+              // Handle errors
+              if (state is DocumentError) {
+                Navigator.pop(context); // Close loading if open
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+
+              // Handle document deleted
+              if (state is DocumentDeleted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('បានលុបឯកសារ')),
+                );
+              }
+            },
+            builder: (context, state) {
+              if (state is DocumentLoading) {
+                return _buildShimmerLoading();
+              }
+
+              if (state is DocumentLoaded) {
+                if (state.documents.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return _buildDocumentGrid(state.documents);
+              }
+
+              if (state is DocumentError) {
+                return _buildErrorState(state.message);
+              }
+
+              return _buildShimmerLoading();
+            },
+          ),
+
+          // Banner ad
+          if (_isBannerAdReady)
             SliverToBoxAdapter(
               child: Container(
-                height: 60,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    _buildCategoryChip('ទាំងអស់', null, Icons.apps),
-                    ...DocumentCategory.values.map(
-                      (cat) => _buildCategoryChip(
-                        cat.nameKhmer,
-                        cat,
-                        cat.icon,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                margin: const EdgeInsets.only(top: 8),
+                child: AdWidget(ad: _bannerAd!),
+              ).animate().fadeIn(duration: 300.ms),
             ),
-
-            // Document count header
-            if (!_isLoading && _documents.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'ឯកសារ (${_documents.length})',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Content: Loading / Empty / Grid or List
-            if (_isLoading)
-              _buildShimmerLoading()
-            else if (_documents.isEmpty)
-              _buildEmptyState()
-            else if (_isGridView)
-              _buildDocumentGrid()
-            else
-              _buildDocumentList(),
-
-            // Bottom padding for FAB
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 80),
-            ),
-          ],
-        ),
+        ],
       ),
 
-      // Modern FAB with animation
+      // FAB
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final imagePath = await Navigator.push<String>(
+          final imagePath = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CameraScreen()),
+            MaterialPageRoute(
+              builder: (context) => const CameraScreen(),
+            ),
           );
+
           if (imagePath != null) {
             await _processNewDocument(imagePath);
           }
@@ -487,49 +341,56 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
         selected: isSelected,
-        avatar: Icon(icon, size: 18),
-        label: Text(label),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 6),
+            Text(label),
+          ],
+        ),
         onSelected: (selected) {
           setState(() {
             _selectedCategory = selected ? category : null;
           });
-          _loadDocuments();
+
+          // Trigger BLoC event
+          context.read<DocumentBloc>().add(
+                FilterDocumentsByCategory(_selectedCategory),
+              );
         },
         backgroundColor: Colors.white,
         selectedColor: Theme.of(context).colorScheme.primaryContainer,
         checkmarkColor: Theme.of(context).colorScheme.primary,
-        showCheckmark: false,
         elevation: isSelected ? 2 : 0,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      ).animate(target: isSelected ? 1 : 0).scaleXY(end: 1.05, duration: 200.ms),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      )
+          .animate(target: isSelected ? 1 : 0)
+          .scaleXY(end: 1.05, duration: 200.ms),
     );
   }
 
   Widget _buildShimmerLoading() {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.75,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            return Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childCount: 6,
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              height: 200 + (index % 2) * 50.0,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
               ),
-            );
-          },
-          childCount: 6,
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -544,7 +405,6 @@ class _HomeScreenState extends State<HomeScreen> {
               'assets/animations/empty_documents.json',
               width: 200,
               height: 200,
-              repeat: true,
             ),
             const SizedBox(height: 24),
             Text(
@@ -570,47 +430,108 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDocumentGrid() {
+  Widget _buildErrorState(String message) {
+    return SliverFillRemaining(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<DocumentBloc>().add(const RefreshDocuments());
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentGrid(List<Document> documents) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
       sliver: SliverMasonryGrid.count(
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childCount: _documents.length,
+        childCount: documents.length,
         itemBuilder: (context, index) {
-          final document = _documents[index];
-          final isDeleting = _deletingDocumentId == document.id;
-
+          final document = documents[index];
           return DocumentGridCard(
             document: document,
-            index: index,
-            isDeleting: isDeleting,
-            onTap: () => _openDocumentDetail(document),
-            onLongPress: () => _deleteDocument(document),
-          );
-        },
-      ),
-    );
-  }
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DocumentDetailScreen(
+                    document: document,
+                  ),
+                ),
+              ).then((_) {
+                if (context.mounted) {
+                  // Refresh after returning
+                  context.read<DocumentBloc>().add(const RefreshDocuments());
+                }
+              });
+            },
+            onDelete: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('លុបឯកសារ'),
+                  content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('បោះបង់'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                      child: const Text('លុប'),
+                    ),
+                  ],
+                ),
+              );
 
-  Widget _buildDocumentList() {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final document = _documents[index];
-          final isDeleting = _deletingDocumentId == document.id;
-
-          return ModernDocumentCard(
-            document: document,
-            index: index,
-            isDeleting: isDeleting,
-            onTap: () => _openDocumentDetail(document),
-            onDelete: () => _deleteDocument(document),
-            onShare: () => _shareDocument(document),
-          );
+              if (confirmed == true && context.mounted) {
+                context.read<DocumentBloc>().add(
+                      DeleteDocument(document),
+                    );
+              }
+            },
+            onShare: () async {
+              // Share implementation
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Share coming soon')),
+              );
+            },
+          ).animate().fadeIn(delay: (50 * index).ms).slideY(begin: 0.1, end: 0);
         },
-        childCount: _documents.length,
       ),
     );
   }

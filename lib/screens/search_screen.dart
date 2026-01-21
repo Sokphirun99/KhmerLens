@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:lottie/lottie.dart';
+
 import '../models/document.dart';
 import '../services/database_service.dart';
+import '../services/export_service.dart';
+import '../repositories/document_repository.dart';
 import '../widgets/modern_document_card.dart';
 import 'document_detail_screen.dart';
 
@@ -17,6 +20,8 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final DatabaseService _dbService = DatabaseService();
   final TextEditingController _searchController = TextEditingController();
+  final DocumentRepository _documentRepository = DocumentRepository();
+  final ExportService _exportService = ExportService();
   List<Document> _searchResults = [];
   bool _isSearching = false;
   bool _hasSearched = false;
@@ -96,9 +101,9 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildBody() {
     if (_isSearching) {
       return Center(
-        child: Column(
+        child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text('កំពុងស្វែងរក...'),
@@ -218,12 +223,75 @@ class _SearchScreenState extends State<SearchScreen> {
                   );
                 },
                 onDelete: () async {
-                  // TODO: Implement delete
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('លុបឯកសារ'),
+                      content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('បោះបង់'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor:
+                                Theme.of(context).colorScheme.error,
+                          ),
+                          child: const Text('លុប'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed == true) {
+                    try {
+                      await _documentRepository.deleteDocument(document);
+                      if (!context.mounted) return;
+                      setState(() {
+                        _searchResults.removeAt(index);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('បានលុបឯកសារដោយជោគជ័យ'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('មិនអាចលុបឯកសារ: $e'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
                 },
                 onShare: () async {
-                  // TODO: Implement share
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    await _exportService.shareDocument(document.id);
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('មិនអាចចែករំលែកឯកសារ: $e'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
                 },
-              ).animate().fadeIn(delay: (50 * index).ms).slideY(begin: 0.1, end: 0);
+              )
+                  .animate()
+                  .fadeIn(delay: (50 * index).ms)
+                  .slideY(begin: 0.1, end: 0);
             },
           ),
         ),

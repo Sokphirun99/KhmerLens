@@ -203,6 +203,11 @@ class StorageService {
     return totalSize;
   }
 
+  /// Backwards-compatible alias used by repositories.
+  Future<int> getTotalStorageUsed() async {
+    return getStorageSize();
+  }
+
   /// Returns the number of stored images.
   Future<int> getImageCount() async {
     await _ensureDirectories();

@@ -188,9 +188,7 @@ class _CameraScreenState extends State<CameraScreen>
                   ..._buildCornerMarkers(),
                 ],
               ),
-            )
-                .animate(onPlay: (controller) => controller.repeat())
-                .shimmer(
+            ).animate(onPlay: (controller) => controller.repeat()).shimmer(
                   duration: 2000.ms,
                   color: Colors.white.withValues(alpha: 0.3),
                 ),
@@ -250,7 +248,7 @@ class _CameraScreenState extends State<CameraScreen>
                         final XFile? image = await picker.pickImage(
                           source: ImageSource.gallery,
                         );
-                        if (image != null && mounted) {
+                        if (image != null && context.mounted) {
                           Navigator.pop(context, image.path);
                         }
                       },

@@ -2,11 +2,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
+
+import '../bloc/ocr/ocr_bloc.dart';
+import '../bloc/ocr/ocr_event.dart';
+import '../bloc/ocr/ocr_state.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
 import '../services/storage_service.dart';
-import '../services/ocr_service.dart';
+import '../services/export_service.dart';
 import '../utils/helpers.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
@@ -26,9 +31,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   late Document _document;
   final DatabaseService _dbService = DatabaseService();
   final StorageService _storageService = StorageService();
-  final OCRService _ocrService = OCRService();
-
-  bool _isProcessing = false;
+  final ExportService _exportService = ExportService();
   late TabController _tabController;
 
   @override
@@ -37,10 +40,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     _document = widget.document;
     _tabController = TabController(length: 2, vsync: this);
 
-    // Auto-run OCR if no text
+    // Auto-run OCR via BLoC if no text
     if (_document.extractedText == null || _document.extractedText!.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _runOCR();
+        context.read<OCRBloc>().add(ExtractText(_document));
       });
     }
   }
@@ -49,40 +52,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  Future<void> _runOCR() async {
-    setState(() => _isProcessing = true);
-
-    try {
-      final result = await _ocrService.extractTextWithDetails(
-        _document.imagePath,
-      );
-
-      if (!result.success) {
-        throw Exception(result.error ?? 'OCR failed');
-      }
-
-      final updatedDocument = _document.copyWith(
-        extractedText: result.fullText,
-      );
-
-      await _dbService.updateDocument(updatedDocument);
-
-      setState(() {
-        _document = updatedDocument;
-        _isProcessing = false;
-      });
-
-      if (result.fullText.isEmpty) {
-        _showSnackBar('រកមិនឃើញអត្ថបទក្នុងរូបភាព');
-      } else {
-        _showSnackBar('ស្កេនអត្ថបទបានជោគជ័យ');
-      }
-    } catch (e) {
-      setState(() => _isProcessing = false);
-      _showSnackBar('Error: $e');
-    }
   }
 
   Future<void> _deleteDocument() async {
@@ -128,6 +97,24 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _shareDocument() async {
+    try {
+      _showSnackBar('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...');
+      await _exportService.shareDocument(_document.id);
+    } catch (e) {
+      _showSnackBar('មិនអាចចែករំលែកឯកសារ: $e');
+    }
+  }
+
+  Future<void> _exportPdf() async {
+    try {
+      _showSnackBar('កំពុងនាំចេញជា PDF...');
+      await _exportService.exportToPdf([_document.id]);
+    } catch (e) {
+      _showSnackBar('មិនអាចនាំចេញជា PDF: $e');
+    }
   }
 
   @override
@@ -176,15 +163,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 ),
               ),
             ],
-            onSelected: (value) {
+            onSelected: (value) async {
               switch (value) {
                 case 'share':
-                  // TODO: Week 4
-                  _showSnackBar('Share coming soon');
+                  await _shareDocument();
                   break;
                 case 'export_pdf':
-                  // TODO: Week 4
-                  _showSnackBar('Export coming soon');
+                  await _exportPdf();
                   break;
                 case 'delete':
                   _deleteDocument();
@@ -296,102 +281,187 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   Widget _buildTextTab() {
-    if (_isProcessing) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Lottie.asset(
-              'assets/animations/scanning.json',
-              width: 150,
-              height: 150,
-            ),
-            const SizedBox(height: 16),
-            const Text('កំពុងស្កេនអត្ថបទ...'),
-            const SizedBox(height: 8),
-            const CircularProgressIndicator(),
-          ],
-        ).animate().fadeIn(duration: 400.ms),
-      );
-    }
+    return BlocConsumer<OCRBloc, OCRState>(
+      listener: (context, state) {
+        if (state is OCRSuccess) {
+          _showSnackBar('ស្កេនអត្ថបទបានជោគជ័យ');
 
-    final text = _document.extractedText ?? '';
-
-    if (text.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.text_fields,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'គ្មានអត្ថបទ',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'រូបភាពមិនមានអត្ថបទដែលអាចស្កេនបាន',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+          // Update local document state
+          setState(() {
+            _document = _document.copyWith(
+              extractedText: state.extractedText,
+            );
+          });
+        } else if (state is OCREmpty) {
+          _showSnackBar('រកមិនឃើញអត្ថបទក្នុងរូបភាព');
+        } else if (state is OCRError) {
+          _showSnackBar('Error: ${state.message}');
+        }
+      },
+      builder: (context, state) {
+        if (state is OCRProcessing) {
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Lottie.asset(
+                    'assets/animations/scanning.json',
+                    width: 150,
+                    height: 150,
                   ),
+                  const SizedBox(height: 16),
+                  const Text('កំពុងស្កេនអត្ថបទ...'),
+                  const SizedBox(height: 8),
+                  const CircularProgressIndicator(),
+                ],
+              ).animate().fadeIn(duration: 400.ms),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _runOCR,
-              icon: const Icon(Icons.refresh),
-              label: const Text('ព្យាយាមម្តងទៀត'),
+          );
+        }
+
+        // Handle error state
+        if (state is OCRError) {
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'កំហុស',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Error: ${state.message}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      // Reset and re-run OCR using BLoC
+                      context.read<OCRBloc>().add(const ResetOCR());
+                      context.read<OCRBloc>().add(ExtractText(_document));
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('ព្យាយាមម្តងទៀត'),
+                  ),
+                ],
+              ).animate().fadeIn(duration: 400.ms),
+            ),
+          );
+        }
+
+        final text = _document.extractedText ?? '';
+
+        if (text.isEmpty) {
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.text_fields,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'គ្មានអត្ថបទ',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'រូបភាពមិនមានអត្ថបទដែលអាចស្កេនបាន',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      // Reset and re-run OCR using BLoC
+                      context.read<OCRBloc>().add(const ResetOCR());
+                      context.read<OCRBloc>().add(ExtractText(_document));
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('ព្យាយាមម្តងទៀត'),
+                  ),
+                ],
+              ).animate().fadeIn(duration: 400.ms),
+            ),
+          );
+        }
+
+        // Show text content
+        return Column(
+          children: [
+            // Action buttons
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: text));
+                      _showSnackBar('បានចម្លងអត្ថបទ');
+                    },
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('ចម្លង'),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      // Reset and re-run OCR using BLoC
+                      context.read<OCRBloc>().add(const ResetOCR());
+                      context.read<OCRBloc>().add(ExtractText(_document));
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('ស្កេនឡើងវិញ'),
+                  ),
+                ],
+              ),
+            ),
+
+            // Text content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: SelectableText(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.6,
+                  ),
+                ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+              ),
             ),
           ],
-        ).animate().fadeIn(duration: 400.ms),
-      );
-    }
-
-    return Column(
-      children: [
-        // Action buttons
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              FilledButton.tonalIcon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: text));
-                  _showSnackBar('បានចម្លងអត្ថបទ');
-                },
-                icon: const Icon(Icons.copy, size: 18),
-                label: const Text('ចម្លង'),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _runOCR,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('ស្កេនឡើងវិញ'),
-              ),
-            ],
-          ),
-        ),
-
-        // Text content
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: SelectableText(
-              text,
-              style: const TextStyle(
-                fontSize: 16,
-                height: 1.6,
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 300.ms)
-                .slideY(begin: 0.1, end: 0),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 

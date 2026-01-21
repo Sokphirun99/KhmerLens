@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 
 class OCRService {
   static final OCRService _instance = OCRService._internal();
@@ -9,6 +10,7 @@ class OCRService {
   OCRService._internal();
 
   TextRecognizer? _textRecognizer;
+  final bool _useTesseractForKhmer = true;
 
   TextRecognizer get textRecognizer {
     _textRecognizer ??= TextRecognizer();
@@ -16,8 +18,34 @@ class OCRService {
   }
 
   /// Extract text from an image file (simple version)
+  /// Uses Tesseract for Khmer, ML Kit for other languages
   Future<String> extractText(String imagePath) async {
     try {
+      // Try Tesseract first for Khmer support
+      if (_useTesseractForKhmer) {
+        try {
+          final text = await FlutterTesseractOcr.extractText(
+            imagePath,
+            language: 'khm', // Khmer language code
+            args: {
+              'preserve_interword_spaces': '1',
+            },
+          );
+
+          if (text.isNotEmpty) {
+            debugPrint(
+                'OCR: Extracted text using Tesseract (${text.length} chars)');
+            // Check if it contains Khmer or any meaningful text
+            if (containsKhmerText(text) || text.trim().length > 3) {
+              return text;
+            }
+          }
+        } catch (e) {
+          debugPrint('Tesseract OCR Error: $e - Falling back to ML Kit');
+        }
+      }
+
+      // Fallback to ML Kit (for non-Khmer or if Tesseract fails)
       final inputImage = InputImage.fromFile(File(imagePath));
       final RecognizedText recognizedText =
           await textRecognizer.processImage(inputImage);
@@ -30,8 +58,56 @@ class OCRService {
   }
 
   /// Extract text with detailed information (blocks, confidence, etc.)
+  /// Uses Tesseract for Khmer, ML Kit for other languages
   Future<OCRResult> extractTextWithDetails(String imagePath) async {
     try {
+      // Try Tesseract first for Khmer support
+      if (_useTesseractForKhmer) {
+        try {
+          final text = await FlutterTesseractOcr.extractText(
+            imagePath,
+            language: 'khm', // Khmer language code
+            args: {
+              'preserve_interword_spaces': '1',
+            },
+          );
+
+          if (text.isNotEmpty) {
+            debugPrint(
+                'OCR: Extracted text using Tesseract (${text.length} chars)');
+
+            // Convert Tesseract result to OCRResult format
+            final lines = text
+                .split('\n')
+                .where((line) => line.trim().isNotEmpty)
+                .toList();
+            final blocks = <OCRTextBlock>[];
+
+            // Create blocks from lines
+            for (var i = 0; i < lines.length; i++) {
+              blocks.add(OCRTextBlock(
+                text: lines[i],
+                confidence: 0.8, // Default confidence for Tesseract
+                linesCount: 1,
+                boundingBox:
+                    null, // Tesseract doesn't provide bounding boxes easily
+              ));
+            }
+
+            return OCRResult(
+              fullText: text,
+              blocks: blocks,
+              totalBlocks: blocks.length,
+              totalLines: lines.length,
+              success: true,
+            );
+          }
+        } catch (e) {
+          debugPrint('Tesseract OCR Error: $e - Falling back to ML Kit');
+        }
+      }
+
+      // Fallback to ML Kit (for non-Khmer or if Tesseract fails)
       final inputImage = InputImage.fromFile(File(imagePath));
       final RecognizedText recognizedText =
           await textRecognizer.processImage(inputImage);
@@ -147,7 +223,8 @@ class OCRResult {
   /// Get average confidence across all blocks
   double get averageConfidence {
     if (blocks.isEmpty) return 0.0;
-    final total = blocks.fold<double>(0, (sum, block) => sum + block.confidence);
+    final total =
+        blocks.fold<double>(0, (sum, block) => sum + block.confidence);
     return total / blocks.length;
   }
 
