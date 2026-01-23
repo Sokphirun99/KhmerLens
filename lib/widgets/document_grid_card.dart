@@ -128,14 +128,14 @@ class DocumentGridCard extends StatelessWidget {
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 12,
-                        color: theme.colorScheme.outline,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           Helpers.formatDate(document.createdAt),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -173,13 +173,14 @@ class DocumentGridCard extends StatelessWidget {
       File(imagePath),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
+        final theme = Theme.of(context);
         return Container(
-          color: Colors.grey[200],
+          color: theme.colorScheme.surfaceContainerHighest,
           child: Center(
             child: Icon(
               Icons.image_not_supported_outlined,
               size: 40,
-              color: Colors.grey[400],
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         );
@@ -341,15 +342,20 @@ class DocumentGridCardCompact extends StatelessWidget {
       File(imagePath),
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey[200],
-          child: Center(
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 32,
-              color: Colors.grey[400],
-            ),
-          ),
+        return Builder(
+          builder: (context) {
+            final theme = Theme.of(context);
+            return Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 32,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          },
         );
       },
     );

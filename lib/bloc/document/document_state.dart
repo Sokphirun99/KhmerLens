@@ -71,10 +71,10 @@ class DocumentDeleted extends DocumentState {
 }
 
 class DocumentError extends DocumentState {
-  final String message;
+  final dynamic error;
 
-  const DocumentError(this.message);
+  const DocumentError(this.error);
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [error];
 }

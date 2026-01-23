@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:lottie/lottie.dart';
 
 import '../models/document.dart';
+import '../router/app_router.dart';
 import '../services/database_service.dart';
 import '../services/export_service.dart';
 import '../repositories/document_repository.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/modern_document_card.dart';
-import 'document_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -72,7 +72,7 @@ class _SearchScreenState extends State<SearchScreen> {
           decoration: InputDecoration(
             hintText: 'ស្វែងរកឯកសារ...',
             border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.grey[400]),
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
           ),
           onChanged: (value) {
             // Debounce search
@@ -124,66 +124,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildInitialState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search,
-            size: 80,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'វាយបញ្ចូលដើម្បីស្វែងរក',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'ស្វែងរកតាមឈ្មោះឯកសារ ឬអត្ថបទដែលបានស្កេន',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+    return EmptyState.searchInitial();
   }
 
   Widget _buildNoResults() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Lottie.asset(
-            'assets/animations/empty_documents.json',
-            width: 150,
-            height: 150,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'រកមិនឃើញលទ្ធផល',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Text(
-              'សូមព្យាយាមស្វែងរកដោយប្រើពាក្យគន្លឹះផ្សេងទៀត',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
+    return EmptyState.noSearchResults();
   }
 
   Widget _buildResults() {
@@ -213,14 +158,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 document: document,
                 index: index,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DocumentDetailScreen(
-                        document: document,
-                      ),
-                    ),
-                  );
+                  context.pushDocumentDetail(document);
                 },
                 onDelete: () async {
                   final confirmed = await showDialog<bool>(

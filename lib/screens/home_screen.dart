@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -12,13 +13,14 @@ import '../bloc/document/document_event.dart';
 import '../bloc/document/document_state.dart';
 import '../models/document.dart';
 import '../models/document_category.dart';
+import '../router/app_router.dart';
 import '../services/ad_service.dart';
 import '../utils/constants.dart';
+import '../utils/error_handler.dart';
+import '../widgets/category_picker.dart';
 import '../widgets/document_grid_card.dart';
-import 'camera_screen.dart';
-import 'document_detail_screen.dart';
-import 'search_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/error_dialog.dart';
+import '../widgets/loading_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,68 +104,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<DocumentCategory?> _showCategoryDialog() async {
-    return await showDialog<DocumentCategory>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ជ្រើសរើសប្រភេទឯកសារ'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: DocumentCategory.values.map((category) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: category.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      category.icon,
-                      color: category.color,
-                    ),
-                  ),
-                  title: Text(
-                    category.nameKhmer,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(
-                    category.nameEnglish,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  onTap: () => Navigator.pop(context, category),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
+    return await CategoryPicker.show(context);
   }
 
   void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('កំពុងរក្សាទុក...'),
-              ],
-            ),
-          ),
-        ),
-      ),
+    LoadingDialog.show(
+      context,
+      message: 'កំពុងរក្សាទុក...',
+      animationAsset: 'assets/animations/scanning.json',
     );
   }
 
@@ -174,7 +122,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       body: CustomScrollView(
         slivers: [
           // Modern app bar
@@ -196,25 +143,11 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.search),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchScreen(),
-                    ),
-                  );
-                },
+                onPressed: () => context.pushSearch(),
               ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
-                    ),
-                  );
-                },
+                onPressed: () => context.pushSettings(),
               ),
               const SizedBox(width: 8),
             ],
@@ -230,13 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   _buildCategoryChip('ទាំងអស់', null, Icons.apps),
-                  ...DocumentCategory.values.map(
-                    (cat) => _buildCategoryChip(
-                      cat.nameKhmer,
-                      cat,
-                      cat.icon,
-                    ),
-                  ),
+                  ...DocumentCategory.values.map((cat) => _buildCategoryChip(
+                        cat.nameKhmer,
+                        cat,
+                        cat.icon,
+                      )),
                 ],
               ),
             ),
@@ -247,28 +178,17 @@ class _HomeScreenState extends State<HomeScreen> {
             listener: (context, state) {
               // Handle document created
               if (state is DocumentCreated) {
-                Navigator.pop(context); // Close loading
-
-                // Navigate to detail for OCR
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DocumentDetailScreen(
-                      document: state.document,
-                    ),
-                  ),
-                );
+                Navigator.pop(context); // Close loading dialog
+                context.pushDocumentDetail(state.document);
               }
 
               // Handle errors
               if (state is DocumentError) {
                 Navigator.pop(context); // Close loading if open
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: Colors.red,
-                  ),
+                ErrorSnackBar.show(
+                  context,
+                  error: state.error,
+                  locale: 'km',
                 );
               }
 
@@ -292,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
               }
 
               if (state is DocumentError) {
-                return _buildErrorState(state.message);
+                return _buildErrorState(state.error);
               }
 
               return _buildShimmerLoading();
@@ -315,13 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // FAB
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final imagePath = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CameraScreen(),
-            ),
-          );
-
+          final imagePath = await context.pushCamera<String>();
           if (imagePath != null) {
             await _processNewDocument(imagePath);
           }
@@ -359,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 FilterDocumentsByCategory(_selectedCategory),
               );
         },
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         selectedColor: Theme.of(context).colorScheme.primaryContainer,
         checkmarkColor: Theme.of(context).colorScheme.primary,
         elevation: isSelected ? 2 : 0,
@@ -379,13 +293,14 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisSpacing: 16,
         childCount: 6,
         itemBuilder: (context, index) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
+            baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+            highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
             child: Container(
               height: 200 + (index % 2) * 50.0,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -419,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 'ចុចប៊ូតុងខាងក្រោមដើម្បីចាប់ផ្តើមស្កេនឯកសាររបស់អ្នក',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -430,7 +345,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildErrorState(String message) {
+  Widget _buildErrorState(dynamic error) {
+    final errorMessage = ErrorHandler.getMessage(error, locale: 'km');
+    final recoverySuggestion =
+        ErrorHandler.getRecoverySuggestion(error, locale: 'km');
+
     return SliverFillRemaining(
       child: Center(
         child: Column(
@@ -439,29 +358,41 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               Icons.error_outline,
               size: 64,
-              color: Colors.red[300],
+              color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 16),
             Text(
-              'Error',
+              'មានបញ្ហា',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Text(
-                message,
+                errorMessage,
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
             ),
+            if (recoverySuggestion != null) const SizedBox(height: 12),
+            if (recoverySuggestion != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: Text(
+                  recoverySuggestion,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
                 context.read<DocumentBloc>().add(const RefreshDocuments());
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: const Text('ព្យាយាមម្តងទៀត'),
             ),
           ],
         ),
@@ -481,20 +412,14 @@ class _HomeScreenState extends State<HomeScreen> {
           final document = documents[index];
           return DocumentGridCard(
             document: document,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DocumentDetailScreen(
-                    document: document,
-                  ),
-                ),
-              ).then((_) {
-                if (context.mounted) {
-                  // Refresh after returning
-                  context.read<DocumentBloc>().add(const RefreshDocuments());
-                }
-              });
+            onTap: () async {
+              await context.push(
+                AppRoutes.documentDetail.replaceFirst(':id', document.id),
+                extra: document,
+              );
+              if (context.mounted) {
+                context.read<DocumentBloc>().add(const RefreshDocuments());
+              }
             },
             onDelete: () async {
               final confirmed = await showDialog<bool>(

@@ -32,7 +32,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: Colors.grey[500]),
+        hintStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
         border: InputBorder.none,
       ),
     );
@@ -81,7 +81,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
                 Icon(
                   Icons.error_outline,
                   size: 64,
-                  color: Colors.grey[400],
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -167,7 +167,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
                       Text(
                         'ស្វែងរកតាមប្រភេទឯកសារ ឬអត្ថបទដែលបានស្កេន',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                       ),
                     ],
@@ -263,7 +263,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
             Icon(
               Icons.search_off,
               size: 80,
-              color: Colors.grey[400],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 24),
             Text(

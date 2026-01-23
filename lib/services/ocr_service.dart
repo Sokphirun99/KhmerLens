@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import '../utils/exceptions.dart';
 
 class OCRService {
   static final OCRService _instance = OCRService._internal();
@@ -18,17 +19,36 @@ class OCRService {
   }
 
   /// Extract text from an image file (simple version)
-  /// Uses Tesseract for Khmer, ML Kit for other languages
+  /// Uses Tesseract for Khmer with optimized parameters
   Future<String> extractText(String imagePath) async {
     try {
-      // Try Tesseract first for Khmer support
+      // Try Tesseract first for Khmer support with enhanced parameters
       if (_useTesseractForKhmer) {
         try {
           final text = await FlutterTesseractOcr.extractText(
             imagePath,
             language: 'khm', // Khmer language code
             args: {
+              // Preserve spacing for Khmer text
               'preserve_interword_spaces': '1',
+
+              // Page segmentation mode
+              // 1 = Automatic page segmentation with OSD (Orientation and Script Detection)
+              // 3 = Fully automatic page segmentation (default)
+              // 6 = Assume a single uniform block of text
+              'psm': '3',
+
+              // OCR Engine mode
+              // 0 = Legacy engine only
+              // 1 = Neural nets LSTM engine only (best for Khmer)
+              // 2 = Legacy + LSTM engines
+              // 3 = Default, based on what is available
+              'oem': '1',
+
+              // Tesseract variables for better Khmer recognition
+              'tessedit_char_whitelist': '', // Allow all characters
+              'language_model_penalty_non_dict_word': '0.5',
+              'language_model_penalty_non_freq_dict_word': '0.5',
             },
           );
 
@@ -50,18 +70,23 @@ class OCRService {
       final RecognizedText recognizedText =
           await textRecognizer.processImage(inputImage);
 
+      if (recognizedText.text.isEmpty) {
+        throw OCRException.noTextFound();
+      }
+
       return recognizedText.text;
     } catch (e) {
+      if (e is OCRException) rethrow;
       debugPrint('OCR Error: $e');
-      return '';
+      throw OCRException.extractionFailed(e);
     }
   }
 
   /// Extract text with detailed information (blocks, confidence, etc.)
-  /// Uses Tesseract for Khmer, ML Kit for other languages
+  /// Uses Tesseract for Khmer with optimized parameters
   Future<OCRResult> extractTextWithDetails(String imagePath) async {
     try {
-      // Try Tesseract first for Khmer support
+      // Try Tesseract first for Khmer support with enhanced parameters
       if (_useTesseractForKhmer) {
         try {
           final text = await FlutterTesseractOcr.extractText(
@@ -69,6 +94,10 @@ class OCRService {
             language: 'khm', // Khmer language code
             args: {
               'preserve_interword_spaces': '1',
+              'psm': '3', // Automatic page segmentation
+              'oem': '1', // LSTM engine (best for Khmer)
+              'language_model_penalty_non_dict_word': '0.5',
+              'language_model_penalty_non_freq_dict_word': '0.5',
             },
           );
 
@@ -83,14 +112,17 @@ class OCRService {
                 .toList();
             final blocks = <OCRTextBlock>[];
 
-            // Create blocks from lines
+            // Create blocks from lines with estimated confidence
             for (var i = 0; i < lines.length; i++) {
+              // Estimate confidence based on Khmer character ratio
+              final khmerRatio = _calculateKhmerRatio(lines[i]);
+              final confidence = khmerRatio > 0.5 ? 0.85 : 0.75;
+
               blocks.add(OCRTextBlock(
                 text: lines[i],
-                confidence: 0.8, // Default confidence for Tesseract
+                confidence: confidence,
                 linesCount: 1,
-                boundingBox:
-                    null, // Tesseract doesn't provide bounding boxes easily
+                boundingBox: null,
               ));
             }
 
@@ -143,6 +175,18 @@ class OCRService {
         error: e.toString(),
       );
     }
+  }
+
+  /// Calculate the ratio of Khmer characters in text
+  double _calculateKhmerRatio(String text) {
+    if (text.isEmpty) return 0.0;
+
+    final khmerChars = text.runes.where((rune) {
+      // Khmer Unicode range: U+1780 to U+17FF
+      return rune >= 0x1780 && rune <= 0x17FF;
+    }).length;
+
+    return khmerChars / text.runes.length;
   }
 
   /// Calculate average confidence for a text block

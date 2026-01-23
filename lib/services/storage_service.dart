@@ -4,6 +4,7 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
 import '../utils/constants.dart';
+import '../utils/exceptions.dart';
 
 class StorageService {
   static final StorageService _instance = StorageService._internal();
@@ -35,43 +36,47 @@ class StorageService {
   /// Saves an image to local storage with compression and generates a thumbnail.
   /// Returns the saved image path.
   Future<String> saveImage(File imageFile) async {
-    await _ensureDirectories();
+    try {
+      await _ensureDirectories();
 
-    final String fileName = '${const Uuid().v4()}.jpg';
-    final String savedPath = path.join(_imageDir!.path, fileName);
+      final String fileName = '${const Uuid().v4()}.jpg';
+      final String savedPath = path.join(_imageDir!.path, fileName);
 
-    // Read and process image
-    final bytes = await imageFile.readAsBytes();
-    img.Image? image = img.decodeImage(bytes);
+      // Read and process image
+      final bytes = await imageFile.readAsBytes();
+      img.Image? image = img.decodeImage(bytes);
 
-    if (image == null) {
-      // If decoding fails, just copy the file as-is
-      await imageFile.copy(savedPath);
-      return savedPath;
-    }
+      if (image == null) {
+        // If decoding fails, just copy the file as-is
+        await imageFile.copy(savedPath);
+        return savedPath;
+      }
 
-    // Resize if larger than max dimensions
-    if (image.width > AppConstants.maxImageWidth ||
-        image.height > AppConstants.maxImageHeight) {
-      image = img.copyResize(
+      // Resize if larger than max dimensions
+      if (image.width > AppConstants.maxImageWidth ||
+          image.height > AppConstants.maxImageHeight) {
+        image = img.copyResize(
+          image,
+          width: image.width > image.height ? AppConstants.maxImageWidth : null,
+          height:
+              image.height >= image.width ? AppConstants.maxImageHeight : null,
+        );
+      }
+
+      // Save compressed image
+      final compressedBytes = img.encodeJpg(
         image,
-        width: image.width > image.height ? AppConstants.maxImageWidth : null,
-        height:
-            image.height >= image.width ? AppConstants.maxImageHeight : null,
+        quality: AppConstants.jpegQuality,
       );
+      await File(savedPath).writeAsBytes(compressedBytes);
+
+      // Generate thumbnail
+      await _generateThumbnail(image, fileName);
+
+      return savedPath;
+    } catch (e) {
+      throw StorageException.saveFailed(e);
     }
-
-    // Save compressed image
-    final compressedBytes = img.encodeJpg(
-      image,
-      quality: AppConstants.jpegQuality,
-    );
-    await File(savedPath).writeAsBytes(compressedBytes);
-
-    // Generate thumbnail
-    await _generateThumbnail(image, fileName);
-
-    return savedPath;
   }
 
   /// Generates a thumbnail for the given image.
@@ -91,19 +96,23 @@ class StorageService {
 
   /// Deletes an image and its thumbnail from storage.
   Future<void> deleteImage(String imagePath) async {
-    final imageFile = File(imagePath);
-    if (await imageFile.exists()) {
-      await imageFile.delete();
-    }
-
-    // Also delete thumbnail
-    final fileName = path.basename(imagePath);
-    final thumbnailPath = await getThumbnailPath(fileName);
-    if (thumbnailPath != null) {
-      final thumbnailFile = File(thumbnailPath);
-      if (await thumbnailFile.exists()) {
-        await thumbnailFile.delete();
+    try {
+      final imageFile = File(imagePath);
+      if (await imageFile.exists()) {
+        await imageFile.delete();
       }
+
+      // Also delete thumbnail
+      final fileName = path.basename(imagePath);
+      final thumbnailPath = await getThumbnailPath(fileName);
+      if (thumbnailPath != null) {
+        final thumbnailFile = File(thumbnailPath);
+        if (await thumbnailFile.exists()) {
+          await thumbnailFile.delete();
+        }
+      }
+    } catch (e) {
+      throw StorageException.deleteFailed(e);
     }
   }
 

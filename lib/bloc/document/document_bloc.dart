@@ -1,6 +1,7 @@
 // bloc/document/document_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repositories/document_repository.dart';
+import '../../utils/error_handler.dart';
 import 'document_event.dart';
 import 'document_state.dart';
 
@@ -31,8 +32,9 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         documents: documents,
         selectedCategory: event.category,
       ));
-    } catch (e) {
-      emit(DocumentError('Failed to load documents: $e'));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
     }
   }
 
@@ -48,8 +50,9 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
       // Reload documents after creating
       add(const RefreshDocuments());
-    } catch (e) {
-      emit(DocumentError('Failed to create document: $e'));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
     }
   }
 
@@ -65,8 +68,9 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
       // Reload documents after updating
       add(const RefreshDocuments());
-    } catch (e) {
-      emit(DocumentError('Failed to update document: $e'));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
     }
   }
 
@@ -82,8 +86,9 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
       // Reload documents after deleting
       add(const RefreshDocuments());
-    } catch (e) {
-      emit(DocumentError('Failed to delete document: $e'));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
     }
   }
 
@@ -102,8 +107,9 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         documents: documents,
         selectedCategory: event.category,
       ));
-    } catch (e) {
-      emit(DocumentError('Failed to filter documents: $e'));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
     }
   }
 
@@ -125,8 +131,9 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         documents: documents,
         selectedCategory: category,
       ));
-    } catch (e) {
-      emit(DocumentError('Failed to refresh documents: $e'));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
     }
   }
 }

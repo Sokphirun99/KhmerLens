@@ -7,11 +7,12 @@ import 'bloc/document/document_bloc.dart';
 import 'bloc/document/document_event.dart';
 import 'bloc/ocr/ocr_bloc.dart';
 import 'bloc/search/search_bloc.dart';
+import 'bloc/theme/theme_cubit.dart';
 import 'repositories/document_repository.dart';
+import 'router/app_router.dart';
 import 'services/ocr_service.dart';
 import 'services/ad_service.dart';
 import 'utils/theme.dart';
-import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,28 +45,41 @@ class MyApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
+          // Theme cubit
+          BlocProvider(
+            create: (context) => ThemeCubit(),
+          ),
+          // Document bloc
           BlocProvider(
             create: (context) => DocumentBloc(
               repository: documentRepository,
             )..add(const LoadDocuments()),
           ),
+          // OCR bloc
           BlocProvider(
             create: (context) => OCRBloc(
               ocrService: ocrService,
               documentRepository: documentRepository,
             ),
           ),
+          // Search bloc
           BlocProvider(
             create: (context) => SearchBloc(
               repository: documentRepository,
             ),
           ),
         ],
-        child: MaterialApp(
-          title: 'KhmerScan',
-          theme: AppTheme.lightTheme,
-          home: const HomeScreen(),
-          debugShowCheckedModeBanner: false,
+        child: BlocBuilder<ThemeCubit, ThemeState>(
+          builder: (context, themeState) {
+            return MaterialApp.router(
+              title: 'KhmerScan',
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: context.read<ThemeCubit>().themeMode,
+              routerConfig: AppRouter.router,
+              debugShowCheckedModeBanner: false,
+            );
+          },
         ),
       ),
     );

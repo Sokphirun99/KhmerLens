@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
+import '../bloc/document/document_bloc.dart';
+import '../bloc/document/document_event.dart';
+import '../bloc/document/document_state.dart';
 import '../bloc/ocr/ocr_bloc.dart';
 import '../bloc/ocr/ocr_event.dart';
 import '../bloc/ocr/ocr_state.dart';
 import '../models/document.dart';
-import '../services/database_service.dart';
-import '../services/storage_service.dart';
 import '../services/export_service.dart';
 import '../utils/helpers.dart';
+import '../widgets/error_dialog.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
   final Document document;
@@ -29,8 +32,6 @@ class DocumentDetailScreen extends StatefulWidget {
 class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     with SingleTickerProviderStateMixin {
   late Document _document;
-  final DatabaseService _dbService = DatabaseService();
-  final StorageService _storageService = StorageService();
   final ExportService _exportService = ExportService();
   late TabController _tabController;
 
@@ -76,17 +77,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        await _storageService.deleteImage(_document.imagePath);
-        await _dbService.deleteDocument(_document.id);
-
-        if (mounted) {
-          Navigator.pop(context, true);
-        }
-      } catch (e) {
-        _showSnackBar('Error deleting: $e');
-      }
+    if (confirmed == true && mounted) {
+      context.read<DocumentBloc>().add(DeleteDocument(_document));
     }
   }
 
@@ -119,11 +111,23 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+    return BlocListener<DocumentBloc, DocumentState>(
+      listener: (context, state) {
+        if (state is DocumentDeleted) {
+          _showSnackBar('បានលុបឯកសារ');
+          context.pop(true);
+        } else if (state is DocumentError) {
+          ErrorSnackBar.show(
+            context,
+            error: state.error,
+            locale: 'km',
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+        appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         title: Text(_document.category.nameKhmer),
         actions: [
           PopupMenuButton<String>(
@@ -185,7 +189,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
           Expanded(
             flex: 2,
             child: Container(
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.surfaceContainerLowest,
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
@@ -200,12 +204,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                           Icon(
                             Icons.broken_image_outlined,
                             size: 64,
-                            color: Colors.grey[700],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'មិនអាចផ្ទុករូបភាព',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       );
@@ -227,7 +233,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
@@ -241,7 +247,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -276,6 +282,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -345,7 +352,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
+                      color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -385,7 +392,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   Icon(
                     Icons.text_fields,
                     size: 64,
-                    color: Colors.grey[400],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -396,7 +403,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   Text(
                     'រូបភាពមិនមានអត្ថបទដែលអាចស្កេនបាន',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -547,19 +554,20 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
+          Icon(icon, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.grey[700],
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),
