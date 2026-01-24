@@ -1,4 +1,5 @@
 // bloc/theme/theme_cubit.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,20 +19,35 @@ class ThemeCubit extends Cubit<ThemeState> {
 
   /// Load saved theme preference
   Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeName = prefs.getString(_themeKey) ?? 'system';
-    final mode = AppThemeMode.values.firstWhere(
-      (e) => e.name == themeName,
-      orElse: () => AppThemeMode.system,
-    );
-    emit(ThemeState(mode: mode, isLoaded: true));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final themeName = prefs.getString(_themeKey) ?? 'system';
+      final mode = AppThemeMode.values.firstWhere(
+        (e) => e.name == themeName,
+        orElse: () => AppThemeMode.system,
+      );
+      emit(ThemeState(mode: mode, isLoaded: true));
+    } catch (e) {
+      // If SharedPreferences fails, use system theme as default
+      if (kDebugMode) {
+        debugPrint('Failed to load theme preference: $e');
+      }
+      emit(const ThemeState(mode: AppThemeMode.system, isLoaded: true));
+    }
   }
 
   /// Set theme mode
   Future<void> setThemeMode(AppThemeMode mode) async {
     emit(state.copyWith(mode: mode));
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_themeKey, mode.name);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_themeKey, mode.name);
+    } catch (e) {
+      // Theme is already updated in state, just log the error
+      if (kDebugMode) {
+        debugPrint('Failed to save theme preference: $e');
+      }
+    }
   }
 
   /// Toggle between light and dark (ignoring system)

@@ -154,28 +154,31 @@ class _CategoryCard extends StatelessWidget {
               width: isSelected ? 2 : 1,
             ),
           ),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Icon with background
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  category.icon,
-                  color: categoryColor,
-                  size: 24,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: categoryColor.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    category.icon,
+                    color: categoryColor,
+                    size: 20,
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               // Category name in Khmer
               Text(
                 category.nameKhmer,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? categoryColor
@@ -190,6 +193,7 @@ class _CategoryCard extends StatelessWidget {
                 category.nameEnglish,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
+                      fontSize: 10,
                     ),
                 textAlign: TextAlign.center,
                 maxLines: 1,

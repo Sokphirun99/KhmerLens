@@ -14,6 +14,7 @@ import '../bloc/ocr/ocr_event.dart';
 import '../bloc/ocr/ocr_state.dart';
 import '../models/document.dart';
 import '../services/export_service.dart';
+import '../utils/error_handler.dart';
 import '../utils/helpers.dart';
 import '../widgets/error_dialog.dart';
 
@@ -31,20 +32,29 @@ class DocumentDetailScreen extends StatefulWidget {
 
 class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     with SingleTickerProviderStateMixin {
-  late Document _document;
   final ExportService _exportService = ExportService();
   late TabController _tabController;
+
+  // Use the document from widget, but allow updates from OCR
+  Document get _document => widget.document;
+
+  // Track OCR extracted text separately to avoid setState race condition
+  String? _ocrExtractedText;
+
+  // Get the best available extracted text
+  String? get _extractedText => _ocrExtractedText ?? _document.extractedText;
 
   @override
   void initState() {
     super.initState();
-    _document = widget.document;
     _tabController = TabController(length: 2, vsync: this);
 
     // Auto-run OCR via BLoC if no text
     if (_document.extractedText == null || _document.extractedText!.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<OCRBloc>().add(ExtractText(_document));
+        if (mounted) {
+          context.read<OCRBloc>().add(ExtractText(_document));
+        }
       });
     }
   }
@@ -83,6 +93,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   void _showSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -95,8 +106,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     try {
       _showSnackBar('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...');
       await _exportService.shareDocument(_document.id);
-    } catch (e) {
-      _showSnackBar('មិនអាចចែករំលែកឯកសារ: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      if (mounted) {
+        _showSnackBar('មិនអាចចែករំលែកឯកសារ');
+      }
     }
   }
 
@@ -104,8 +118,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     try {
       _showSnackBar('កំពុងនាំចេញជា PDF...');
       await _exportService.exportToPdf([_document.id]);
-    } catch (e) {
-      _showSnackBar('មិនអាចនាំចេញជា PDF: $e');
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      if (mounted) {
+        _showSnackBar('មិនអាចនាំចេញជា PDF');
+      }
     }
   }
 
@@ -292,17 +309,16 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       listener: (context, state) {
         if (state is OCRSuccess) {
           _showSnackBar('ស្កេនអត្ថបទបានជោគជ័យ');
-
-          // Update local document state
-          setState(() {
-            _document = _document.copyWith(
-              extractedText: state.extractedText,
-            );
-          });
+          // Store the extracted text without using setState on document
+          if (mounted) {
+            setState(() {
+              _ocrExtractedText = state.extractedText;
+            });
+          }
         } else if (state is OCREmpty) {
           _showSnackBar('រកមិនឃើញអត្ថបទក្នុងរូបភាព');
         } else if (state is OCRError) {
-          _showSnackBar('Error: ${state.message}');
+          _showSnackBar('កំហុស: ${state.message}');
         }
       },
       builder: (context, state) {
@@ -318,11 +334,16 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                     'assets/animations/scanning.json',
                     width: 150,
                     height: 150,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const SizedBox(
+                        width: 150,
+                        height: 150,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   const Text('កំពុងស្កេនអត្ថបទ...'),
-                  const SizedBox(height: 8),
-                  const CircularProgressIndicator(),
                 ],
               ).animate().fadeIn(duration: 400.ms),
             ),
@@ -356,7 +377,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Error: ${state.message}',
+                      state.message,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.error,
                           ),
@@ -379,7 +400,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
           );
         }
 
-        final text = _document.extractedText ?? '';
+        final text = _extractedText ?? '';
 
         if (text.isEmpty) {
           return Center(
@@ -509,21 +530,26 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             FutureBuilder<int>(
               future: File(_document.imagePath).length(),
               builder: (context, snapshot) {
+                String sizeText;
+                if (snapshot.hasError) {
+                  sizeText = 'មិនអាចផ្ទុក';
+                } else if (snapshot.hasData) {
+                  sizeText = Helpers.formatFileSize(snapshot.data!);
+                } else {
+                  sizeText = 'កំពុងផ្ទុក...';
+                }
                 return _buildInfoRow(
                   Icons.storage,
                   'ទំហំ',
-                  snapshot.hasData
-                      ? Helpers.formatFileSize(snapshot.data!)
-                      : 'Loading...',
+                  sizeText,
                 );
               },
             ),
             _buildInfoRow(
               Icons.text_fields,
               'អត្ថបទ',
-              _document.extractedText != null &&
-                      _document.extractedText!.isNotEmpty
-                  ? '${_document.extractedText!.length} តួអក្សរ'
+              _extractedText != null && _extractedText!.isNotEmpty
+                  ? '${_extractedText!.length} តួអក្សរ'
                   : 'គ្មាន',
             ),
           ],

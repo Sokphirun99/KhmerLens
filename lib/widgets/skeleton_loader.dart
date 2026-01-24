@@ -19,16 +19,21 @@ class SkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+      baseColor: isDark
+          ? colorScheme.surfaceContainerHighest
+          : colorScheme.surfaceContainerHigh,
+      highlightColor: isDark
+          ? colorScheme.surfaceContainerHigh
+          : colorScheme.surfaceContainerLowest,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: borderRadius ?? AppRadius.borderRadiusSm,
         ),
       ),
@@ -47,9 +52,14 @@ class DocumentCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = isDark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainerHigh;
+    final highlightColor = isDark
+        ? colorScheme.surfaceContainerHigh
+        : colorScheme.surfaceContainerLowest;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -63,7 +73,7 @@ class DocumentCardSkeleton extends StatelessWidget {
             AspectRatio(
               aspectRatio: 3 / 4,
               child: Container(
-                color: Colors.white,
+                color: colorScheme.surface,
               ),
             ),
             // Content placeholder
@@ -76,7 +86,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                     height: 16,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surface,
                       borderRadius: AppRadius.borderRadiusXs,
                     ),
                   ),
@@ -85,7 +95,7 @@ class DocumentCardSkeleton extends StatelessWidget {
                     height: 12,
                     width: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surface,
                       borderRadius: AppRadius.borderRadiusXs,
                     ),
                   ),
@@ -105,9 +115,14 @@ class ListItemSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = isDark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainerHigh;
+    final highlightColor = isDark
+        ? colorScheme.surfaceContainerHigh
+        : colorScheme.surfaceContainerLowest;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -121,7 +136,7 @@ class ListItemSkeleton extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 borderRadius: AppRadius.borderRadiusSm,
               ),
             ),
@@ -135,7 +150,7 @@ class ListItemSkeleton extends StatelessWidget {
                     height: 16,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surface,
                       borderRadius: AppRadius.borderRadiusXs,
                     ),
                   ),
@@ -144,7 +159,7 @@ class ListItemSkeleton extends StatelessWidget {
                     height: 12,
                     width: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surface,
                       borderRadius: AppRadius.borderRadiusXs,
                     ),
                   ),
@@ -169,9 +184,14 @@ class SettingsSectionSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = isDark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainerHigh;
+    final highlightColor = isDark
+        ? colorScheme.surfaceContainerHigh
+        : colorScheme.surfaceContainerLowest;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -185,7 +205,7 @@ class SettingsSectionSkeleton extends StatelessWidget {
             width: 100,
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface,
               borderRadius: AppRadius.borderRadiusXs,
             ),
           ),
@@ -202,7 +222,7 @@ class SettingsSectionSkeleton extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: colorScheme.surface,
                           borderRadius: AppRadius.borderRadiusSm,
                         ),
                       ),
@@ -215,7 +235,7 @@ class SettingsSectionSkeleton extends StatelessWidget {
                               height: 14,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colorScheme.surface,
                                 borderRadius: AppRadius.borderRadiusXs,
                               ),
                             ),
@@ -224,7 +244,7 @@ class SettingsSectionSkeleton extends StatelessWidget {
                               height: 10,
                               width: 100,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: colorScheme.surface,
                                 borderRadius: AppRadius.borderRadiusXs,
                               ),
                             ),
@@ -240,20 +260,5 @@ class SettingsSectionSkeleton extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Full screen skeleton loader
-class FullScreenSkeleton extends StatelessWidget {
-  final Widget child;
-
-  const FullScreenSkeleton({
-    super.key,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return child;
   }
 }

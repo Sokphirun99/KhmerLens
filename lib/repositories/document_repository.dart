@@ -14,11 +14,31 @@ class DocumentRepository {
   Future<List<Document>> getAllDocuments({
     DocumentCategory? category,
   }) async {
-    return await _dbService.getAllDocuments(category: category);
+    try {
+      return await _dbService.getAllDocuments(category: category);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to load documents',
+        code: 'DOCUMENT_LOAD_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<Document?> getDocument(String id) async {
-    return _dbService.getDocument(id);
+    try {
+      return await _dbService.getDocument(id);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to get document',
+        code: 'DOCUMENT_LOAD_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<String> createDocument(Document document, String imagePath) async {
@@ -40,16 +60,28 @@ class DocumentRepository {
 
       await _dbService.insertDocument(docToSave);
       return docToSave.id;
-    } catch (e) {
-      throw DocumentException.createFailed(e);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to create document',
+        code: 'DOCUMENT_CREATE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   Future<void> updateDocument(Document document) async {
     try {
       await _dbService.updateDocument(document);
-    } catch (e) {
-      throw DocumentException.updateFailed(e);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to update document',
+        code: 'DOCUMENT_UPDATE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -57,27 +89,73 @@ class DocumentRepository {
     try {
       await _storageService.deleteImage(document.imagePath);
       await _dbService.deleteDocument(document.id);
-    } catch (e) {
-      throw DocumentException.deleteFailed(e);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to delete document',
+        code: 'DOCUMENT_DELETE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   Future<List<Document>> searchDocuments(String query) async {
-    return _dbService.searchDocuments(query);
+    try {
+      return await _dbService.searchDocuments(query);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to search documents',
+        code: 'DOCUMENT_SEARCH_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<int> getDocumentCount({DocumentCategory? category}) async {
-    return await _dbService.getDocumentCount(category: category);
+    try {
+      return await _dbService.getDocumentCount(category: category);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to get document count',
+        code: 'DOCUMENT_COUNT_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<int> getTotalStorageUsed() async {
-    return _storageService.getStorageSize();
+    try {
+      return await _storageService.getStorageSize();
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw StorageException(
+        'Failed to get storage size',
+        code: 'STORAGE_SIZE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> clearAllDocuments() async {
-    final docs = await _dbService.getAllDocuments();
-    for (var doc in docs) {
-      await deleteDocument(doc);
+    try {
+      final docs = await _dbService.getAllDocuments();
+      for (var doc in docs) {
+        await deleteDocument(doc);
+      }
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to clear all documents',
+        code: 'DOCUMENT_CLEAR_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 }

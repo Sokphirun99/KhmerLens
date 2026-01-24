@@ -1,4 +1,7 @@
 // main.dart
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,36 +15,82 @@ import 'repositories/document_repository.dart';
 import 'router/app_router.dart';
 import 'services/ocr_service.dart';
 import 'services/ad_service.dart';
+import 'utils/error_handler.dart';
 import 'utils/theme.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Catch Flutter framework errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    if (kDebugMode) {
+      ErrorHandler.logError(details.exception, stackTrace: details.stack);
+    }
+  };
 
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // Catch async errors not handled by Flutter framework
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize AdMob
-  await AdService().initialize();
+      // Set preferred orientations
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
 
-  runApp(const MyApp());
+      // Initialize AdMob with error handling
+      try {
+        await AdService().initialize();
+      } catch (e, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('AdService initialization failed: $e');
+          ErrorHandler.logError(e, stackTrace: stackTrace);
+        }
+        // Continue running the app even if ads fail to initialize
+      }
+
+      runApp(const MyApp());
+    },
+    (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('Unhandled error: $error');
+        ErrorHandler.logError(error, stackTrace: stackTrace);
+      }
+    },
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Create repository
-    final documentRepository = DocumentRepository();
-    final ocrService = OCRService();
+  State<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends State<MyApp> {
+  late final DocumentRepository _documentRepository;
+  late final OCRService _ocrService;
+
+  @override
+  void initState() {
+    super.initState();
+    _documentRepository = DocumentRepository();
+    _ocrService = OCRService();
+  }
+
+  @override
+  void dispose() {
+    // Dispose OCR service to release resources
+    _ocrService.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider.value(value: documentRepository),
-        RepositoryProvider.value(value: ocrService),
+        RepositoryProvider.value(value: _documentRepository),
+        RepositoryProvider.value(value: _ocrService),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -52,20 +101,20 @@ class MyApp extends StatelessWidget {
           // Document bloc
           BlocProvider(
             create: (context) => DocumentBloc(
-              repository: documentRepository,
+              repository: _documentRepository,
             )..add(const LoadDocuments()),
           ),
           // OCR bloc
           BlocProvider(
             create: (context) => OCRBloc(
-              ocrService: ocrService,
-              documentRepository: documentRepository,
+              ocrService: _ocrService,
+              documentRepository: _documentRepository,
             ),
           ),
           // Search bloc
           BlocProvider(
             create: (context) => SearchBloc(
-              repository: documentRepository,
+              repository: _documentRepository,
             ),
           ),
         ],

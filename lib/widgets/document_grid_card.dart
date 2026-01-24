@@ -110,16 +110,17 @@ class DocumentGridCard extends StatelessWidget {
             ),
             // Content
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     document.title,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
@@ -128,14 +129,16 @@ class DocumentGridCard extends StatelessWidget {
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 12,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           Helpers.formatDate(document.createdAt),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.7),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -145,7 +148,7 @@ class DocumentGridCard extends StatelessWidget {
                     ],
                   ),
                   if (document.expiryDate != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     _buildExpiryRow(context),
                   ],
                 ],
@@ -156,7 +159,8 @@ class DocumentGridCard extends StatelessWidget {
       ),
     )
         .animate(
-          delay: isDeleting ? Duration.zero : Duration(milliseconds: 50 * index),
+          delay:
+              isDeleting ? Duration.zero : Duration(milliseconds: 50 * index),
         )
         .fadeIn(duration: 300.ms)
         .slideY(begin: 0.1, end: 0, duration: 300.ms)

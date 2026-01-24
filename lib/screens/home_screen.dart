@@ -32,6 +32,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   BannerAd? _bannerAd;
   bool _isBannerAdReady = false;
+  bool _isDisposed = false;
   int _scansCount = 0;
   DocumentCategory? _selectedCategory;
 
@@ -44,17 +45,22 @@ class _HomeScreenState extends State<HomeScreen> {
   void _loadBannerAd() {
     _bannerAd = AdService().createBannerAd()
       ..load().then((_) {
-        if (mounted) {
+        if (mounted && !_isDisposed) {
           setState(() {
             _isBannerAdReady = true;
           });
         }
+      }).catchError((e) {
+        // Silently handle ad load errors
+        debugPrint('Banner ad failed to load: $e');
       });
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _bannerAd?.dispose();
+    _bannerAd = null;
     super.dispose();
   }
 
@@ -176,15 +182,24 @@ class _HomeScreenState extends State<HomeScreen> {
           // Documents grid - BLoC Consumer
           BlocConsumer<DocumentBloc, DocumentState>(
             listener: (context, state) {
+              if (!mounted) return;
+
               // Handle document created
               if (state is DocumentCreated) {
-                Navigator.pop(context); // Close loading dialog
+                // Safely close loading dialog if open
+                final navigator = Navigator.of(context, rootNavigator: true);
+                if (navigator.canPop()) {
+                  navigator.pop();
+                }
                 context.pushDocumentDetail(state.document);
               }
 
               // Handle errors
               if (state is DocumentError) {
-                Navigator.pop(context); // Close loading if open
+                // Try to close loading dialog if open
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
                 ErrorSnackBar.show(
                   context,
                   error: state.error,
@@ -295,8 +310,8 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, index) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return Shimmer.fromColors(
-            baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-            highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+            baseColor: isDark ? (Colors.grey[800] ?? Colors.grey) : (Colors.grey[300] ?? Colors.grey),
+            highlightColor: isDark ? (Colors.grey[700] ?? Colors.grey) : (Colors.grey[100] ?? Colors.white),
             child: Container(
               height: 200 + (index % 2) * 50.0,
               decoration: BoxDecoration(
@@ -311,7 +326,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isFiltered = _selectedCategory != null;
+
     return SliverFillRemaining(
+      hasScrollBody: false,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -320,10 +338,17 @@ class _HomeScreenState extends State<HomeScreen> {
               'assets/animations/empty_documents.json',
               width: 200,
               height: 200,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.folder_open_outlined,
+                  size: 120,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                );
+              },
             ),
             const SizedBox(height: 24),
             Text(
-              'គ្មានឯកសារ',
+              isFiltered ? 'គ្មានឯកសារក្នុងប្រភេទនេះ' : 'គ្មានឯកសារ',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -332,13 +357,30 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Text(
-                'ចុចប៊ូតុងខាងក្រោមដើម្បីចាប់ផ្តើមស្កេនឯកសាររបស់អ្នក',
+                isFiltered
+                    ? 'សូមជ្រើសរើសប្រភេទផ្សេង ឬស្កេនឯកសារថ្មី'
+                    : 'ចុចប៊ូតុងខាងក្រោមដើម្បីចាប់ផ្តើមស្កេនឯកសាររបស់អ្នក',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                 textAlign: TextAlign.center,
               ),
             ),
+            if (isFiltered) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _selectedCategory = null;
+                  });
+                  context.read<DocumentBloc>().add(
+                        const FilterDocumentsByCategory(null),
+                      );
+                },
+                icon: const Icon(Icons.clear_all),
+                label: const Text('បង្ហាញទាំងអស់'),
+              ),
+            ],
           ],
         ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
       ),
@@ -351,6 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ErrorHandler.getRecoverySuggestion(error, locale: 'km');
 
     return SliverFillRemaining(
+      hasScrollBody: false,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

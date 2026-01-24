@@ -187,13 +187,14 @@ class ModernDocumentCard extends StatelessWidget {
         File(imagePath),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
+          final theme = Theme.of(context);
           return Container(
             width: 64,
             height: 64,
-            color: Colors.grey[200],
+            color: theme.colorScheme.surfaceContainerHighest,
             child: Icon(
               Icons.image_not_supported_outlined,
-              color: Colors.grey[400],
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           );
         },

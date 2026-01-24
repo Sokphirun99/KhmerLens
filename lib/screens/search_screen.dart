@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
+import '../bloc/document/document_bloc.dart';
+import '../bloc/document/document_event.dart';
+import '../bloc/search/search_bloc.dart';
+import '../bloc/search/search_event.dart';
+import '../bloc/search/search_state.dart';
 import '../models/document.dart';
 import '../router/app_router.dart';
-import '../services/database_service.dart';
 import '../services/export_service.dart';
-import '../repositories/document_repository.dart';
+import '../utils/error_handler.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/modern_document_card.dart';
 
@@ -18,13 +23,8 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final DatabaseService _dbService = DatabaseService();
   final TextEditingController _searchController = TextEditingController();
-  final DocumentRepository _documentRepository = DocumentRepository();
   final ExportService _exportService = ExportService();
-  List<Document> _searchResults = [];
-  bool _isSearching = false;
-  bool _hasSearched = false;
 
   @override
   void dispose() {
@@ -32,32 +32,73 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  Future<void> _performSearch(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        _searchResults = [];
-        _isSearching = false;
-        _hasSearched = false;
-      });
-      return;
+  void _onSearchChanged(String query) {
+    context.read<SearchBloc>().add(SearchDocuments(query));
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    FocusScope.of(context).unfocus();
+    context.read<SearchBloc>().add(const ClearSearch());
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _deleteDocument(Document document, int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('លុបឯកសារ'),
+        content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('បោះបង់'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('លុប'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        // Use DocumentBloc for deletion to maintain consistency
+        context.read<DocumentBloc>().add(DeleteDocument(document));
+        _showSnackBar('បានលុបឯកសារដោយជោគជ័យ');
+        // Re-run the search to update results
+        _onSearchChanged(_searchController.text);
+      } catch (e, stackTrace) {
+        ErrorHandler.logError(e, stackTrace: stackTrace);
+        if (mounted) {
+          _showSnackBar('មិនអាចលុបឯកសារ');
+        }
+      }
     }
+  }
 
-    setState(() {
-      _isSearching = true;
-      _hasSearched = true;
-    });
-
+  Future<void> _shareDocument(Document document) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
-      final results = await _dbService.searchDocuments(query);
-
-      setState(() {
-        _searchResults = results;
-        _isSearching = false;
-      });
-    } catch (e) {
-      setState(() => _isSearching = false);
-      debugPrint('Search error: $e');
+      _showSnackBar('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...');
+      await _exportService.shareDocument(document.id);
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      if (mounted) {
+        _showSnackBar('មិនអាចចែករំលែកឯកសារ');
+      }
     }
   }
 
@@ -72,55 +113,65 @@ class _SearchScreenState extends State<SearchScreen> {
           decoration: InputDecoration(
             hintText: 'ស្វែងរកឯកសារ...',
             border: InputBorder.none,
-            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+            hintStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
-          onChanged: (value) {
-            // Debounce search
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (_searchController.text == value) {
-                _performSearch(value);
-              }
-            });
-          },
+          onChanged: _onSearchChanged,
         ),
         actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                _performSearch('');
-              },
-            ),
+          BlocBuilder<SearchBloc, SearchState>(
+            builder: (context, state) {
+              if (_searchController.text.isNotEmpty) {
+                return IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: _clearSearch,
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
         ],
       ),
-      body: _buildBody(),
+      body: BlocBuilder<SearchBloc, SearchState>(
+        builder: (context, state) {
+          if (state is SearchLoading) {
+            return _buildLoadingState();
+          }
+
+          if (state is SearchInitial) {
+            return _buildInitialState();
+          }
+
+          if (state is SearchEmpty) {
+            return _buildNoResults();
+          }
+
+          if (state is SearchError) {
+            return _buildErrorState(state.message);
+          }
+
+          if (state is SearchLoaded) {
+            return _buildResults(state.results);
+          }
+
+          return _buildInitialState();
+        },
+      ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isSearching) {
-      return Center(
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('កំពុងស្វែងរក...'),
-          ],
-        ).animate().fadeIn(duration: 300.ms),
-      );
-    }
-
-    if (!_hasSearched) {
-      return _buildInitialState();
-    }
-
-    if (_searchResults.isEmpty) {
-      return _buildNoResults();
-    }
-
-    return _buildResults();
+  Widget _buildLoadingState() {
+    return Center(
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('កំពុងស្វែងរក...'),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
+    );
   }
 
   Widget _buildInitialState() {
@@ -131,14 +182,46 @@ class _SearchScreenState extends State<SearchScreen> {
     return EmptyState.noSearchResults();
   }
 
-  Widget _buildResults() {
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'កំហុស',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: () => _onSearchChanged(_searchController.text),
+            icon: const Icon(Icons.refresh),
+            label: const Text('ព្យាយាមម្តងទៀត'),
+          ),
+        ],
+      ).animate().fadeIn(duration: 300.ms),
+    );
+  }
+
+  Widget _buildResults(List<Document> results) {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'រកឃើញ ${_searchResults.length} លទ្ធផល',
+              'រកឃើញ ${results.length} លទ្ធផល',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -151,81 +234,17 @@ class _SearchScreenState extends State<SearchScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childCount: _searchResults.length,
+            childCount: results.length,
             itemBuilder: (context, index) {
-              final document = _searchResults[index];
+              final document = results[index];
               return ModernDocumentCard(
                 document: document,
                 index: index,
                 onTap: () {
                   context.pushDocumentDetail(document);
                 },
-                onDelete: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('លុបឯកសារ'),
-                      content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('បោះបង់'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: FilledButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.error,
-                          ),
-                          child: const Text('លុប'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirmed == true) {
-                    try {
-                      await _documentRepository.deleteDocument(document);
-                      if (!context.mounted) return;
-                      setState(() {
-                        _searchResults.removeAt(index);
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('បានលុបឯកសារដោយជោគជ័យ'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('មិនអាចលុបឯកសារ: $e'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                },
-                onShare: () async {
-                  try {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    await _exportService.shareDocument(document.id);
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('មិនអាចចែករំលែកឯកសារ: $e'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                },
+                onDelete: () => _deleteDocument(document, index),
+                onShare: () => _shareDocument(document),
               )
                   .animate()
                   .fadeIn(delay: (50 * index).ms)

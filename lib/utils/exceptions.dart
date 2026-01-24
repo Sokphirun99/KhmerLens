@@ -200,6 +200,22 @@ class DatabaseException extends AppException {
       originalError: error,
     );
   }
+
+  factory DatabaseException.initializationFailed(dynamic error) {
+    return DatabaseException(
+      'Failed to initialize database',
+      code: 'DATABASE_INIT_FAILED',
+      originalError: error,
+    );
+  }
+
+  factory DatabaseException.connectionFailed(dynamic error) {
+    return DatabaseException(
+      'Failed to connect to database',
+      code: 'DATABASE_CONNECTION_FAILED',
+      originalError: error,
+    );
+  }
 }
 
 /// Exception thrown when authentication operations fail
