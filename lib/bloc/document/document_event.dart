@@ -21,15 +21,15 @@ class LoadDocuments extends DocumentEvent {
 
 class CreateDocument extends DocumentEvent {
   final Document document;
-  final String imagePath;
+  final List<String> imagePaths;
 
   const CreateDocument({
     required this.document,
-    required this.imagePath,
+    required this.imagePaths,
   });
 
   @override
-  List<Object?> get props => [document, imagePath];
+  List<Object?> get props => [document, imagePaths];
 }
 
 class UpdateDocument extends DocumentEvent {
@@ -61,4 +61,30 @@ class FilterDocumentsByCategory extends DocumentEvent {
 
 class RefreshDocuments extends DocumentEvent {
   const RefreshDocuments();
+}
+
+class AddImagesToDocument extends DocumentEvent {
+  final String documentId;
+  final List<String> imagePaths;
+
+  const AddImagesToDocument({
+    required this.documentId,
+    required this.imagePaths,
+  });
+
+  @override
+  List<Object?> get props => [documentId, imagePaths];
+}
+
+class RemoveImageFromDocument extends DocumentEvent {
+  final String documentId;
+  final String imagePath;
+
+  const RemoveImageFromDocument({
+    required this.documentId,
+    required this.imagePath,
+  });
+
+  @override
+  List<Object?> get props => [documentId, imagePath];
 }

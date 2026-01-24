@@ -24,8 +24,9 @@ class DatabaseService {
 
       return await openDatabase(
         path,
-        version: 1,
+        version: 2,
         onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
       );
     } catch (e, stackTrace) {
       throw DatabaseException(
@@ -44,7 +45,7 @@ class DatabaseService {
           id TEXT PRIMARY KEY,
           title TEXT NOT NULL,
           category TEXT NOT NULL,
-          imagePath TEXT NOT NULL,
+          imagePaths TEXT NOT NULL,
           extractedText TEXT,
           createdAt TEXT NOT NULL,
           expiryDate TEXT,
@@ -60,6 +61,62 @@ class DatabaseService {
       throw DatabaseException(
         'Failed to create database tables',
         code: 'DATABASE_CREATE_TABLES_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    try {
+      if (oldVersion < 2) {
+        // Migrate from imagePath (String) to imagePaths (JSON array)
+        // First, get all existing documents
+        final existingDocs = await db.query('documents');
+
+        // Create new table with updated schema
+        await db.execute('''
+          CREATE TABLE documents_new (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            category TEXT NOT NULL,
+            imagePaths TEXT NOT NULL,
+            extractedText TEXT,
+            createdAt TEXT NOT NULL,
+            expiryDate TEXT,
+            metadata TEXT
+          )
+        ''');
+
+        // Migrate data: convert single imagePath to array [imagePath]
+        for (var doc in existingDocs) {
+          final imagePath = doc['imagePath'] as String?;
+          final imagePaths = imagePath != null ? '["$imagePath"]' : '[]';
+
+          await db.insert('documents_new', {
+            'id': doc['id'],
+            'title': doc['title'],
+            'category': doc['category'],
+            'imagePaths': imagePaths,
+            'extractedText': doc['extractedText'],
+            'createdAt': doc['createdAt'],
+            'expiryDate': doc['expiryDate'],
+            'metadata': doc['metadata'],
+          });
+        }
+
+        // Drop old table and rename new table
+        await db.execute('DROP TABLE documents');
+        await db.execute('ALTER TABLE documents_new RENAME TO documents');
+
+        // Recreate indexes
+        await db.execute('CREATE INDEX idx_category ON documents(category)');
+        await db.execute('CREATE INDEX idx_created_at ON documents(createdAt DESC)');
+      }
+    } catch (e, stackTrace) {
+      throw DatabaseException(
+        'Failed to upgrade database',
+        code: 'DATABASE_UPGRADE_FAILED',
         originalError: e,
         stackTrace: stackTrace,
       );

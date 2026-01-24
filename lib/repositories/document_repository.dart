@@ -41,17 +41,21 @@ class DocumentRepository {
     }
   }
 
-  Future<String> createDocument(Document document, String imagePath) async {
+  Future<String> createDocument(Document document, List<String> imagePaths) async {
     try {
-      // Save image to storage
-      final savedPath = await _storageService.saveImage(File(imagePath));
+      // Save all images to storage
+      final savedPaths = <String>[];
+      for (final imagePath in imagePaths) {
+        final savedPath = await _storageService.saveImage(File(imagePath));
+        savedPaths.add(savedPath);
+      }
 
-      // Create document with saved path
+      // Create document with saved paths
       final docToSave = Document(
         id: document.id,
         title: document.title,
         category: document.category,
-        imagePath: savedPath,
+        imagePaths: savedPaths,
         extractedText: document.extractedText,
         createdAt: document.createdAt,
         expiryDate: document.expiryDate,
@@ -85,9 +89,77 @@ class DocumentRepository {
     }
   }
 
+  Future<void> addImagesToDocument(String documentId, List<String> newImagePaths) async {
+    try {
+      final document = await getDocument(documentId);
+      if (document == null) {
+        throw DocumentException(
+          'Document not found',
+          code: 'DOCUMENT_NOT_FOUND',
+        );
+      }
+
+      // Save new images to storage
+      final savedPaths = <String>[];
+      for (final imagePath in newImagePaths) {
+        final savedPath = await _storageService.saveImage(File(imagePath));
+        savedPaths.add(savedPath);
+      }
+
+      // Update document with new image paths
+      final updatedDocument = document.copyWith(
+        imagePaths: [...document.imagePaths, ...savedPaths],
+      );
+
+      await _dbService.updateDocument(updatedDocument);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to add images to document',
+        code: 'DOCUMENT_ADD_IMAGES_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> removeImageFromDocument(String documentId, String imagePath) async {
+    try {
+      final document = await getDocument(documentId);
+      if (document == null) {
+        throw DocumentException(
+          'Document not found',
+          code: 'DOCUMENT_NOT_FOUND',
+        );
+      }
+
+      // Remove image from storage
+      await _storageService.deleteImage(imagePath);
+
+      // Update document by removing the image path
+      final updatedImagePaths = document.imagePaths.where((path) => path != imagePath).toList();
+      final updatedDocument = document.copyWith(
+        imagePaths: updatedImagePaths,
+      );
+
+      await _dbService.updateDocument(updatedDocument);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to remove image from document',
+        code: 'DOCUMENT_REMOVE_IMAGE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<void> deleteDocument(Document document) async {
     try {
-      await _storageService.deleteImage(document.imagePath);
+      // Delete all images associated with the document
+      for (final imagePath in document.imagePaths) {
+        await _storageService.deleteImage(imagePath);
+      }
       await _dbService.deleteDocument(document.id);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;

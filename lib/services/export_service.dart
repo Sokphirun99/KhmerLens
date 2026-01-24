@@ -37,49 +37,70 @@ class ExportService {
       final pdf = pw.Document();
 
       for (final doc in docs) {
-        final imageFile = await _storageService.getImageFile(doc.imagePath);
-        if (imageFile == null) continue;
+        // Handle multiple images per document
+        if (doc.imagePaths.isEmpty) continue;
 
-        final imageBytes = await imageFile.readAsBytes();
-        final pdfImage = pw.MemoryImage(imageBytes);
+        for (int i = 0; i < doc.imagePaths.length; i++) {
+          final imagePath = doc.imagePaths[i];
+          final imageFile = await _storageService.getImageFile(imagePath);
+          if (imageFile == null) continue;
 
-        pdf.addPage(
-          pw.Page(
-            pageFormat: PdfPageFormat.a4,
-            build: (context) {
-              return pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    doc.title,
-                    style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Text(
-                    'Category: ${doc.category.name}',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                  pw.Text(
-                    'Created: ${doc.createdAt}',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                  pw.SizedBox(height: 12),
-                  pw.Expanded(
-                    child: pw.Center(
-                      child: pw.Image(
-                        pdfImage,
-                        fit: pw.BoxFit.contain,
+          final imageBytes = await imageFile.readAsBytes();
+          final pdfImage = pw.MemoryImage(imageBytes);
+
+          // Add header only on first image of each document
+          final isFirstImage = i == 0;
+          final pageNumber = i + 1;
+          final totalImages = doc.imagePaths.length;
+
+          pdf.addPage(
+            pw.Page(
+              pageFormat: PdfPageFormat.a4,
+              build: (context) {
+                return pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (isFirstImage) ...[
+                      pw.Text(
+                        doc.title,
+                        style: pw.TextStyle(
+                          fontSize: 18,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.SizedBox(height: 8),
+                      pw.Text(
+                        'Category: ${doc.category.name}',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                      pw.Text(
+                        'Created: ${doc.createdAt}',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                      pw.SizedBox(height: 12),
+                    ],
+                    // Show page number for multi-image documents
+                    if (totalImages > 1) ...[
+                      pw.Text(
+                        'Page $pageNumber of $totalImages',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                      pw.SizedBox(height: 8),
+                    ],
+                    pw.Expanded(
+                      child: pw.Center(
+                        child: pw.Image(
+                          pdfImage,
+                          fit: pw.BoxFit.contain,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
+                  ],
+                );
+              },
+            ),
+          );
+        }
       }
 
       // Save to temporary file
@@ -109,18 +130,28 @@ class ExportService {
     }
   }
 
-  /// Export a single document's image (share the original image file).
+  /// Export a single document's images (share the original image files).
   Future<void> exportToImage(String documentId) async {
     try {
       final doc = await _databaseService.getDocument(documentId);
       if (doc == null) return;
 
-      final imageFile = await _storageService.getImageFile(doc.imagePath);
-      if (imageFile == null) return;
+      if (doc.imagePaths.isEmpty) return;
+
+      // Get all image files for this document
+      final imageFiles = <XFile>[];
+      for (final imagePath in doc.imagePaths) {
+        final imageFile = await _storageService.getImageFile(imagePath);
+        if (imageFile != null) {
+          imageFiles.add(XFile(imageFile.path));
+        }
+      }
+
+      if (imageFiles.isEmpty) return;
 
       if (!kIsWeb) {
         await Share.shareXFiles(
-          [XFile(imageFile.path)],
+          imageFiles,
           text: doc.title,
         );
       } else {

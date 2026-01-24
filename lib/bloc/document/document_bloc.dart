@@ -15,6 +15,8 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     on<DeleteDocument>(_onDeleteDocument);
     on<FilterDocumentsByCategory>(_onFilterByCategory);
     on<RefreshDocuments>(_onRefreshDocuments);
+    on<AddImagesToDocument>(_onAddImagesToDocument);
+    on<RemoveImageFromDocument>(_onRemoveImageFromDocument);
   }
 
   Future<void> _onLoadDocuments(
@@ -45,7 +47,7 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentCreating());
 
     try {
-      await repository.createDocument(event.document, event.imagePath);
+      await repository.createDocument(event.document, event.imagePaths);
       emit(DocumentCreated(event.document));
 
       // Reload documents after creating
@@ -131,6 +133,40 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
         documents: documents,
         selectedCategory: category,
       ));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
+    }
+  }
+
+  Future<void> _onAddImagesToDocument(
+    AddImagesToDocument event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentUpdating());
+
+    try {
+      await repository.addImagesToDocument(event.documentId, event.imagePaths);
+
+      // Reload documents after adding images
+      add(const RefreshDocuments());
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      emit(DocumentError(e));
+    }
+  }
+
+  Future<void> _onRemoveImageFromDocument(
+    RemoveImageFromDocument event,
+    Emitter<DocumentState> emit,
+  ) async {
+    emit(DocumentUpdating());
+
+    try {
+      await repository.removeImageFromDocument(event.documentId, event.imagePath);
+
+      // Reload documents after removing image
+      add(const RefreshDocuments());
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       emit(DocumentError(e));

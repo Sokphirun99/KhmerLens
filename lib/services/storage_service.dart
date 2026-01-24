@@ -94,6 +94,27 @@ class StorageService {
     }
   }
 
+  /// Saves multiple images to local storage with compression and generates thumbnails.
+  /// Returns the list of saved image paths.
+  Future<List<String>> saveImages(List<File> imageFiles) async {
+    try {
+      final savedPaths = <String>[];
+      for (final imageFile in imageFiles) {
+        final savedPath = await saveImage(imageFile);
+        savedPaths.add(savedPath);
+      }
+      return savedPaths;
+    } catch (e, stackTrace) {
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to save images',
+        code: 'STORAGE_SAVE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Generates a thumbnail for the given image.
   Future<void> _generateThumbnail(img.Image image, String fileName) async {
     try {
@@ -140,6 +161,23 @@ class StorageService {
       if (e is StorageException) rethrow;
       throw StorageException(
         'Failed to delete image',
+        code: 'STORAGE_DELETE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Deletes multiple images and their thumbnails from storage.
+  Future<void> deleteImages(List<String> imagePaths) async {
+    try {
+      for (final imagePath in imagePaths) {
+        await deleteImage(imagePath);
+      }
+    } catch (e, stackTrace) {
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to delete images',
         code: 'STORAGE_DELETE_FAILED',
         originalError: e,
         stackTrace: stackTrace,
