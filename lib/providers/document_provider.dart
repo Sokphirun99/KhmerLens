@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/document.dart';
+import '../models/document_category.dart';
 import '../services/database_service.dart';
 
 class DocumentProvider with ChangeNotifier {
@@ -13,14 +14,13 @@ class DocumentProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadDocuments() async {
+  Future<void> loadDocuments({DocumentCategory? category}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final data = await _databaseService.getAllDocuments();
-      _documents = data.map((json) => Document.fromJson(json)).toList();
+      _documents = await _databaseService.getAllDocuments(category: category);
       _error = null;
     } catch (e) {
       _error = e.toString();
@@ -32,7 +32,7 @@ class DocumentProvider with ChangeNotifier {
 
   Future<void> addDocument(Document document) async {
     try {
-      await _databaseService.insertDocument(document.toJson());
+      await _databaseService.insertDocument(document);
       await loadDocuments();
     } catch (e) {
       _error = e.toString();
@@ -42,7 +42,7 @@ class DocumentProvider with ChangeNotifier {
 
   Future<void> updateDocument(Document document) async {
     try {
-      await _databaseService.updateDocument(document.id, document.toJson());
+      await _databaseService.updateDocument(document);
       await loadDocuments();
     } catch (e) {
       _error = e.toString();
@@ -62,12 +62,21 @@ class DocumentProvider with ChangeNotifier {
 
   Future<List<Document>> searchDocuments(String query) async {
     try {
-      final data = await _databaseService.searchDocuments(query);
-      return data.map((json) => Document.fromJson(json)).toList();
+      return await _databaseService.searchDocuments(query);
     } catch (e) {
       _error = e.toString();
       notifyListeners();
       return [];
+    }
+  }
+
+  Future<int> getDocumentCount({DocumentCategory? category}) async {
+    try {
+      return await _databaseService.getDocumentCount(category: category);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return 0;
     }
   }
 }

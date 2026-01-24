@@ -1,6 +1,8 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 
@@ -67,7 +69,8 @@ class _CameraScreenState extends State<CameraScreen>
       final XFile image = await _controller!.takePicture();
 
       if (mounted) {
-        Navigator.pop(context, image.path);
+        HapticFeedback.mediumImpact();
+        context.pop(image.path);
       }
     } catch (e) {
       _showError('Failed to capture: $e');
@@ -188,9 +191,7 @@ class _CameraScreenState extends State<CameraScreen>
                   ..._buildCornerMarkers(),
                 ],
               ),
-            )
-                .animate(onPlay: (controller) => controller.repeat())
-                .shimmer(
+            ).animate(onPlay: (controller) => controller.repeat()).shimmer(
                   duration: 2000.ms,
                   color: Colors.white.withValues(alpha: 0.3),
                 ),
@@ -209,11 +210,13 @@ class _CameraScreenState extends State<CameraScreen>
                   children: [
                     _buildTopButton(
                       Icons.close,
-                      () => Navigator.pop(context),
+                      () => context.pop(),
+                      tooltip: 'បិទ',
                     ),
                     _buildTopButton(
                       _isFlashOn ? Icons.flash_on : Icons.flash_off,
                       _toggleFlash,
+                      tooltip: _isFlashOn ? 'បិទភ្លើង' : 'បើកភ្លើង',
                     ),
                   ],
                 ),
@@ -250,10 +253,12 @@ class _CameraScreenState extends State<CameraScreen>
                         final XFile? image = await picker.pickImage(
                           source: ImageSource.gallery,
                         );
-                        if (image != null && mounted) {
-                          Navigator.pop(context, image.path);
+                        if (image != null && context.mounted) {
+                          HapticFeedback.lightImpact();
+                          context.pop(image.path);
                         }
                       },
+                      tooltip: 'ជ្រើសរូបពីវិចិត្រសាល',
                     ),
 
                     // Capture button with animation
@@ -307,32 +312,42 @@ class _CameraScreenState extends State<CameraScreen>
     );
   }
 
-  Widget _buildTopButton(IconData icon, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 28),
-        onPressed: onPressed,
+  Widget _buildTopButton(IconData icon, VoidCallback onPressed, {String? tooltip}) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+        ),
+        child: IconButton(
+          icon: Icon(icon, color: Colors.white, size: 28),
+          onPressed: onPressed,
+          tooltip: tooltip,
+        ),
       ),
     );
   }
 
-  Widget _buildControlButton(IconData icon, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 2,
+  Widget _buildControlButton(IconData icon, VoidCallback onPressed, {String? tooltip}) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 2,
+          ),
         ),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 28),
-        onPressed: onPressed,
+        child: IconButton(
+          icon: Icon(icon, color: Colors.white, size: 28),
+          onPressed: onPressed,
+          tooltip: tooltip,
+        ),
       ),
     );
   }
