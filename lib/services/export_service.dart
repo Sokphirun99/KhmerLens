@@ -56,45 +56,44 @@ class ExportService {
           pdf.addPage(
             pw.Page(
               pageFormat: PdfPageFormat.a4,
+              margin: const pw.EdgeInsets.all(0),
               build: (context) {
-                return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                return pw.Stack(
+                  alignment: pw.Alignment.center,
                   children: [
-                    if (isFirstImage) ...[
-                      pw.Text(
-                        doc.title,
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Text(
-                        'Category: ${doc.category.name}',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.Text(
-                        'Created: ${doc.createdAt}',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.SizedBox(height: 12),
-                    ],
-                    // Show page number for multi-image documents
-                    if (totalImages > 1) ...[
-                      pw.Text(
-                        'Page $pageNumber of $totalImages',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.SizedBox(height: 8),
-                    ],
-                    pw.Expanded(
-                      child: pw.Center(
-                        child: pw.Image(
-                          pdfImage,
-                          fit: pw.BoxFit.contain,
-                        ),
+                    // Full-page image (centered)
+                    pw.Container(
+                      width: PdfPageFormat.a4.width,
+                      height: PdfPageFormat.a4.height,
+                      child: pw.Image(
+                        pdfImage,
+                        fit: pw.BoxFit.cover,
                       ),
                     ),
+                    // Optional: Page number badge in corner (for multi-image docs)
+                    if (totalImages > 1)
+                      pw.Positioned(
+                        top: 8,
+                        right: 8,
+                        child: pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColor.fromInt(0xB3000000),
+                            borderRadius: pw.BorderRadius.circular(12),
+                          ),
+                          child: pw.Text(
+                            '$pageNumber/$totalImages',
+                            style: pw.TextStyle(
+                              color: PdfColors.white,
+                              fontSize: 10,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 );
               },

@@ -1,4 +1,5 @@
 // bloc/ocr/ocr_bloc.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../services/ocr_service.dart';
 import '../../repositories/document_repository.dart';
@@ -24,31 +25,58 @@ class OCRBloc extends Bloc<OCREvent, OCRState> {
     emit(OCRProcessing());
 
     try {
-      final result = await ocrService.extractTextWithDetails(
-        event.document.imagePath,
-      );
-
-      if (!result.success) {
-        emit(OCRError(result.error ?? 'OCR failed'));
+      // Process all images in the document
+      if (event.document.imagePaths.isEmpty) {
+        emit(const OCRError('No images found in document'));
         return;
       }
 
-      if (result.fullText.isEmpty) {
+      final allTexts = <String>[];
+      int totalBlocks = 0;
+      int totalLines = 0;
+
+      // Process each image
+      for (int i = 0; i < event.document.imagePaths.length; i++) {
+        final imagePath = event.document.imagePaths[i];
+
+        try {
+          final result = await ocrService.extractTextWithDetails(imagePath);
+
+          if (result.success && result.fullText.isNotEmpty) {
+            // Add page separator for multi-image documents
+            if (event.document.imagePaths.length > 1) {
+              allTexts.add('--- Page ${i + 1} ---\n${result.fullText}');
+            } else {
+              allTexts.add(result.fullText);
+            }
+            totalBlocks += result.totalBlocks;
+            totalLines += result.totalLines;
+          }
+        } catch (e) {
+          // Continue processing other images even if one fails
+          debugPrint('OCR failed for image $i: $e');
+        }
+      }
+
+      if (allTexts.isEmpty) {
         emit(const OCREmpty());
         return;
       }
 
+      // Combine all extracted text
+      final combinedText = allTexts.join('\n\n');
+
       // Update document with extracted text
       final updatedDocument = event.document.copyWith(
-        extractedText: result.fullText,
+        extractedText: combinedText,
       );
 
       await documentRepository.updateDocument(updatedDocument);
 
       emit(OCRSuccess(
-        extractedText: result.fullText,
-        blocksCount: result.totalBlocks,
-        linesCount: result.totalLines,
+        extractedText: combinedText,
+        blocksCount: totalBlocks,
+        linesCount: totalLines,
       ));
     } catch (e) {
       emit(OCRError('Failed to extract text: $e'));

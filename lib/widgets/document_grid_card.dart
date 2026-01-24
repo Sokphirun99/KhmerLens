@@ -171,24 +171,76 @@ class DocumentGridCard extends StatelessWidget {
   }
 
   Widget _buildImage(BuildContext context) {
-    final imagePath = thumbnailPath ?? document.imagePath;
+    // Use first image from the list
+    final imagePath = thumbnailPath ??
+        (document.imagePaths.isNotEmpty ? document.imagePaths.first : '');
 
-    return Image.file(
-      File(imagePath),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        final theme = Theme.of(context);
-        return Container(
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Center(
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 40,
-              color: theme.colorScheme.onSurfaceVariant,
+    if (imagePath.isEmpty) {
+      final theme = Theme.of(context);
+      return Container(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            size: 40,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        Image.file(
+          File(imagePath),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            final theme = Theme.of(context);
+            return Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 40,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          },
+        ),
+        // Multi-image indicator
+        if (document.imagePaths.length > 1)
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.collections,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${document.imagePaths.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        );
-      },
+      ],
     );
   }
 
@@ -340,28 +392,84 @@ class DocumentGridCardCompact extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    final imagePath = thumbnailPath ?? document.imagePath;
+    // Use first image from the list
+    final imagePath = thumbnailPath ??
+        (document.imagePaths.isNotEmpty ? document.imagePaths.first : '');
 
-    return Image.file(
-      File(imagePath),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Builder(
-          builder: (context) {
-            final theme = Theme.of(context);
-            return Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 32,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+    if (imagePath.isEmpty) {
+      return Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          return Container(
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Center(
+              child: Icon(
+                Icons.image_not_supported_outlined,
+                size: 32,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
+            ),
+          );
+        },
+      );
+    }
+
+    return Stack(
+      children: [
+        Image.file(
+          File(imagePath),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                return Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 32,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                );
+              },
             );
           },
-        );
-      },
+        ),
+        // Multi-image indicator
+        if (document.imagePaths.length > 1)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.collections,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${document.imagePaths.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

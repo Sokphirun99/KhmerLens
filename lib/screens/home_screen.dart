@@ -64,8 +64,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _processNewDocument(String imagePath) async {
+  Future<void> _processNewDocument(List<String> imagePaths) async {
     try {
+      if (imagePaths.isEmpty) return;
+
       // Show category dialog
       final category = await _showCategoryDialog();
       if (category == null) return;
@@ -80,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
         id: documentId,
         title: '${category.nameKhmer} - ${_formatDate(DateTime.now())}',
         category: category,
-        imagePath: imagePath, // Will be updated by repository
+        imagePaths: [], // Will be updated by repository
         createdAt: DateTime.now(),
       );
 
@@ -90,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context.read<DocumentBloc>().add(
             CreateDocument(
               document: document,
-              imagePath: imagePath,
+              imagePaths: imagePaths,
             ),
           );
 
@@ -250,9 +252,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // FAB
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final imagePath = await context.pushCamera<String>();
-          if (imagePath != null) {
-            await _processNewDocument(imagePath);
+          final imagePaths = await context.pushCamera<List<String>>();
+          if (imagePaths != null && imagePaths.isNotEmpty) {
+            await _processNewDocument(imagePaths);
           }
         },
         icon: const Icon(Icons.document_scanner),

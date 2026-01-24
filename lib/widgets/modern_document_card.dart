@@ -178,7 +178,26 @@ class ModernDocumentCard extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    final imagePath = thumbnailPath ?? document.imagePath;
+    // Use first image from the list
+    final imagePath = thumbnailPath ??
+        (document.imagePaths.isNotEmpty ? document.imagePaths.first : '');
+
+    if (imagePath.isEmpty) {
+      return Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          return Container(
+            width: 64,
+            height: 64,
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Icon(
+              Icons.image_not_supported_outlined,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          );
+        },
+      );
+    }
 
     return SizedBox(
       width: 64,

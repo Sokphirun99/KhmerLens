@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +22,7 @@ class _CameraScreenState extends State<CameraScreen>
   bool _isInitialized = false;
   bool _isFlashOn = false;
   late AnimationController _animController;
+  final List<String> _capturedImages = [];
 
   @override
   void initState() {
@@ -70,10 +73,32 @@ class _CameraScreenState extends State<CameraScreen>
 
       if (mounted) {
         HapticFeedback.mediumImpact();
-        context.pop(image.path);
+        setState(() {
+          _capturedImages.add(image.path);
+        });
+
+        // Show snackbar with option to finish
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('រូបភាពទី ${_capturedImages.length} ត្រូវបានថតរួច'),
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'បញ្ចប់',
+              onPressed: () => _finishCapture(),
+            ),
+          ),
+        );
       }
     } catch (e) {
       _showError('Failed to capture: $e');
+    }
+  }
+
+  void _finishCapture() {
+    if (_capturedImages.isEmpty) {
+      context.pop();
+    } else {
+      context.pop(_capturedImages);
     }
   }
 
@@ -213,16 +238,56 @@ class _CameraScreenState extends State<CameraScreen>
                       () => context.pop(),
                       tooltip: 'បិទ',
                     ),
-                    _buildTopButton(
-                      _isFlashOn ? Icons.flash_on : Icons.flash_off,
-                      _toggleFlash,
-                      tooltip: _isFlashOn ? 'បិទភ្លើង' : 'បើកភ្លើង',
+                    Row(
+                      children: [
+                        // Image counter badge
+                        if (_capturedImages.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${_capturedImages.length} រូប',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        _buildTopButton(
+                          _isFlashOn ? Icons.flash_on : Icons.flash_off,
+                          _toggleFlash,
+                          tooltip: _isFlashOn ? 'បិទភ្លើង' : 'បើកភ្លើង',
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
           ),
+
+          // Image preview strip (above bottom controls)
+          if (_capturedImages.isNotEmpty)
+            Positioned(
+              bottom: 140,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 80,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _capturedImages.length,
+                  itemBuilder: (context, index) {
+                    return _buildImagePreview(_capturedImages[index], index);
+                  },
+                ),
+              ).animate().fadeIn().slideY(begin: 0.2, end: 0),
+            ),
 
           // Bottom controls
           Positioned(
@@ -245,17 +310,16 @@ class _CameraScreenState extends State<CameraScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Gallery button
+                    // Gallery button - multi-select
                     _buildControlButton(
                       Icons.photo_library,
                       () async {
                         final ImagePicker picker = ImagePicker();
-                        final XFile? image = await picker.pickImage(
-                          source: ImageSource.gallery,
-                        );
-                        if (image != null && context.mounted) {
+                        final List<XFile> images = await picker.pickMultiImage();
+                        if (images.isNotEmpty && context.mounted) {
                           HapticFeedback.lightImpact();
-                          context.pop(image.path);
+                          final imagePaths = images.map((img) => img.path).toList();
+                          context.pop(imagePaths);
                         }
                       },
                       tooltip: 'ជ្រើសរូបពីវិចិត្រសាល',
@@ -301,7 +365,15 @@ class _CameraScreenState extends State<CameraScreen>
                       ),
                     ),
 
-                    const SizedBox(width: 56), // Spacer for symmetry
+                    // Done button (visible when images captured)
+                    if (_capturedImages.isNotEmpty)
+                      _buildControlButton(
+                        Icons.check,
+                        _finishCapture,
+                        tooltip: 'បញ្ចប់',
+                      )
+                    else
+                      const SizedBox(width: 56), // Spacer for symmetry
                   ],
                 ),
               ),
@@ -399,6 +471,103 @@ class _CameraScreenState extends State<CameraScreen>
           right: !isLeft
               ? const BorderSide(color: Colors.white, width: 3)
               : BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePreview(String imagePath, int index) {
+    return Container(
+      width: 60,
+      height: 80,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.5),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Stack(
+          children: [
+            // Thumbnail image
+            Positioned.fill(
+              child: Image.file(
+                File(imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade800,
+                    child: const Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Colors.white54,
+                      size: 24,
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Image number badge
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            // Delete button (optional - on long press)
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() {
+                    _capturedImages.removeAt(index);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('រូបភាពត្រូវបានលុបចេញ'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.8),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

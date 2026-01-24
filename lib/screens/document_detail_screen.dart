@@ -5,6 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
@@ -17,6 +19,7 @@ import '../services/export_service.dart';
 import '../utils/error_handler.dart';
 import '../utils/helpers.dart';
 import '../widgets/error_dialog.dart';
+import '../router/app_router.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
   final Document document;
@@ -34,6 +37,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     with SingleTickerProviderStateMixin {
   final ExportService _exportService = ExportService();
   late TabController _tabController;
+  late PageController _pageController;
+  int _currentImageIndex = 0;
 
   // Use the document from widget, but allow updates from OCR
   Document get _document => widget.document;
@@ -48,6 +53,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _pageController = PageController();
 
     // Auto-run OCR via BLoC if no text
     if (_document.extractedText == null || _document.extractedText!.isEmpty) {
@@ -62,6 +68,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -102,6 +109,22 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
   }
 
+  Future<int> _calculateTotalSize() async {
+    int totalSize = 0;
+    for (final imagePath in _document.imagePaths) {
+      try {
+        final file = File(imagePath);
+        if (await file.exists()) {
+          totalSize += await file.length();
+        }
+      } catch (e) {
+        // Skip file if error
+        continue;
+      }
+    }
+    return totalSize;
+  }
+
   Future<void> _shareDocument() async {
     try {
       _showSnackBar('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...');
@@ -126,6 +149,139 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     }
   }
 
+  Future<void> _addMoreImages() async {
+    // Show options: Camera or Gallery
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('ថតរូប'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('ជ្រើសរូបពីវិចិត្រសាល'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    if (!mounted) return;
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      List<String> newImagePaths = [];
+
+      if (source == ImageSource.camera) {
+        // Use camera screen for multi-capture
+        if (!mounted) return;
+        final paths = await context.pushCamera<List<String>>();
+        if (paths != null && paths.isNotEmpty) {
+          newImagePaths = paths;
+        }
+      } else {
+        // Gallery multi-select
+        final List<XFile> images = await picker.pickMultiImage();
+        if (images.isNotEmpty) {
+          newImagePaths = images.map((img) => img.path).toList();
+        }
+      }
+
+      if (newImagePaths.isNotEmpty && mounted) {
+        _showSnackBar('កំពុងបន្ថែមរូបភាព...');
+        context.read<DocumentBloc>().add(
+              AddImagesToDocument(
+                documentId: _document.id,
+                imagePaths: newImagePaths,
+              ),
+            );
+      }
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      if (mounted) {
+        _showSnackBar('មិនអាចបន្ថែមរូបភាព');
+      }
+    }
+  }
+
+  Future<void> _deleteImage(String imagePath) async {
+    // Don't allow deleting the last image
+    if (_document.imagePaths.length <= 1) {
+      _showSnackBar('មិនអាចលុបរូបភាពចុងក្រោយបានទេ');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('លុបរូបភាព'),
+        content: const Text('តើអ្នកពិតជាចង់លុបរូបភាពនេះមែនទេ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('បោះបង់'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('លុប'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<DocumentBloc>().add(
+            RemoveImageFromDocument(
+              documentId: _document.id,
+              imagePath: imagePath,
+            ),
+          );
+    }
+  }
+
+  Future<void> _reorderImages(List<String> newOrder) async {
+    try {
+      final updatedDocument = _document.copyWith(imagePaths: newOrder);
+      context.read<DocumentBloc>().add(UpdateDocument(updatedDocument));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      if (mounted) {
+        _showSnackBar('មិនអាចរៀបចំរូបភាពឡើងវិញ');
+      }
+    }
+  }
+
+  void _showImageManager() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return _ImageManagerSheet(
+            document: _document,
+            onDelete: _deleteImage,
+            onReorder: _reorderImages,
+            onAddMore: _addMoreImages,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<DocumentBloc, DocumentState>(
@@ -147,6 +303,19 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         title: Text(_document.category.nameKhmer),
         actions: [
+          // Add images button
+          IconButton(
+            icon: const Icon(Icons.add_photo_alternate),
+            onPressed: _addMoreImages,
+            tooltip: 'បន្ថែមរូបភាព',
+          ),
+          // Manage images button
+          if (_document.imagePaths.length > 1)
+            IconButton(
+              icon: const Icon(Icons.view_carousel),
+              onPressed: _showImageManager,
+              tooltip: 'គ្រប់គ្រងរូបភាព',
+            ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
@@ -202,39 +371,110 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       ),
       body: Column(
         children: [
-          // Image viewer
+          // Image viewer with PageView for multiple images
           Expanded(
             flex: 2,
             child: Container(
               color: Theme.of(context).colorScheme.surfaceContainerLowest,
-              child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: Center(
-                  child: Image.file(
-                    File(_document.imagePath),
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image_outlined,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+              child: Stack(
+                children: [
+                  // PageView for images
+                  PageView.builder(
+                    controller: _pageController,
+                    itemCount: _document.imagePaths.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentImageIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        child: Center(
+                          child: Image.file(
+                            File(_document.imagePaths[index]),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 64,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'មិនអាចផ្ទុករូបភាព',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'មិនអាចផ្ទុករូបភាព',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                        ),
                       );
                     },
                   ),
-                ),
+
+                  // Image counter badge (top right)
+                  if (_document.imagePaths.length > 1)
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${_currentImageIndex + 1}/${_document.imagePaths.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ).animate().fadeIn(),
+                    ),
+
+                  // Page indicator dots (bottom)
+                  if (_document.imagePaths.length > 1)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(
+                              _document.imagePaths.length,
+                              (index) => Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _currentImageIndex == index
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.4),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ).animate().fadeIn(),
+                    ),
+                ],
               ),
             ),
           ),
@@ -527,8 +767,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               'ID',
               _document.id.substring(0, 8),
             ),
+            _buildInfoRow(
+              Icons.image,
+              'រូបភាព',
+              '${_document.imagePaths.length} រូប',
+            ),
             FutureBuilder<int>(
-              future: File(_document.imagePath).length(),
+              future: _calculateTotalSize(),
               builder: (context, snapshot) {
                 String sizeText;
                 if (snapshot.hasError) {
@@ -604,6 +849,184 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               value,
               style: const TextStyle(fontSize: 15),
               textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Image Manager Sheet Widget
+class _ImageManagerSheet extends StatefulWidget {
+  final Document document;
+  final Function(String) onDelete;
+  final Function(List<String>) onReorder;
+  final VoidCallback onAddMore;
+
+  const _ImageManagerSheet({
+    required this.document,
+    required this.onDelete,
+    required this.onReorder,
+    required this.onAddMore,
+  });
+
+  @override
+  State<_ImageManagerSheet> createState() => _ImageManagerSheetState();
+}
+
+class _ImageManagerSheetState extends State<_ImageManagerSheet> {
+  late List<String> _imagePaths;
+
+  @override
+  void initState() {
+    super.initState();
+    _imagePaths = List.from(widget.document.imagePaths);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Text(
+                  'គ្រប់គ្រងរូបភាព',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.onAddMore();
+                  },
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('បន្ថែម'),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Grid of images
+          Expanded(
+            child: ReorderableGridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: _imagePaths.length,
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  final item = _imagePaths.removeAt(oldIndex);
+                  _imagePaths.insert(newIndex, item);
+                });
+                widget.onReorder(_imagePaths);
+              },
+              itemBuilder: (context, index) {
+                final imagePath = _imagePaths[index];
+                return _buildImageCard(imagePath, index);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageCard(String imagePath, int index) {
+    return Card(
+      key: ValueKey(imagePath),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image
+          Image.file(
+            File(imagePath),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Icon(
+                  Icons.broken_image,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              );
+            },
+          ),
+          // Overlay with index
+          Positioned(
+            top: 4,
+            left: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          // Delete button
+          if (_imagePaths.length > 1)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, size: 16, color: Colors.white),
+                ),
+                onPressed: () {
+                  widget.onDelete(imagePath);
+                  Navigator.pop(context);
+                },
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          // Drag handle icon
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Icon(
+              Icons.drag_indicator,
+              color: Colors.white.withValues(alpha: 0.8),
+              size: 20,
             ),
           ),
         ],
