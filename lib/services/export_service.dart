@@ -81,7 +81,7 @@ class ExportService {
                             vertical: 4,
                           ),
                           decoration: pw.BoxDecoration(
-                            color: PdfColor.fromInt(0xB3000000),
+                            color: const PdfColor.fromInt(0xB3000000),
                             borderRadius: pw.BorderRadius.circular(12),
                           ),
                           child: pw.Text(

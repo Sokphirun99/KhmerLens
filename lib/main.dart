@@ -5,15 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 import 'bloc/document/document_bloc.dart';
 import 'bloc/document/document_event.dart';
-import 'bloc/ocr/ocr_bloc.dart';
 import 'bloc/search/search_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
 import 'repositories/document_repository.dart';
 import 'router/app_router.dart';
-import 'services/ocr_service.dart';
 import 'services/ad_service.dart';
 import 'utils/error_handler.dart';
 import 'utils/theme.dart';
@@ -69,20 +68,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final DocumentRepository _documentRepository;
-  late final OCRService _ocrService;
 
   @override
   void initState() {
     super.initState();
     _documentRepository = DocumentRepository();
-    _ocrService = OCRService();
-  }
-
-  @override
-  void dispose() {
-    // Dispose OCR service to release resources
-    _ocrService.dispose();
-    super.dispose();
   }
 
   @override
@@ -90,7 +80,6 @@ class _MyAppState extends State<MyApp> {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider.value(value: _documentRepository),
-        RepositoryProvider.value(value: _ocrService),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -103,13 +92,6 @@ class _MyAppState extends State<MyApp> {
             create: (context) => DocumentBloc(
               repository: _documentRepository,
             )..add(const LoadDocuments()),
-          ),
-          // OCR bloc
-          BlocProvider(
-            create: (context) => OCRBloc(
-              ocrService: _ocrService,
-              documentRepository: _documentRepository,
-            ),
           ),
           // Search bloc
           BlocProvider(
@@ -127,6 +109,8 @@ class _MyAppState extends State<MyApp> {
               themeMode: context.read<ThemeCubit>().themeMode,
               routerConfig: AppRouter.router,
               debugShowCheckedModeBanner: false,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
             );
           },
         ),

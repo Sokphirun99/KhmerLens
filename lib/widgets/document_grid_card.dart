@@ -124,16 +124,17 @@ class DocumentGridCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 12,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 4),
-                      Expanded(
+                      Flexible(
                         child: Text(
                           Helpers.formatDate(document.createdAt),
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -142,7 +143,6 @@ class DocumentGridCard extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          softWrap: false,
                         ),
                       ),
                     ],
@@ -158,13 +158,7 @@ class DocumentGridCard extends StatelessWidget {
         ),
       ),
     )
-        .animate(
-          delay:
-              isDeleting ? Duration.zero : Duration(milliseconds: 50 * index),
-        )
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: 0.1, end: 0, duration: 300.ms)
-        // Delete animation (triggered when isDeleting becomes true)
+        // Only show delete animation when needed
         .animate(target: isDeleting ? 1 : 0)
         .scaleXY(end: 0.8, duration: 250.ms, curve: Curves.easeInBack)
         .fadeOut(duration: 250.ms);
@@ -194,6 +188,8 @@ class DocumentGridCard extends StatelessWidget {
         Image.file(
           File(imagePath),
           fit: BoxFit.cover,
+          cacheWidth: 400, // Optimize memory by downsampling images
+          cacheHeight: 400,
           errorBuilder: (context, error, stackTrace) {
             final theme = Theme.of(context);
             return Container(
@@ -419,6 +415,8 @@ class DocumentGridCardCompact extends StatelessWidget {
         Image.file(
           File(imagePath),
           fit: BoxFit.cover,
+          cacheWidth: 300, // Optimize memory for compact cards
+          cacheHeight: 300,
           errorBuilder: (context, error, stackTrace) {
             return Builder(
               builder: (context) {

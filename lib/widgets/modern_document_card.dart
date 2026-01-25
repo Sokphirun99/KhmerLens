@@ -205,6 +205,8 @@ class ModernDocumentCard extends StatelessWidget {
       child: Image.file(
         File(imagePath),
         fit: BoxFit.cover,
+        cacheWidth: 128, // Optimize for small thumbnail (2x for retina)
+        cacheHeight: 128,
         errorBuilder: (context, error, stackTrace) {
           final theme = Theme.of(context);
           return Container(

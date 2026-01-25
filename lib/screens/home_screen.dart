@@ -8,6 +8,8 @@ import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:uuid/uuid.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
+
 import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
 import '../bloc/document/document_state.dart';
@@ -19,6 +21,7 @@ import '../utils/constants.dart';
 import '../utils/error_handler.dart';
 import '../widgets/category_picker.dart';
 import '../widgets/document_grid_card.dart';
+import '../widgets/destructive_action_sheet.dart';
 import '../widgets/error_dialog.dart';
 import '../widgets/loading_dialog.dart';
 
@@ -36,10 +39,32 @@ class _HomeScreenState extends State<HomeScreen> {
   int _scansCount = 0;
   DocumentCategory? _selectedCategory;
 
+  // Scroll controller for FAB animation
+  final ScrollController _scrollController = ScrollController();
+  bool _isFabExtended = true;
+  double _lastScrollOffset = 0;
+
   @override
   void initState() {
     super.initState();
     _loadBannerAd();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final currentOffset = _scrollController.offset;
+    final scrollDelta = currentOffset - _lastScrollOffset;
+
+    // Only trigger state change if scroll delta is significant (avoid jitter)
+    if (scrollDelta.abs() > 5) {
+      final shouldExtend = scrollDelta < 0 || currentOffset <= 0;
+      if (_isFabExtended != shouldExtend) {
+        setState(() {
+          _isFabExtended = shouldExtend;
+        });
+      }
+      _lastScrollOffset = currentOffset;
+    }
   }
 
   void _loadBannerAd() {
@@ -59,6 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _isDisposed = true;
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _bannerAd?.dispose();
     _bannerAd = null;
     super.dispose();
@@ -66,14 +93,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _processNewDocument(List<String> imagePaths) async {
     try {
-      if (imagePaths.isEmpty) return;
+      debugPrint('HomeScreen: Processing ${imagePaths.length} images');
+      debugPrint('HomeScreen: Image paths: $imagePaths');
+
+      if (imagePaths.isEmpty) {
+        debugPrint('HomeScreen: No images to process');
+        return;
+      }
 
       // Show category dialog
       final category = await _showCategoryDialog();
-      if (category == null) return;
+      if (category == null) {
+        debugPrint('HomeScreen: Category selection cancelled');
+        return;
+      }
+
+      debugPrint('HomeScreen: Selected category: ${category.nameKhmer}');
 
       // Show loading
-      _showLoadingDialog();
+      if (mounted) {
+        _showLoadingDialog(context);
+      }
 
       final documentId = const Uuid().v4();
 
@@ -86,9 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
         createdAt: DateTime.now(),
       );
 
+      debugPrint('HomeScreen: Created document with ID: $documentId');
+
       if (!mounted) return;
 
       // Create document using BLoC
+      debugPrint('HomeScreen: Dispatching CreateDocument event');
       context.read<DocumentBloc>().add(
             CreateDocument(
               document: document,
@@ -102,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
         AdService().showInterstitialAd();
       }
     } catch (e) {
+      debugPrint('HomeScreen: Error in _processNewDocument: $e');
       if (mounted) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
@@ -115,10 +159,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return await CategoryPicker.show(context);
   }
 
-  void _showLoadingDialog() {
+  void _showLoadingDialog(BuildContext context) {
     LoadingDialog.show(
       context,
-      message: 'កំពុងរក្សាទុក...',
+      message: AppLocalizations.of(context)!.saving,
       animationAsset: 'assets/animations/scanning.json',
     );
   }
@@ -127,10 +171,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  Future<void> _onFabPressed() async {
+    final imagePaths = await context.pushCamera<List<String>>();
+    if (imagePaths != null && imagePaths.isNotEmpty) {
+      await _processNewDocument(imagePaths);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           // Modern app bar
           SliverAppBar.large(
@@ -140,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                'KhmerScan',
+                l10n.appTitle,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.bold,
@@ -170,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  _buildCategoryChip('ទាំងអស់', null, Icons.apps),
+                  _buildCategoryChip(l10n.all, null, Icons.apps),
                   ...DocumentCategory.values.map((cat) => _buildCategoryChip(
                         cat.nameKhmer,
                         cat,
@@ -184,24 +238,49 @@ class _HomeScreenState extends State<HomeScreen> {
           // Documents grid - BLoC Consumer
           BlocConsumer<DocumentBloc, DocumentState>(
             listener: (context, state) {
-              if (!mounted) return;
+              debugPrint(
+                  'HomeScreen BlocConsumer: Received state: ${state.runtimeType}');
+
+              if (!mounted) {
+                debugPrint('HomeScreen: Widget not mounted, ignoring state');
+                return;
+              }
 
               // Handle document created
               if (state is DocumentCreated) {
+                debugPrint('HomeScreen: DocumentCreated state received');
+                debugPrint('HomeScreen: Document ID: ${state.document.id}');
+                debugPrint(
+                    'HomeScreen: Document has ${state.document.imagePaths.length} images');
+                debugPrint(
+                    'HomeScreen: Image paths: ${state.document.imagePaths}');
+
                 // Safely close loading dialog if open
                 final navigator = Navigator.of(context, rootNavigator: true);
                 if (navigator.canPop()) {
+                  debugPrint('HomeScreen: Closing loading dialog');
                   navigator.pop();
                 }
+
+                // Reload documents list and navigate to created document
+                debugPrint('HomeScreen: Reloading documents list');
+                context.read<DocumentBloc>().add(const LoadDocuments());
+
+                debugPrint('HomeScreen: Navigating to document detail');
                 context.pushDocumentDetail(state.document);
               }
 
               // Handle errors
               if (state is DocumentError) {
+                debugPrint(
+                    'HomeScreen: DocumentError state received: ${state.error}');
+
                 // Try to close loading dialog if open
                 if (Navigator.of(context).canPop()) {
+                  debugPrint('HomeScreen: Closing loading dialog after error');
                   Navigator.of(context).pop();
                 }
+
                 ErrorSnackBar.show(
                   context,
                   error: state.error,
@@ -211,8 +290,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Handle document deleted
               if (state is DocumentDeleted) {
+                debugPrint('HomeScreen: Document deleted: ${state.documentId}');
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('បានលុបឯកសារ')),
+                  SnackBar(content: Text(l10n.deletedSuccess)),
                 );
               }
             },
@@ -223,13 +303,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (state is DocumentLoaded) {
                 if (state.documents.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(l10n);
                 }
-                return _buildDocumentGrid(state.documents);
+                return _buildDocumentGrid(state.documents, l10n);
               }
 
               if (state is DocumentError) {
-                return _buildErrorState(state.error);
+                return _buildErrorState(state.error, l10n);
               }
 
               return _buildShimmerLoading();
@@ -249,17 +329,30 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // FAB
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final imagePaths = await context.pushCamera<List<String>>();
-          if (imagePaths != null && imagePaths.isNotEmpty) {
-            await _processNewDocument(imagePaths);
-          }
+      // FAB - shrinks on scroll down, extends on scroll up
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) {
+          return ScaleTransition(
+            scale: animation,
+            child: child,
+          );
         },
-        icon: const Icon(Icons.document_scanner),
-        label: const Text('ស្កេនឯកសារ'),
-        elevation: 2,
+        child: _isFabExtended
+            ? FloatingActionButton.extended(
+                key: const ValueKey('extended'),
+                onPressed: _onFabPressed,
+                icon: const Icon(Icons.document_scanner),
+                label: Text(l10n.scanDocument),
+                elevation: 2,
+              )
+            : FloatingActionButton(
+                key: const ValueKey('collapsed'),
+                onPressed: _onFabPressed,
+                elevation: 2,
+                tooltip: l10n.scanDocument,
+                child: const Icon(Icons.document_scanner),
+              ),
       ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
     );
   }
@@ -267,6 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategoryChip(
       String label, DocumentCategory? category, IconData icon) {
     final isSelected = _selectedCategory == category;
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -295,6 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
         checkmarkColor: Theme.of(context).colorScheme.primary,
         elevation: isSelected ? 2 : 0,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        tooltip: l10n.showCategoryTooltip(label),
       )
           .animate(target: isSelected ? 1 : 0)
           .scaleXY(end: 1.05, duration: 200.ms),
@@ -312,8 +407,12 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, index) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return Shimmer.fromColors(
-            baseColor: isDark ? (Colors.grey[800] ?? Colors.grey) : (Colors.grey[300] ?? Colors.grey),
-            highlightColor: isDark ? (Colors.grey[700] ?? Colors.grey) : (Colors.grey[100] ?? Colors.white),
+            baseColor: isDark
+                ? (Colors.grey[800] ?? Colors.grey)
+                : (Colors.grey[300] ?? Colors.grey),
+            highlightColor: isDark
+                ? (Colors.grey[700] ?? Colors.grey)
+                : (Colors.grey[100] ?? Colors.white),
             child: Container(
               height: 200 + (index % 2) * 50.0,
               decoration: BoxDecoration(
@@ -327,69 +426,79 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     final isFiltered = _selectedCategory != null;
 
     return SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Lottie.asset(
-              'assets/animations/empty_documents.json',
-              width: 200,
-              height: 200,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.folder_open_outlined,
-                  size: 120,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            Text(
-              isFiltered ? 'គ្មានឯកសារក្នុងប្រភេទនេះ' : 'គ្មានឯកសារ',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: Text(
-                isFiltered
-                    ? 'សូមជ្រើសរើសប្រភេទផ្សេង ឬស្កេនឯកសារថ្មី'
-                    : 'ចុចប៊ូតុងខាងក្រោមដើម្បីចាប់ផ្តើមស្កេនឯកសាររបស់អ្នក',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            if (isFiltered) ...[
-              const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _selectedCategory = null;
-                  });
-                  context.read<DocumentBloc>().add(
-                        const FilterDocumentsByCategory(null),
-                      );
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.asset(
+                'assets/animations/empty_documents.json',
+                width: 200,
+                height: 200,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.folder_open_outlined,
+                    size: 120,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.5),
+                  );
                 },
-                icon: const Icon(Icons.clear_all),
-                label: const Text('បង្ហាញទាំងអស់'),
               ),
+              const SizedBox(height: 24),
+              Text(
+                isFiltered
+                    ? l10n.emptyStateFilteredMessage
+                    : l10n.emptyStateMessage,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 48),
+                child: Text(
+                  isFiltered
+                      ? l10n.emptyStateFilteredDescription
+                      : l10n.emptyStateDescription,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (isFiltered) ...[
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _selectedCategory = null;
+                    });
+                    context.read<DocumentBloc>().add(
+                          const FilterDocumentsByCategory(null),
+                        );
+                  },
+                  icon: const Icon(Icons.clear_all),
+                  label: Text(l10n.showAll),
+                ),
+              ],
             ],
-          ],
-        ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
+          ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
+        ),
       ),
     );
   }
 
-  Widget _buildErrorState(dynamic error) {
+  Widget _buildErrorState(dynamic error, AppLocalizations l10n) {
     final errorMessage = ErrorHandler.getMessage(error, locale: 'km');
     final recoverySuggestion =
         ErrorHandler.getRecoverySuggestion(error, locale: 'km');
@@ -407,7 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'មានបញ្ហា',
+              l10n.error,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -437,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context.read<DocumentBloc>().add(const RefreshDocuments());
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('ព្យាយាមម្តងទៀត'),
+              label: Text(l10n.retry),
             ),
           ],
         ),
@@ -445,18 +554,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDocumentGrid(List<Document> documents) {
+  Widget _buildDocumentGrid(List<Document> documents, AppLocalizations l10n) {
+    // Responsive grid
+    final width = MediaQuery.of(context).size.width;
+    final int crossAxisCount = width > 900
+        ? 4
+        : width > 600
+            ? 3
+            : 2;
+
     return SliverPadding(
       padding: const EdgeInsets.all(16),
       sliver: SliverMasonryGrid.count(
-        crossAxisCount: 2,
+        crossAxisCount: crossAxisCount,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
         childCount: documents.length,
         itemBuilder: (context, index) {
           final document = documents[index];
-          return DocumentGridCard(
+          // Limit animations to first 10 items for better performance
+          final shouldAnimate = index < 10;
+          final card = DocumentGridCard(
             document: document,
+            index: index,
             onTap: () async {
               await context.push(
                 AppRoutes.documentDetail.replaceFirst(':id', document.id),
@@ -467,28 +587,15 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             onDelete: () async {
-              final confirmed = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('លុបឯកសារ'),
-                  content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('បោះបង់'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error,
-                      ),
-                      child: const Text('លុប'),
-                    ),
-                  ],
-                ),
+              final confirmed = await DestructiveActionSheet.show(
+                context,
+                title: l10n.deleteDocument,
+                message: l10n.deleteDocumentConfirmation,
+                confirmLabel: l10n.deleteDocument,
+                icon: Icons.delete_forever,
               );
 
-              if (confirmed == true && context.mounted) {
+              if (confirmed && context.mounted) {
                 context.read<DocumentBloc>().add(
                       DeleteDocument(document),
                     );
@@ -497,10 +604,15 @@ class _HomeScreenState extends State<HomeScreen> {
             onShare: () async {
               // Share implementation
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share coming soon')),
+                SnackBar(content: Text(l10n.shareComingSoon)),
               );
             },
-          ).animate().fadeIn(delay: (50 * index).ms).slideY(begin: 0.1, end: 0);
+          );
+
+          // Only animate first 10 items for performance
+          return shouldAnimate
+              ? card.animate().fadeIn(delay: (30 * index).ms, duration: 200.ms)
+              : card;
         },
       ),
     );

@@ -1,4 +1,5 @@
 // bloc/document/document_bloc.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repositories/document_repository.dart';
 import '../../utils/error_handler.dart';
@@ -47,12 +48,27 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentCreating());
 
     try {
+      debugPrint('DocumentBloc: Creating document with ${event.imagePaths.length} images');
+      debugPrint('DocumentBloc: Image paths: ${event.imagePaths}');
+
       await repository.createDocument(event.document, event.imagePaths);
-      emit(DocumentCreated(event.document));
+
+      // Fetch the created document from repository to get the saved image paths
+      final createdDocument = await repository.getDocument(event.document.id);
+
+      debugPrint('DocumentBloc: Document created with ID: ${event.document.id}');
+      debugPrint('DocumentBloc: Created document has ${createdDocument?.imagePaths.length ?? 0} images');
+
+      if (createdDocument != null) {
+        emit(DocumentCreated(createdDocument));
+      } else {
+        emit(DocumentCreated(event.document));
+      }
 
       // Reload documents after creating
       add(const RefreshDocuments());
     } catch (e, stackTrace) {
+      debugPrint('DocumentBloc: Error creating document: $e');
       ErrorHandler.logError(e, stackTrace: stackTrace);
       emit(DocumentError(e));
     }

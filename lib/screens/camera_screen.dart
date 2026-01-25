@@ -21,6 +21,7 @@ class _CameraScreenState extends State<CameraScreen>
   List<CameraDescription>? _cameras;
   bool _isInitialized = false;
   bool _isFlashOn = false;
+  bool _isSinglePageMode = true; // Default to single-page for quick scans
   late AnimationController _animController;
   final List<String> _capturedImages = [];
 
@@ -55,7 +56,8 @@ class _CameraScreenState extends State<CameraScreen>
         _animController.forward();
       }
     } catch (e) {
-      _showError('Camera error: $e');
+      debugPrint('Camera initialization error: $e');
+      _showError('មិនអាចចាប់ផ្តើមកាមេរ៉ាបានទេ');
     }
   }
 
@@ -77,7 +79,13 @@ class _CameraScreenState extends State<CameraScreen>
           _capturedImages.add(image.path);
         });
 
-        // Show snackbar with option to finish
+        // In single-page mode, auto-advance after capture
+        if (_isSinglePageMode) {
+          _finishCapture();
+          return;
+        }
+
+        // Multi-page mode: show snackbar with option to finish
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('រូបភាពទី ${_capturedImages.length} ត្រូវបានថតរួច'),
@@ -90,7 +98,8 @@ class _CameraScreenState extends State<CameraScreen>
         );
       }
     } catch (e) {
-      _showError('Failed to capture: $e');
+      debugPrint('Capture error: $e');
+      _showError('មិនអាចថតរូបភាពបានទេ');
     }
   }
 
@@ -117,10 +126,45 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
-  void _showError(String message) {
+  void _toggleScanMode() {
+    HapticFeedback.selectionClick();
+    setState(() => _isSinglePageMode = !_isSinglePageMode);
+
+    // Show feedback about mode change
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(
+          _isSinglePageMode ? 'ម៉ូដទំព័រតែមួយ (រហ័ស)' : 'ម៉ូដច្រើនទំព័រ',
+        ),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final List<XFile> images = await picker.pickMultiImage();
+
+      if (images.isNotEmpty && mounted) {
+        HapticFeedback.lightImpact();
+        final imagePaths = images.map((img) => img.path).toList();
+        context.pop(imagePaths);
+      }
+    } catch (e) {
+      debugPrint('Gallery picker error: $e');
+      _showError('មិនអាចជ្រើសរូបភាពបានទេ');
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   @override
@@ -244,7 +288,8 @@ class _CameraScreenState extends State<CameraScreen>
                         if (_capturedImages.isNotEmpty)
                           Container(
                             margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.primary,
                               borderRadius: BorderRadius.circular(20),
@@ -257,6 +302,9 @@ class _CameraScreenState extends State<CameraScreen>
                               ),
                             ),
                           ),
+                        // Single/Multi page mode toggle
+                        _buildModeToggle(),
+                        const SizedBox(width: 8),
                         _buildTopButton(
                           _isFlashOn ? Icons.flash_on : Icons.flash_off,
                           _toggleFlash,
@@ -313,15 +361,7 @@ class _CameraScreenState extends State<CameraScreen>
                     // Gallery button - multi-select
                     _buildControlButton(
                       Icons.photo_library,
-                      () async {
-                        final ImagePicker picker = ImagePicker();
-                        final List<XFile> images = await picker.pickMultiImage();
-                        if (images.isNotEmpty && context.mounted) {
-                          HapticFeedback.lightImpact();
-                          final imagePaths = images.map((img) => img.path).toList();
-                          context.pop(imagePaths);
-                        }
-                      },
+                      _pickFromGallery,
                       tooltip: 'ជ្រើសរូបពីវិចិត្រសាល',
                     ),
 
@@ -373,7 +413,8 @@ class _CameraScreenState extends State<CameraScreen>
                         tooltip: 'បញ្ចប់',
                       )
                     else
-                      const SizedBox(width: 56), // Spacer for symmetry
+                      // Spacer when no images captured
+                      const SizedBox(width: 56),
                   ],
                 ),
               ),
@@ -384,7 +425,8 @@ class _CameraScreenState extends State<CameraScreen>
     );
   }
 
-  Widget _buildTopButton(IconData icon, VoidCallback onPressed, {String? tooltip}) {
+  Widget _buildTopButton(IconData icon, VoidCallback onPressed,
+      {String? tooltip}) {
     return Semantics(
       button: true,
       label: tooltip,
@@ -402,7 +444,54 @@ class _CameraScreenState extends State<CameraScreen>
     );
   }
 
-  Widget _buildControlButton(IconData icon, VoidCallback onPressed, {String? tooltip}) {
+  Widget _buildModeToggle() {
+    return Semantics(
+      button: true,
+      label: _isSinglePageMode ? 'ម៉ូដទំព័រតែមួយ' : 'ម៉ូដច្រើនទំព័រ',
+      child: GestureDetector(
+        onTap: _toggleScanMode,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _isSinglePageMode
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.white.withValues(alpha: 0.3),
+              width: 2,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _isSinglePageMode ? Icons.looks_one : Icons.burst_mode,
+                color: _isSinglePageMode
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _isSinglePageMode ? '១រូប' : 'ច្រើន',
+                style: TextStyle(
+                  color: _isSinglePageMode
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton(IconData icon, VoidCallback onPressed,
+      {String? tooltip}) {
     return Semantics(
       button: true,
       label: tooltip,
@@ -467,8 +556,7 @@ class _CameraScreenState extends State<CameraScreen>
               : BorderSide.none,
           left: isLeft
               ? const BorderSide(color: Colors.white, width: 3)
-              : BorderSide.none,
-          right: !isLeft
+              : BorderSide.none,          right: !isLeft
               ? const BorderSide(color: Colors.white, width: 3)
               : BorderSide.none,
         ),
@@ -504,6 +592,8 @@ class _CameraScreenState extends State<CameraScreen>
               child: Image.file(
                 File(imagePath),
                 fit: BoxFit.cover,
+                cacheWidth: 160, // Optimize for 80px thumbnail (2x for retina)
+                cacheHeight: 160,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: Colors.grey.shade800,
@@ -536,7 +626,7 @@ class _CameraScreenState extends State<CameraScreen>
                 ),
               ),
             ),
-            // Delete button (optional - on long press)
+            // Delete button
             Positioned(
               bottom: 4,
               right: 4,
