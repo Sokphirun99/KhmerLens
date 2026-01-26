@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
@@ -48,33 +49,41 @@ class ExportService {
           final imageBytes = await imageFile.readAsBytes();
           final pdfImage = pw.MemoryImage(imageBytes);
 
-          // Add header only on first image of each document
-          final isFirstImage = i == 0;
+          // Get image dimensions to determine orientation
+          final codec = await ui.instantiateImageCodec(imageBytes);
+          final frame = await codec.getNextFrame();
+          final imageWidth = frame.image.width.toDouble();
+          final imageHeight = frame.image.height.toDouble();
+          codec.dispose();
+
+          // Use A4 format, but choose orientation based on image aspect ratio
+          final isLandscape = imageWidth > imageHeight;
+          final pageFormat = isLandscape
+              ? PdfPageFormat.a4.landscape
+              : PdfPageFormat.a4.portrait;
+
           final pageNumber = i + 1;
           final totalImages = doc.imagePaths.length;
 
           pdf.addPage(
             pw.Page(
-              pageFormat: PdfPageFormat.a4,
-              margin: const pw.EdgeInsets.all(0),
+              pageFormat: pageFormat,
+              margin: const pw.EdgeInsets.all(24),
               build: (context) {
                 return pw.Stack(
-                  alignment: pw.Alignment.center,
                   children: [
-                    // Full-page image (centered)
-                    pw.Container(
-                      width: PdfPageFormat.a4.width,
-                      height: PdfPageFormat.a4.height,
+                    // Centered image that fills the page
+                    pw.Center(
                       child: pw.Image(
                         pdfImage,
-                        fit: pw.BoxFit.cover,
+                        fit: pw.BoxFit.contain,
                       ),
                     ),
                     // Optional: Page number badge in corner (for multi-image docs)
                     if (totalImages > 1)
                       pw.Positioned(
-                        top: 8,
-                        right: 8,
+                        top: 0,
+                        right: 0,
                         child: pw.Container(
                           padding: const pw.EdgeInsets.symmetric(
                             horizontal: 8,

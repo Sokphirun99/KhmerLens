@@ -9,6 +9,7 @@ import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 import 'bloc/document/document_bloc.dart';
 import 'bloc/document/document_event.dart';
+import 'bloc/locale/locale_cubit.dart';
 import 'bloc/search/search_bloc.dart';
 import 'bloc/theme/theme_cubit.dart';
 import 'repositories/document_repository.dart';
@@ -87,6 +88,10 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(
             create: (context) => ThemeCubit(),
           ),
+          // Locale cubit
+          BlocProvider(
+            create: (context) => LocaleCubit(),
+          ),
           // Document bloc
           BlocProvider(
             create: (context) => DocumentBloc(
@@ -102,15 +107,20 @@ class _MyAppState extends State<MyApp> {
         ],
         child: BlocBuilder<ThemeCubit, ThemeState>(
           builder: (context, themeState) {
-            return MaterialApp.router(
-              title: 'KhmerScan',
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: context.read<ThemeCubit>().themeMode,
-              routerConfig: AppRouter.router,
-              debugShowCheckedModeBanner: false,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
+            return BlocBuilder<LocaleCubit, LocaleState>(
+              builder: (context, localeState) {
+                return MaterialApp.router(
+                  title: 'KhmerScan',
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: context.read<ThemeCubit>().themeMode,
+                  locale: context.read<LocaleCubit>().locale,
+                  routerConfig: AppRouter.router,
+                  debugShowCheckedModeBanner: false,
+                  localizationsDelegates: AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                );
+              },
             );
           },
         ),

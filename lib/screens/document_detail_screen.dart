@@ -16,6 +16,7 @@ import '../utils/helpers.dart';
 import '../widgets/error_dialog.dart';
 import '../widgets/destructive_action_sheet.dart';
 import '../router/app_router.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
   final Document document;
@@ -40,6 +41,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   // Use current document
   Document get _document => _currentDocument;
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -56,9 +59,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   Future<void> _deleteDocument() async {
     final confirmed = await DestructiveActionSheet.show(
       context,
-      title: 'លុបឯកសារ',
-      message: 'តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
-      confirmLabel: 'លុបឯកសារ',
+      title: l10n.deleteDocument,
+      message: l10n.deleteDocumentConfirmation,
+      confirmLabel: l10n.deleteDocument,
       icon: Icons.delete_forever,
     );
 
@@ -95,24 +98,24 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   Future<void> _shareDocument() async {
     try {
-      _showSnackBar('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...');
+      _showSnackBar(l10n.preparingToShare);
       await _exportService.shareDocument(_document.id);
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
-        _showSnackBar('មិនអាចចែករំលែកឯកសារ');
+        _showSnackBar(l10n.unableToShare);
       }
     }
   }
 
   Future<void> _exportPdf() async {
     try {
-      _showSnackBar('កំពុងនាំចេញជា PDF...');
+      _showSnackBar(l10n.exportingPdf);
       await _exportService.exportToPdf([_document.id]);
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
-        _showSnackBar('មិនអាចនាំចេញជា PDF');
+        _showSnackBar(l10n.unableToExportPdf);
       }
     }
   }
@@ -126,12 +129,12 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('ថតរូប'),
+              title: Text(l10n.takePhoto),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('ជ្រើសរូបពីវិចិត្រសាល'),
+              title: Text(l10n.chooseFromGallery),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
           ],
@@ -163,7 +166,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       }
 
       if (newImagePaths.isNotEmpty && mounted) {
-        _showSnackBar('កំពុងបន្ថែមរូបភាព...');
+        _showSnackBar(l10n.addingImages);
         context.read<DocumentBloc>().add(
               AddImagesToDocument(
                 documentId: _document.id,
@@ -174,7 +177,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
-        _showSnackBar('មិនអាចបន្ថែមរូបភាព');
+        _showSnackBar(l10n.unableToAddImages);
       }
     }
   }
@@ -182,15 +185,15 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   Future<void> _deleteImage(String imagePath) async {
     // Don't allow deleting the last image
     if (_document.imagePaths.length <= 1) {
-      _showSnackBar('មិនអាចលុបរូបភាពចុងក្រោយបានទេ');
+      _showSnackBar(l10n.cannotDeleteLastImage);
       return;
     }
 
     final confirmed = await DestructiveActionSheet.show(
       context,
-      title: 'លុបរូបភាព',
-      message: 'តើអ្នកពិតជាចង់លុបរូបភាពនេះមែនទេ?',
-      confirmLabel: 'លុបរូបភាព',
+      title: l10n.deleteImage,
+      message: l10n.deleteImageConfirmation,
+      confirmLabel: l10n.deleteImage,
       icon: Icons.image_not_supported,
     );
 
@@ -211,7 +214,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
-        _showSnackBar('មិនអាចរៀបចំរូបភាពឡើងវិញ');
+        _showSnackBar(l10n.unableToReorderImages);
       }
     }
   }
@@ -242,7 +245,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     return BlocListener<DocumentBloc, DocumentState>(
       listener: (context, state) {
         if (state is DocumentDeleted) {
-          _showSnackBar('បានលុបឯកសារ');
+          _showSnackBar(l10n.deletedSuccess);
           context.pop(true);
         } else if (state is DocumentLoaded) {
           // When documents list is refreshed after image add/remove, update current document
@@ -275,37 +278,37 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-          title: Text(_document.category.nameKhmer),
+          title: Text(_document.title),
           actions: [
             // Add images button
             IconButton(
               icon: const Icon(Icons.add_photo_alternate),
               onPressed: _addMoreImages,
-              tooltip: 'បន្ថែមរូបភាព',
+              tooltip: l10n.addImages,
             ),
             // Manage images button
             if (_document.imagePaths.length > 1)
               IconButton(
                 icon: const Icon(Icons.view_carousel),
                 onPressed: _showImageManager,
-                tooltip: 'គ្រប់គ្រងរូបភាព',
+                tooltip: l10n.manageImages,
               ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'share',
                   child: ListTile(
-                    leading: Icon(Icons.share),
-                    title: Text('ចែករំលែក'),
+                    leading: const Icon(Icons.share),
+                    title: Text(l10n.share),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'export_pdf',
                   child: ListTile(
-                    leading: Icon(Icons.picture_as_pdf),
-                    title: Text('នាំចេញជា PDF'),
+                    leading: const Icon(Icons.picture_as_pdf),
+                    title: Text(l10n.exportPdf),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -318,7 +321,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       color: Theme.of(context).colorScheme.error,
                     ),
                     title: Text(
-                      'លុប',
+                      l10n.delete,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -365,7 +368,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'គ្មានរូបភាពក្នុងឯកសារ',
+                              l10n.noImagesInDocument,
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
@@ -377,7 +380,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'សូមថែមរូបភាពថ្មី',
+                              l10n.pleaseAddImages,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -392,7 +395,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                             FilledButton.icon(
                               onPressed: _addMoreImages,
                               icon: const Icon(Icons.add_photo_alternate),
-                              label: const Text('បន្ថែមរូបភាព'),
+                              label: Text(l10n.addImages),
                             ),
                           ],
                         ),
@@ -435,7 +438,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            'មិនអាចផ្ទុករូបភាព',
+                                            l10n.unableToLoadImage,
                                             style: TextStyle(
                                               color: Theme.of(context)
                                                   .colorScheme
@@ -574,10 +577,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'ព័ត៌មានឯកសារ',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            l10n.documentInfo,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ],
                       ),
@@ -602,54 +608,49 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         _buildInfoCard(
-          'ព័ត៌មានទូទៅ',
+          l10n.generalInfo,
           [
             _buildInfoRow(
-              Icons.category,
-              'ប្រភេទ',
-              _document.category.nameKhmer,
-            ),
-            _buildInfoRow(
               Icons.calendar_today,
-              'បង្កើត',
+              l10n.created,
               Helpers.formatDateTime(_document.createdAt),
             ),
             if (_document.expiryDate != null)
               _buildInfoRow(
                 Icons.event_busy,
-                'ផុតកំណត់',
+                l10n.expires,
                 Helpers.formatDate(_document.expiryDate!),
               ),
           ],
         ),
         const SizedBox(height: 16),
         _buildInfoCard(
-          'ព័ត៌មានបច្ចេកទេស',
+          l10n.technicalInfo,
           [
             _buildInfoRow(
               Icons.badge,
-              'ID',
+              l10n.id,
               _document.id.substring(0, 8),
             ),
             _buildInfoRow(
               Icons.image,
-              'រូបភាព',
-              '${_document.imagePaths.length} រូប',
+              l10n.images,
+              l10n.imageCount(_document.imagePaths.length),
             ),
             FutureBuilder<int>(
               future: _calculateTotalSize(),
               builder: (context, snapshot) {
                 String sizeText;
                 if (snapshot.hasError) {
-                  sizeText = 'មិនអាចផ្ទុក';
+                  sizeText = l10n.unableToLoad;
                 } else if (snapshot.hasData) {
                   sizeText = Helpers.formatFileSize(snapshot.data!);
                 } else {
-                  sizeText = 'កំពុងផ្ទុក...';
+                  sizeText = l10n.loading;
                 }
                 return _buildInfoRow(
                   Icons.storage,
-                  'ទំហំ',
+                  l10n.size,
                   sizeText,
                 );
               },
@@ -737,6 +738,8 @@ class _ImageManagerSheet extends StatefulWidget {
 class _ImageManagerSheetState extends State<_ImageManagerSheet> {
   late List<String> _imagePaths;
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -771,7 +774,7 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
             child: Row(
               children: [
                 Text(
-                  'គ្រប់គ្រងរូបភាព',
+                  l10n.manageImages,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -783,7 +786,7 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
                     widget.onAddMore();
                   },
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('បន្ថែម'),
+                  label: Text(l10n.add),
                 ),
               ],
             ),

@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -25,6 +26,8 @@ class _CameraScreenState extends State<CameraScreen>
   late AnimationController _animController;
   final List<String> _capturedImages = [];
 
+  AppLocalizations get l10n => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +42,7 @@ class _CameraScreenState extends State<CameraScreen>
     try {
       _cameras = await availableCameras();
       if (_cameras!.isEmpty) {
-        _showError('No camera found');
+        _showError(l10n.noCameraFound);
         return;
       }
 
@@ -57,7 +60,7 @@ class _CameraScreenState extends State<CameraScreen>
       }
     } catch (e) {
       debugPrint('Camera initialization error: $e');
-      _showError('មិនអាចចាប់ផ្តើមកាមេរ៉ាបានទេ');
+      _showError(l10n.cameraInitError);
     }
   }
 
@@ -88,10 +91,10 @@ class _CameraScreenState extends State<CameraScreen>
         // Multi-page mode: show snackbar with option to finish
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('រូបភាពទី ${_capturedImages.length} ត្រូវបានថតរួច'),
+            content: Text(l10n.imageCaptured(_capturedImages.length)),
             duration: const Duration(seconds: 2),
             action: SnackBarAction(
-              label: 'បញ្ចប់',
+              label: l10n.finish,
               onPressed: () => _finishCapture(),
             ),
           ),
@@ -99,7 +102,7 @@ class _CameraScreenState extends State<CameraScreen>
       }
     } catch (e) {
       debugPrint('Capture error: $e');
-      _showError('មិនអាចថតរូបភាពបានទេ');
+      _showError(l10n.captureError);
     }
   }
 
@@ -135,7 +138,7 @@ class _CameraScreenState extends State<CameraScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _isSinglePageMode ? 'ម៉ូដទំព័រតែមួយ (រហ័ស)' : 'ម៉ូដច្រើនទំព័រ',
+          _isSinglePageMode ? l10n.singlePageMode : l10n.multiPageMode,
         ),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
@@ -155,7 +158,7 @@ class _CameraScreenState extends State<CameraScreen>
       }
     } catch (e) {
       debugPrint('Gallery picker error: $e');
-      _showError('មិនអាចជ្រើសរូបភាពបានទេ');
+      _showError(l10n.pickImageError);
     }
   }
 
@@ -189,9 +192,9 @@ class _CameraScreenState extends State<CameraScreen>
                 height: 150,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'កំពុងចាប់ផ្តើមកាមេរ៉ា...',
-                style: TextStyle(color: Colors.white),
+              Text(
+                l10n.startingCamera,
+                style: const TextStyle(color: Colors.white),
               ),
             ],
           ),
@@ -246,9 +249,9 @@ class _CameraScreenState extends State<CameraScreen>
                         color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'រៀបចំឯកសារក្នុងក្របនេះ',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.alignDocument,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
                         ),
@@ -280,7 +283,7 @@ class _CameraScreenState extends State<CameraScreen>
                     _buildTopButton(
                       Icons.close,
                       () => context.pop(),
-                      tooltip: 'បិទ',
+                      tooltip: l10n.close,
                     ),
                     Row(
                       children: [
@@ -295,7 +298,7 @@ class _CameraScreenState extends State<CameraScreen>
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '${_capturedImages.length} រូប',
+                              l10n.imageCount(_capturedImages.length),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -308,7 +311,7 @@ class _CameraScreenState extends State<CameraScreen>
                         _buildTopButton(
                           _isFlashOn ? Icons.flash_on : Icons.flash_off,
                           _toggleFlash,
-                          tooltip: _isFlashOn ? 'បិទភ្លើង' : 'បើកភ្លើង',
+                          tooltip: _isFlashOn ? l10n.flashOn : l10n.flashOff,
                         ),
                       ],
                     ),
@@ -362,7 +365,7 @@ class _CameraScreenState extends State<CameraScreen>
                     _buildControlButton(
                       Icons.photo_library,
                       _pickFromGallery,
-                      tooltip: 'ជ្រើសរូបពីវិចិត្រសាល',
+                      tooltip: l10n.chooseFromGallery,
                     ),
 
                     // Capture button with animation
@@ -410,7 +413,7 @@ class _CameraScreenState extends State<CameraScreen>
                       _buildControlButton(
                         Icons.check,
                         _finishCapture,
-                        tooltip: 'បញ្ចប់',
+                        tooltip: l10n.finish,
                       )
                     else
                       // Spacer when no images captured
@@ -447,7 +450,7 @@ class _CameraScreenState extends State<CameraScreen>
   Widget _buildModeToggle() {
     return Semantics(
       button: true,
-      label: _isSinglePageMode ? 'ម៉ូដទំព័រតែមួយ' : 'ម៉ូដច្រើនទំព័រ',
+      label: _isSinglePageMode ? l10n.singlePageMode : l10n.multiPageMode,
       child: GestureDetector(
         onTap: _toggleScanMode,
         child: Container(
@@ -474,7 +477,7 @@ class _CameraScreenState extends State<CameraScreen>
               ),
               const SizedBox(width: 6),
               Text(
-                _isSinglePageMode ? '១រូប' : 'ច្រើន',
+                _isSinglePageMode ? l10n.modeSingle : l10n.modeMulti,
                 style: TextStyle(
                   color: _isSinglePageMode
                       ? Theme.of(context).colorScheme.primary
@@ -556,7 +559,8 @@ class _CameraScreenState extends State<CameraScreen>
               : BorderSide.none,
           left: isLeft
               ? const BorderSide(color: Colors.white, width: 3)
-              : BorderSide.none,          right: !isLeft
+              : BorderSide.none,
+          right: !isLeft
               ? const BorderSide(color: Colors.white, width: 3)
               : BorderSide.none,
         ),
@@ -637,9 +641,9 @@ class _CameraScreenState extends State<CameraScreen>
                     _capturedImages.removeAt(index);
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('រូបភាពត្រូវបានលុបចេញ'),
-                      duration: Duration(seconds: 1),
+                    SnackBar(
+                      content: Text(l10n.imageDeleted),
+                      duration: const Duration(seconds: 1),
                     ),
                   );
                 },

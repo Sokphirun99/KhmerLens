@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/document.dart';
 import '../utils/helpers.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 /// A vertical grid-style document card for displaying documents in a masonry grid.
 class DocumentGridCard extends StatelessWidget {
@@ -30,7 +31,6 @@ class DocumentGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = document.category.color;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -48,45 +48,12 @@ class DocumentGridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with category badge
+            // Image
             Stack(
               children: [
                 AspectRatio(
                   aspectRatio: 3 / 4,
                   child: _buildImage(context),
-                ),
-                // Category badge
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          document.category.icon,
-                          size: 12,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          document.category.nameEnglish,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
                 // Expiry warning badge
                 if (_isExpiringSoon())
@@ -265,8 +232,9 @@ class DocumentGridCard extends StatelessWidget {
         Expanded(
           child: Text(
             isExpired
-                ? 'Expired'
-                : 'Expires ${Helpers.formatDate(document.expiryDate!)}',
+                ? AppLocalizations.of(context)!.expired
+                : AppLocalizations.of(context)!
+                    .expiresOn(Helpers.formatDate(document.expiryDate!)),
             style: theme.textTheme.bodySmall?.copyWith(
               color: textColor,
               fontWeight: isExpired || isExpiringSoon
@@ -306,7 +274,6 @@ class DocumentGridCardCompact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = document.category.color;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -323,7 +290,7 @@ class DocumentGridCardCompact extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with color overlay at bottom
+            // Image with overlay at bottom
             Stack(
               children: [
                 AspectRatio(
@@ -349,34 +316,19 @@ class DocumentGridCardCompact extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Category indicator
+                // Title
                 Positioned(
                   bottom: 8,
                   left: 8,
                   right: 8,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: categoryColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          document.title,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    document.title,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

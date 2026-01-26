@@ -14,7 +14,6 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     on<CreateDocument>(_onCreateDocument);
     on<UpdateDocument>(_onUpdateDocument);
     on<DeleteDocument>(_onDeleteDocument);
-    on<FilterDocumentsByCategory>(_onFilterByCategory);
     on<RefreshDocuments>(_onRefreshDocuments);
     on<AddImagesToDocument>(_onAddImagesToDocument);
     on<RemoveImageFromDocument>(_onRemoveImageFromDocument);
@@ -27,13 +26,10 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentLoading());
 
     try {
-      final documents = await repository.getAllDocuments(
-        category: event.category,
-      );
+      final documents = await repository.getAllDocuments();
 
       emit(DocumentLoaded(
         documents: documents,
-        selectedCategory: event.category,
       ));
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
@@ -110,44 +106,15 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     }
   }
 
-  Future<void> _onFilterByCategory(
-    FilterDocumentsByCategory event,
-    Emitter<DocumentState> emit,
-  ) async {
-    emit(DocumentLoading());
-
-    try {
-      final documents = await repository.getAllDocuments(
-        category: event.category,
-      );
-
-      emit(DocumentLoaded(
-        documents: documents,
-        selectedCategory: event.category,
-      ));
-    } catch (e, stackTrace) {
-      ErrorHandler.logError(e, stackTrace: stackTrace);
-      emit(DocumentError(e));
-    }
-  }
-
   Future<void> _onRefreshDocuments(
     RefreshDocuments event,
     Emitter<DocumentState> emit,
   ) async {
-    final currentState = state;
-
     try {
-      final category =
-          currentState is DocumentLoaded ? currentState.selectedCategory : null;
-
-      final documents = await repository.getAllDocuments(
-        category: category,
-      );
+      final documents = await repository.getAllDocuments();
 
       emit(DocumentLoaded(
         documents: documents,
-        selectedCategory: category,
       ));
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);

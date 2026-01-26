@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:uuid/uuid.dart';
@@ -14,16 +13,15 @@ import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
 import '../bloc/document/document_state.dart';
 import '../models/document.dart';
-import '../models/document_category.dart';
 import '../router/app_router.dart';
 import '../services/ad_service.dart';
 import '../utils/constants.dart';
 import '../utils/error_handler.dart';
-import '../widgets/category_picker.dart';
 import '../widgets/document_grid_card.dart';
 import '../widgets/destructive_action_sheet.dart';
 import '../widgets/error_dialog.dart';
 import '../widgets/loading_dialog.dart';
+import '../widgets/empty_state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,7 +35,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isBannerAdReady = false;
   bool _isDisposed = false;
   int _scansCount = 0;
-  DocumentCategory? _selectedCategory;
 
   // Scroll controller for FAB animation
   final ScrollController _scrollController = ScrollController();
@@ -101,15 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Show category dialog
-      final category = await _showCategoryDialog();
-      if (category == null) {
-        debugPrint('HomeScreen: Category selection cancelled');
-        return;
-      }
-
-      debugPrint('HomeScreen: Selected category: ${category.nameKhmer}');
-
       // Show loading
       if (mounted) {
         _showLoadingDialog(context);
@@ -120,8 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // Create document
       final document = Document(
         id: documentId,
-        title: '${category.nameKhmer} - ${_formatDate(DateTime.now())}',
-        category: category,
+        title:
+            '${AppLocalizations.of(context)!.documentPrefix} - ${_formatDate(DateTime.now())}',
         imagePaths: [], // Will be updated by repository
         createdAt: DateTime.now(),
       );
@@ -153,10 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
-  }
-
-  Future<DocumentCategory?> _showCategoryDialog() async {
-    return await CategoryPicker.show(context);
   }
 
   void _showLoadingDialog(BuildContext context) {
@@ -213,26 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 8),
             ],
-          ),
-
-          // Category chips
-          SliverToBoxAdapter(
-            child: Container(
-              height: 60,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _buildCategoryChip(l10n.all, null, Icons.apps),
-                  ...DocumentCategory.values.map((cat) => _buildCategoryChip(
-                        cat.nameKhmer,
-                        cat,
-                        cat.icon,
-                      )),
-                ],
-              ),
-            ),
           ),
 
           // Documents grid - BLoC Consumer
@@ -303,7 +267,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (state is DocumentLoaded) {
                 if (state.documents.isEmpty) {
-                  return _buildEmptyState(l10n);
+                  return EmptyState.documents(
+                    context,
+                    onScan: _onFabPressed,
+                  );
                 }
                 return _buildDocumentGrid(state.documents, l10n);
               }
@@ -357,45 +324,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryChip(
-      String label, DocumentCategory? category, IconData icon) {
-    final isSelected = _selectedCategory == category;
-    final l10n = AppLocalizations.of(context)!;
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        selected: isSelected,
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18),
-            const SizedBox(width: 6),
-            Text(label),
-          ],
-        ),
-        onSelected: (selected) {
-          setState(() {
-            _selectedCategory = selected ? category : null;
-          });
-
-          // Trigger BLoC event
-          context.read<DocumentBloc>().add(
-                FilterDocumentsByCategory(_selectedCategory),
-              );
-        },
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-        selectedColor: Theme.of(context).colorScheme.primaryContainer,
-        checkmarkColor: Theme.of(context).colorScheme.primary,
-        elevation: isSelected ? 2 : 0,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        tooltip: l10n.showCategoryTooltip(label),
-      )
-          .animate(target: isSelected ? 1 : 0)
-          .scaleXY(end: 1.05, duration: 200.ms),
-    );
-  }
-
   Widget _buildShimmerLoading() {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
@@ -422,78 +350,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(AppLocalizations l10n) {
-    final isFiltered = _selectedCategory != null;
-
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Lottie.asset(
-                'assets/animations/empty_documents.json',
-                width: 200,
-                height: 200,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.folder_open_outlined,
-                    size: 120,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.5),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              Text(
-                isFiltered
-                    ? l10n.emptyStateFilteredMessage
-                    : l10n.emptyStateMessage,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: Text(
-                  isFiltered
-                      ? l10n.emptyStateFilteredDescription
-                      : l10n.emptyStateDescription,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.6),
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              if (isFiltered) ...[
-                const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _selectedCategory = null;
-                    });
-                    context.read<DocumentBloc>().add(
-                          const FilterDocumentsByCategory(null),
-                        );
-                  },
-                  icon: const Icon(Icons.clear_all),
-                  label: Text(l10n.showAll),
-                ),
-              ],
-            ],
-          ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0),
-        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/document.dart';
 import '../utils/helpers.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 /// A horizontal list-style document card with swipe actions.
 class ModernDocumentCard extends StatelessWidget {
@@ -29,7 +30,6 @@ class ModernDocumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = document.category.color;
 
     return Slidable(
       key: ValueKey(document.id),
@@ -44,7 +44,7 @@ class ModernDocumentCard extends StatelessWidget {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,
                   icon: Icons.share,
-                  label: 'Share',
+                  label: AppLocalizations.of(context)!.share,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     bottomLeft: Radius.circular(12),
@@ -65,7 +65,7 @@ class ModernDocumentCard extends StatelessWidget {
                   backgroundColor: theme.colorScheme.error,
                   foregroundColor: Colors.white,
                   icon: Icons.delete,
-                  label: 'Delete',
+                  label: AppLocalizations.of(context)!.delete,
                   borderRadius: const BorderRadius.only(
                     topRight: Radius.circular(12),
                     bottomRight: Radius.circular(12),
@@ -90,30 +90,10 @@ class ModernDocumentCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Thumbnail with category color indicator
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: _buildImage(),
-                    ),
-                    // Category color indicator
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 4,
-                        decoration: BoxDecoration(
-                          color: categoryColor,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            bottomLeft: Radius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                // Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: _buildImage(),
                 ),
                 const SizedBox(width: 12),
                 // Content
@@ -129,23 +109,6 @@ class ModernDocumentCard extends StatelessWidget {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            document.category.icon,
-                            size: 14,
-                            color: categoryColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            document.category.nameEnglish,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(

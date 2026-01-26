@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../models/document.dart';
-import '../models/document_category.dart';
 import '../services/database_service.dart';
 
 class DocumentProvider with ChangeNotifier {
@@ -14,13 +13,13 @@ class DocumentProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> loadDocuments({DocumentCategory? category}) async {
+  Future<void> loadDocuments() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _documents = await _databaseService.getAllDocuments(category: category);
+      _documents = await _databaseService.getAllDocuments();
       _error = null;
     } catch (e) {
       _error = e.toString();
@@ -70,9 +69,9 @@ class DocumentProvider with ChangeNotifier {
     }
   }
 
-  Future<int> getDocumentCount({DocumentCategory? category}) async {
+  Future<int> getDocumentCount() async {
     try {
-      return await _databaseService.getDocumentCount(category: category);
+      return await _databaseService.getDocumentCount();
     } catch (e) {
       _error = e.toString();
       notifyListeners();

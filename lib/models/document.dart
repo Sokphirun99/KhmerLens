@@ -1,10 +1,8 @@
 import 'dart:convert';
-import 'document_category.dart';
 
 class Document {
   final String id;
   final String title;
-  final DocumentCategory category;
   final List<String> imagePaths;
   final String? extractedText;
   final DateTime createdAt;
@@ -14,7 +12,6 @@ class Document {
   Document({
     required this.id,
     required this.title,
-    required this.category,
     required this.imagePaths,
     this.extractedText,
     required this.createdAt,
@@ -26,7 +23,6 @@ class Document {
     return {
       'id': id,
       'title': title,
-      'category': category.name,
       'imagePaths': jsonEncode(imagePaths),
       'extractedText': extractedText,
       'createdAt': createdAt.toIso8601String(),
@@ -39,7 +35,6 @@ class Document {
     return Document(
       id: map['id'],
       title: map['title'],
-      category: DocumentCategory.values.byName(map['category']),
       imagePaths: map['imagePaths'] != null
           ? List<String>.from(jsonDecode(map['imagePaths']))
           : [],
@@ -64,7 +59,6 @@ class Document {
     return Document(
       id: id,
       title: title ?? this.title,
-      category: category,
       imagePaths: imagePaths ?? this.imagePaths,
       extractedText: extractedText ?? this.extractedText,
       createdAt: createdAt,

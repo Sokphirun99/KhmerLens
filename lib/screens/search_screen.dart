@@ -14,6 +14,7 @@ import '../services/export_service.dart';
 import '../utils/error_handler.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/modern_document_card.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -56,19 +57,19 @@ class _SearchScreenState extends State<SearchScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('លុបឯកសារ'),
-        content: const Text('តើអ្នកពិតជាចង់លុបឯកសារនេះមែនទេ?'),
+        title: Text(AppLocalizations.of(context)!.deleteDocument),
+        content: Text(AppLocalizations.of(context)!.deleteDocumentConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('បោះបង់'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('លុប'),
+            child: Text(AppLocalizations.of(context)!.delete),
           ),
         ],
       ),
@@ -78,13 +79,13 @@ class _SearchScreenState extends State<SearchScreen> {
       try {
         // Use DocumentBloc for deletion to maintain consistency
         context.read<DocumentBloc>().add(DeleteDocument(document));
-        _showSnackBar('បានលុបឯកសារដោយជោគជ័យ');
+        _showSnackBar(AppLocalizations.of(context)!.deletedSuccessfully);
         // Re-run the search to update results
         _onSearchChanged(_searchController.text);
       } catch (e, stackTrace) {
         ErrorHandler.logError(e, stackTrace: stackTrace);
         if (mounted) {
-          _showSnackBar('មិនអាចលុបឯកសារ');
+          _showSnackBar(AppLocalizations.of(context)!.cannotDeleteDocument);
         }
       }
     }
@@ -92,12 +93,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _shareDocument(Document document) async {
     try {
-      _showSnackBar('កំពុងរៀបចំឯកសារសម្រាប់ចែករំលែក...');
+      _showSnackBar(AppLocalizations.of(context)!.preparingToShare);
       await _exportService.shareDocument(document.id);
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
-        _showSnackBar('មិនអាចចែករំលែកឯកសារ');
+        _showSnackBar(AppLocalizations.of(context)!.unableToShare);
       }
     }
   }
@@ -111,10 +112,13 @@ class _SearchScreenState extends State<SearchScreen> {
           autofocus: true,
           style: const TextStyle(fontSize: 16),
           decoration: InputDecoration(
-            hintText: 'ស្វែងរកឯកសារ...',
+            hintText: AppLocalizations.of(context)!.searchDocumentsHint,
             border: InputBorder.none,
             hintStyle: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.5),
             ),
           ),
           onChanged: _onSearchChanged,
@@ -163,23 +167,23 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildLoadingState() {
     return Center(
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('កំពុងស្វែងរក...'),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(AppLocalizations.of(context)!.searching),
         ],
       ).animate().fadeIn(duration: 300.ms),
     );
   }
 
   Widget _buildInitialState() {
-    return EmptyState.searchInitial();
+    return EmptyState.searchInitial(context);
   }
 
   Widget _buildNoResults() {
-    return EmptyState.noSearchResults();
+    return EmptyState.noSearchResults(context);
   }
 
   Widget _buildErrorState(String message) {
@@ -194,7 +198,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'កំហុស',
+            AppLocalizations.of(context)!.error,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
@@ -207,7 +211,7 @@ class _SearchScreenState extends State<SearchScreen> {
           FilledButton.icon(
             onPressed: () => _onSearchChanged(_searchController.text),
             icon: const Icon(Icons.refresh),
-            label: const Text('ព្យាយាមម្តងទៀត'),
+            label: Text(AppLocalizations.of(context)!.retry),
           ),
         ],
       ).animate().fadeIn(duration: 300.ms),
@@ -221,7 +225,7 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'រកឃើញ ${results.length} លទ្ធផល',
+              AppLocalizations.of(context)!.foundResults(results.length),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),

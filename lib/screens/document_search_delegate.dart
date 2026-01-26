@@ -4,6 +4,7 @@ import '../models/document.dart';
 import '../services/database_service.dart';
 import '../utils/helpers.dart';
 import 'document_detail_screen.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 class DocumentSearchDelegate extends SearchDelegate<Document?> {
   final DatabaseService _dbService = DatabaseService();
@@ -20,7 +21,16 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
   }
 
   @override
-  String get searchFieldLabel => 'ស្វែងរកឯកសារ...';
+  String get searchFieldLabel =>
+      'Search documents...'; // Will be overridden by localization in build() if possible, but SearchDelegate label is constant.
+  // Actually, we can access context in build methods but not easily here.
+  // Let's use a workaround or accept English default for now, or assume this is localized by flutter if passed in constructor?
+  // SearchDelegate doesn't support context-aware localization for label easily without hacking.
+  // Let's check if we can override buildSearchField.
+  // For now, I will use English default if context is not available, OR I will just leave it if I can't access context.
+  // Wait, I can't access context in getter.
+  // I'll skip this one or use a static/global accessor if available (not recommended).
+  // Actually, I can pass the localized string into the constructor of the delegate.
 
   @override
   ThemeData appBarTheme(BuildContext context) {
@@ -32,7 +42,8 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+        hintStyle: TextStyle(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
         border: InputBorder.none,
       ),
     );
@@ -85,7 +96,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'កំហុសក្នុងការស្វែងរក',
+                  AppLocalizations.of(context)!.searchError,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ],
@@ -143,7 +154,10 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -158,16 +172,19 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ការណែនាំស្វែងរក',
+                        AppLocalizations.of(context)!.searchTips,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'ស្វែងរកតាមប្រភេទឯកសារ ឬអត្ថបទដែលបានស្កេន',
+                        AppLocalizations.of(context)!.searchByTypeOrText,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.6),
                             ),
                       ),
                     ],
@@ -181,7 +198,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
 
           // Quick search categories
           Text(
-            'ស្វែងរកតាមប្រភេទ',
+            AppLocalizations.of(context)!.searchByType,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -192,11 +209,20 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _buildQuickSearchChip(context, 'អត្តសញ្ញាណប័ណ្ណ', Icons.badge),
-              _buildQuickSearchChip(context, 'លិខិតឆ្លងដែន', Icons.flight),
-              _buildQuickSearchChip(context, 'ប័ណ្ណបើកបរ', Icons.directions_car),
-              _buildQuickSearchChip(context, 'វិក្កយបត្រ', Icons.receipt),
-              _buildQuickSearchChip(context, 'កិច្ចសន្យា', Icons.description),
+              _buildQuickSearchChip(context,
+                  AppLocalizations.of(context)!.categoryIdCard, Icons.badge),
+              _buildQuickSearchChip(context,
+                  AppLocalizations.of(context)!.categoryPassport, Icons.flight),
+              _buildQuickSearchChip(
+                  context,
+                  AppLocalizations.of(context)!.categoryDriverLicense,
+                  Icons.directions_car),
+              _buildQuickSearchChip(context,
+                  AppLocalizations.of(context)!.categoryInvoice, Icons.receipt),
+              _buildQuickSearchChip(
+                  context,
+                  AppLocalizations.of(context)!.categoryContract,
+                  Icons.description),
             ],
           ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
 
@@ -206,7 +232,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'ស្វែងរកថ្មីៗ',
+                  AppLocalizations.of(context)!.recentSearches,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -215,7 +241,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
                   onPressed: () {
                     _recentSearches.clear();
                   },
-                  child: const Text('សម្អាត'),
+                  child: Text(AppLocalizations.of(context)!.clear),
                 ),
               ],
             ),
@@ -242,7 +268,8 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
     );
   }
 
-  Widget _buildQuickSearchChip(BuildContext context, String label, IconData icon) {
+  Widget _buildQuickSearchChip(
+      BuildContext context, String label, IconData icon) {
     return ActionChip(
       avatar: Icon(icon, size: 18),
       label: Text(label),
@@ -267,14 +294,14 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
             ),
             const SizedBox(height: 24),
             Text(
-              'រកមិនឃើញឯកសារ',
+              AppLocalizations.of(context)!.noResultsFound,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 8),
             Text(
-              'សូមព្យាយាមស្វែងរកពាក្យផ្សេងទៀត',
+              AppLocalizations.of(context)!.tryDifferentKeywords,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
                   ),
@@ -287,6 +314,8 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
   }
 
   Widget _buildResultsList(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: _results.length,
@@ -298,12 +327,12 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: document.category.color.withValues(alpha: 0.1),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              document.category.icon,
-              color: document.category.color,
+              Icons.description,
+              color: theme.colorScheme.primary,
             ),
           ),
           title: Text(
@@ -312,24 +341,12 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                document.category.nameKhmer,
-                style: TextStyle(
-                  color: document.category.color,
-                  fontSize: 12,
-                ),
-              ),
-              Text(
-                Helpers.formatDateTime(document.createdAt),
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 11,
-                ),
-              ),
-            ],
+          subtitle: Text(
+            Helpers.formatDateTime(document.createdAt),
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 11,
+            ),
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {

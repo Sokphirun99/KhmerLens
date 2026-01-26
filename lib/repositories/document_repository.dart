@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import '../models/document.dart';
-import '../models/document_category.dart';
 import '../services/database_service.dart';
 import '../services/storage_service.dart';
 import '../utils/exceptions.dart';
@@ -12,11 +11,9 @@ class DocumentRepository {
   final DatabaseService _dbService = DatabaseService();
   final StorageService _storageService = StorageService();
 
-  Future<List<Document>> getAllDocuments({
-    DocumentCategory? category,
-  }) async {
+  Future<List<Document>> getAllDocuments() async {
     try {
-      return await _dbService.getAllDocuments(category: category);
+      return await _dbService.getAllDocuments();
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -62,7 +59,6 @@ class DocumentRepository {
       final docToSave = Document(
         id: document.id,
         title: document.title,
-        category: document.category,
         imagePaths: savedPaths,
         extractedText: document.extractedText,
         createdAt: document.createdAt,
@@ -198,9 +194,9 @@ class DocumentRepository {
     }
   }
 
-  Future<int> getDocumentCount({DocumentCategory? category}) async {
+  Future<int> getDocumentCount() async {
     try {
-      return await _dbService.getDocumentCount(category: category);
+      return await _dbService.getDocumentCount();
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(

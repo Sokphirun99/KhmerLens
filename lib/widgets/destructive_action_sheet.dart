@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 /// A bottom sheet for confirming destructive actions like delete.
 /// More ergonomic on large phones than a centered dialog.
@@ -28,8 +29,8 @@ class DestructiveActionSheet extends StatelessWidget {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = 'លុប',
-    String cancelLabel = 'បោះបង់',
+    String? confirmLabel,
+    String? cancelLabel,
     IconData icon = Icons.delete_outline,
   }) async {
     final result = await showModalBottomSheet<bool>(
@@ -39,8 +40,8 @@ class DestructiveActionSheet extends StatelessWidget {
       builder: (context) => DestructiveActionSheet(
         title: title,
         message: message,
-        confirmLabel: confirmLabel,
-        cancelLabel: cancelLabel,
+        confirmLabel: confirmLabel ?? AppLocalizations.of(context)!.delete,
+        cancelLabel: cancelLabel ?? AppLocalizations.of(context)!.cancel,
         icon: icon,
       ),
     );
