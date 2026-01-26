@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
@@ -20,6 +21,25 @@ class ExportService {
   final DatabaseService _databaseService = DatabaseService();
   final StorageService _storageService = StorageService();
 
+  /// Print a single document directly using the system print dialog.
+  /// Allows the user to select paper size (Letter, A4, etc.) dynamically.
+  Future<void> printDocument(String documentId) async {
+    try {
+      final doc = await _databaseService.getDocument(documentId);
+      if (doc == null) return;
+
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async {
+          return await _generatePdf(format, [doc]);
+        },
+        name: '${doc.title}.pdf',
+      );
+    } catch (e) {
+      debugPrint('ExportService.printDocument error: $e');
+      rethrow;
+    }
+  }
+
   /// Export selected documents to a single PDF file and share it.
   Future<void> exportToPdf(List<String> documentIds) async {
     if (documentIds.isEmpty) return;
@@ -34,74 +54,8 @@ class ExportService {
       }
       if (docs.isEmpty) return;
 
-      final pdf = pw.Document();
-
-      for (final doc in docs) {
-        // Handle multiple images per document
-        if (doc.imagePaths.isEmpty) continue;
-
-        for (int i = 0; i < doc.imagePaths.length; i++) {
-          final imagePath = doc.imagePaths[i];
-          final imageFile = await _storageService.getImageFile(imagePath);
-          if (imageFile == null) continue;
-
-          final imageBytes = await imageFile.readAsBytes();
-          final pdfImage = pw.MemoryImage(imageBytes);
-
-          // Add header only on first image of each document
-          final isFirstImage = i == 0;
-          final pageNumber = i + 1;
-          final totalImages = doc.imagePaths.length;
-
-          pdf.addPage(
-            pw.Page(
-              pageFormat: PdfPageFormat.a4,
-              build: (context) {
-                return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    if (isFirstImage) ...[
-                      pw.Text(
-                        doc.title,
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Text(
-                        'Category: ${doc.category.name}',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.Text(
-                        'Created: ${doc.createdAt}',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.SizedBox(height: 12),
-                    ],
-                    // Show page number for multi-image documents
-                    if (totalImages > 1) ...[
-                      pw.Text(
-                        'Page $pageNumber of $totalImages',
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                      pw.SizedBox(height: 8),
-                    ],
-                    pw.Expanded(
-                      child: pw.Center(
-                        child: pw.Image(
-                          pdfImage,
-                          fit: pw.BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-        }
-      }
+      // For file export, default to A4
+      final pdfBytes = await _generatePdf(PdfPageFormat.a4, docs);
 
       // Save to temporary file
       final tempDir = await getTemporaryDirectory();
@@ -111,7 +65,7 @@ class ExportService {
       final sanitizedName = fileName.replaceAll(RegExp(r'[\\/:"*?<>|]+'), '_');
       final outputPath = p.join(tempDir.path, sanitizedName);
       final file = File(outputPath);
-      await file.writeAsBytes(await pdf.save());
+      await file.writeAsBytes(pdfBytes);
 
       if (!kIsWeb) {
         await Share.shareXFiles(
@@ -121,13 +75,96 @@ class ExportService {
       } else {
         // On web, just trigger the print/save dialog
         await Printing.layoutPdf(
-          onLayout: (PdfPageFormat format) async => pdf.save(),
+          onLayout: (PdfPageFormat format) async => pdfBytes,
         );
       }
     } catch (e) {
       debugPrint('ExportService.exportToPdf error: $e');
       rethrow;
     }
+  }
+
+  /// Helper to generate PDF bytes given a format and list of documents
+  Future<Uint8List> _generatePdf(
+      PdfPageFormat baseFormat, List<Document> docs) async {
+    final pdf = pw.Document();
+
+    for (final doc in docs) {
+      // Handle multiple images per document
+      if (doc.imagePaths.isEmpty) continue;
+
+      for (int i = 0; i < doc.imagePaths.length; i++) {
+        final imagePath = doc.imagePaths[i];
+        final imageFile = await _storageService.getImageFile(imagePath);
+        if (imageFile == null) continue;
+
+        final imageBytes = await imageFile.readAsBytes();
+        final pdfImage = pw.MemoryImage(imageBytes);
+
+        // Get image dimensions to determine orientation
+        final codec = await ui.instantiateImageCodec(imageBytes);
+        final frame = await codec.getNextFrame();
+        final imageWidth = frame.image.width.toDouble();
+        final imageHeight = frame.image.height.toDouble();
+        codec.dispose();
+
+        // Determine orientation based on image aspect ratio
+        final isLandscape = imageWidth > imageHeight;
+
+        // Use the provided format but adjust orientation
+        // If the base format is A4 or Letter, we respect that size but rotate if needed
+        final pageFormat =
+            isLandscape ? baseFormat.landscape : baseFormat.portrait;
+
+        final pageNumber = i + 1;
+        final totalImages = doc.imagePaths.length;
+
+        pdf.addPage(
+          pw.Page(
+            pageFormat: pageFormat,
+            margin: const pw.EdgeInsets.all(24),
+            build: (context) {
+              return pw.Stack(
+                children: [
+                  // Centered image that fills the page
+                  pw.Center(
+                    child: pw.Image(
+                      pdfImage,
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                  // Optional: Page number badge in corner (for multi-image docs)
+                  if (totalImages > 1)
+                    pw.Positioned(
+                      top: 0,
+                      right: 0,
+                      child: pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: pw.BoxDecoration(
+                          color: const PdfColor.fromInt(0xB3000000),
+                          borderRadius: pw.BorderRadius.circular(12),
+                        ),
+                        child: pw.Text(
+                          '$pageNumber/$totalImages',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      }
+    }
+    return await pdf.save();
   }
 
   /// Export a single document's images (share the original image files).

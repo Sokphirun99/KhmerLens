@@ -1,8 +1,8 @@
 // repositories/document_repository.dart
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import '../models/document.dart';
-import '../models/document_category.dart';
 import '../services/database_service.dart';
 import '../services/storage_service.dart';
 import '../utils/exceptions.dart';
@@ -11,11 +11,9 @@ class DocumentRepository {
   final DatabaseService _dbService = DatabaseService();
   final StorageService _storageService = StorageService();
 
-  Future<List<Document>> getAllDocuments({
-    DocumentCategory? category,
-  }) async {
+  Future<List<Document>> getAllDocuments() async {
     try {
-      return await _dbService.getAllDocuments(category: category);
+      return await _dbService.getAllDocuments();
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -43,18 +41,24 @@ class DocumentRepository {
 
   Future<String> createDocument(Document document, List<String> imagePaths) async {
     try {
+      debugPrint('DocumentRepository: Creating document with ${imagePaths.length} images');
+
       // Save all images to storage
       final savedPaths = <String>[];
-      for (final imagePath in imagePaths) {
+      for (int i = 0; i < imagePaths.length; i++) {
+        final imagePath = imagePaths[i];
+        debugPrint('DocumentRepository: Saving image ${i + 1}/${imagePaths.length}: $imagePath');
         final savedPath = await _storageService.saveImage(File(imagePath));
+        debugPrint('DocumentRepository: Image saved to: $savedPath');
         savedPaths.add(savedPath);
       }
+
+      debugPrint('DocumentRepository: All ${savedPaths.length} images saved');
 
       // Create document with saved paths
       final docToSave = Document(
         id: document.id,
         title: document.title,
-        category: document.category,
         imagePaths: savedPaths,
         extractedText: document.extractedText,
         createdAt: document.createdAt,
@@ -62,9 +66,13 @@ class DocumentRepository {
         metadata: document.metadata,
       );
 
+      debugPrint('DocumentRepository: Inserting document into database');
       await _dbService.insertDocument(docToSave);
+      debugPrint('DocumentRepository: Document created successfully with ID: ${docToSave.id}');
+
       return docToSave.id;
     } catch (e, stackTrace) {
+      debugPrint('DocumentRepository: Error creating document: $e');
       if (e is AppException) rethrow;
       throw DocumentException(
         'Failed to create document',
@@ -186,9 +194,9 @@ class DocumentRepository {
     }
   }
 
-  Future<int> getDocumentCount({DocumentCategory? category}) async {
+  Future<int> getDocumentCount() async {
     try {
-      return await _dbService.getDocumentCount(category: category);
+      return await _dbService.getDocumentCount();
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(

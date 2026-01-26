@@ -1,4 +1,5 @@
 // bloc/document/document_bloc.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repositories/document_repository.dart';
 import '../../utils/error_handler.dart';
@@ -13,7 +14,6 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     on<CreateDocument>(_onCreateDocument);
     on<UpdateDocument>(_onUpdateDocument);
     on<DeleteDocument>(_onDeleteDocument);
-    on<FilterDocumentsByCategory>(_onFilterByCategory);
     on<RefreshDocuments>(_onRefreshDocuments);
     on<AddImagesToDocument>(_onAddImagesToDocument);
     on<RemoveImageFromDocument>(_onRemoveImageFromDocument);
@@ -26,13 +26,10 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentLoading());
 
     try {
-      final documents = await repository.getAllDocuments(
-        category: event.category,
-      );
+      final documents = await repository.getAllDocuments();
 
       emit(DocumentLoaded(
         documents: documents,
-        selectedCategory: event.category,
       ));
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
@@ -47,12 +44,27 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentCreating());
 
     try {
+      debugPrint('DocumentBloc: Creating document with ${event.imagePaths.length} images');
+      debugPrint('DocumentBloc: Image paths: ${event.imagePaths}');
+
       await repository.createDocument(event.document, event.imagePaths);
-      emit(DocumentCreated(event.document));
+
+      // Fetch the created document from repository to get the saved image paths
+      final createdDocument = await repository.getDocument(event.document.id);
+
+      debugPrint('DocumentBloc: Document created with ID: ${event.document.id}');
+      debugPrint('DocumentBloc: Created document has ${createdDocument?.imagePaths.length ?? 0} images');
+
+      if (createdDocument != null) {
+        emit(DocumentCreated(createdDocument));
+      } else {
+        emit(DocumentCreated(event.document));
+      }
 
       // Reload documents after creating
       add(const RefreshDocuments());
     } catch (e, stackTrace) {
+      debugPrint('DocumentBloc: Error creating document: $e');
       ErrorHandler.logError(e, stackTrace: stackTrace);
       emit(DocumentError(e));
     }
@@ -94,44 +106,15 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     }
   }
 
-  Future<void> _onFilterByCategory(
-    FilterDocumentsByCategory event,
-    Emitter<DocumentState> emit,
-  ) async {
-    emit(DocumentLoading());
-
-    try {
-      final documents = await repository.getAllDocuments(
-        category: event.category,
-      );
-
-      emit(DocumentLoaded(
-        documents: documents,
-        selectedCategory: event.category,
-      ));
-    } catch (e, stackTrace) {
-      ErrorHandler.logError(e, stackTrace: stackTrace);
-      emit(DocumentError(e));
-    }
-  }
-
   Future<void> _onRefreshDocuments(
     RefreshDocuments event,
     Emitter<DocumentState> emit,
   ) async {
-    final currentState = state;
-
     try {
-      final category =
-          currentState is DocumentLoaded ? currentState.selectedCategory : null;
-
-      final documents = await repository.getAllDocuments(
-        category: category,
-      );
+      final documents = await repository.getAllDocuments();
 
       emit(DocumentLoaded(
         documents: documents,
-        selectedCategory: category,
       ));
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);

@@ -1,7 +1,6 @@
 // bloc/document/document_state.dart
 import 'package:equatable/equatable.dart';
 import '../../models/document.dart';
-import '../../models/document_category.dart';
 
 abstract class DocumentState extends Equatable {
   const DocumentState();
@@ -16,23 +15,19 @@ class DocumentLoading extends DocumentState {}
 
 class DocumentLoaded extends DocumentState {
   final List<Document> documents;
-  final DocumentCategory? selectedCategory;
 
   const DocumentLoaded({
     required this.documents,
-    this.selectedCategory,
   });
 
   @override
-  List<Object?> get props => [documents, selectedCategory];
+  List<Object?> get props => [documents];
 
   DocumentLoaded copyWith({
     List<Document>? documents,
-    DocumentCategory? selectedCategory,
   }) {
     return DocumentLoaded(
       documents: documents ?? this.documents,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
     );
   }
 }

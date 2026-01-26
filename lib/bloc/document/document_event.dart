@@ -1,7 +1,6 @@
 // bloc/document/document_event.dart
 import 'package:equatable/equatable.dart';
 import '../../models/document.dart';
-import '../../models/document_category.dart';
 
 abstract class DocumentEvent extends Equatable {
   const DocumentEvent();
@@ -11,12 +10,7 @@ abstract class DocumentEvent extends Equatable {
 }
 
 class LoadDocuments extends DocumentEvent {
-  final DocumentCategory? category;
-
-  const LoadDocuments({this.category});
-
-  @override
-  List<Object?> get props => [category];
+  const LoadDocuments();
 }
 
 class CreateDocument extends DocumentEvent {
@@ -48,15 +42,6 @@ class DeleteDocument extends DocumentEvent {
 
   @override
   List<Object?> get props => [document];
-}
-
-class FilterDocumentsByCategory extends DocumentEvent {
-  final DocumentCategory? category;
-
-  const FilterDocumentsByCategory(this.category);
-
-  @override
-  List<Object?> get props => [category];
 }
 
 class RefreshDocuments extends DocumentEvent {

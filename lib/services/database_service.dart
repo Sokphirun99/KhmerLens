@@ -1,7 +1,6 @@
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 import 'package:path/path.dart';
 import '../models/document.dart';
-import '../models/document_category.dart';
 import '../utils/exceptions.dart';
 
 class DatabaseService {
@@ -44,7 +43,6 @@ class DatabaseService {
         CREATE TABLE documents (
           id TEXT PRIMARY KEY,
           title TEXT NOT NULL,
-          category TEXT NOT NULL,
           imagePaths TEXT NOT NULL,
           extractedText TEXT,
           createdAt TEXT NOT NULL,
@@ -54,7 +52,6 @@ class DatabaseService {
       ''');
 
       // Create indexes for faster queries
-      await db.execute('CREATE INDEX idx_category ON documents(category)');
       await db.execute(
           'CREATE INDEX idx_created_at ON documents(createdAt DESC)');
     } catch (e, stackTrace) {
@@ -74,12 +71,11 @@ class DatabaseService {
         // First, get all existing documents
         final existingDocs = await db.query('documents');
 
-        // Create new table with updated schema
+        // Create new table with updated schema (without category)
         await db.execute('''
           CREATE TABLE documents_new (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
-            category TEXT NOT NULL,
             imagePaths TEXT NOT NULL,
             extractedText TEXT,
             createdAt TEXT NOT NULL,
@@ -96,7 +92,6 @@ class DatabaseService {
           await db.insert('documents_new', {
             'id': doc['id'],
             'title': doc['title'],
-            'category': doc['category'],
             'imagePaths': imagePaths,
             'extractedText': doc['extractedText'],
             'createdAt': doc['createdAt'],
@@ -110,7 +105,6 @@ class DatabaseService {
         await db.execute('ALTER TABLE documents_new RENAME TO documents');
 
         // Recreate indexes
-        await db.execute('CREATE INDEX idx_category ON documents(category)');
         await db.execute('CREATE INDEX idx_created_at ON documents(createdAt DESC)');
       }
     } catch (e, stackTrace) {
@@ -146,28 +140,15 @@ class DatabaseService {
   }
 
   Future<List<Document>> getAllDocuments({
-    DocumentCategory? category,
     int? limit,
   }) async {
     try {
       final db = await database;
-      final List<Map<String, dynamic>> maps;
-
-      if (category != null) {
-        maps = await db.query(
-          'documents',
-          where: 'category = ?',
-          whereArgs: [category.name],
-          orderBy: 'createdAt DESC',
-          limit: limit,
-        );
-      } else {
-        maps = await db.query(
-          'documents',
-          orderBy: 'createdAt DESC',
-          limit: limit,
-        );
-      }
+      final maps = await db.query(
+        'documents',
+        orderBy: 'createdAt DESC',
+        limit: limit,
+      );
 
       return List.generate(maps.length, (i) => Document.fromMap(maps[i]));
     } catch (e, stackTrace) {
@@ -265,22 +246,13 @@ class DatabaseService {
     }
   }
 
-  Future<int> getDocumentCount({DocumentCategory? category}) async {
+  Future<int> getDocumentCount() async {
     try {
       final db = await database;
-
-      if (category != null) {
-        final result = await db.rawQuery(
-          'SELECT COUNT(*) as count FROM documents WHERE category = ?',
-          [category.name],
-        );
-        return Sqflite.firstIntValue(result) ?? 0;
-      } else {
-        final result = await db.rawQuery(
-          'SELECT COUNT(*) as count FROM documents',
-        );
-        return Sqflite.firstIntValue(result) ?? 0;
-      }
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM documents',
+      );
+      return Sqflite.firstIntValue(result) ?? 0;
     } catch (e, stackTrace) {
       if (e is DatabaseException) rethrow;
       throw DatabaseException(

@@ -6,7 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
+import '../bloc/locale/locale_cubit.dart';
 import '../bloc/theme/theme_cubit.dart';
 import '../utils/constants.dart';
 import '../utils/theme.dart';
@@ -20,7 +22,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   int _documentCount = 0;
-  String _storageUsed = 'គណនា...';
+  String _storageUsed = '';
   bool _isLoadingStorage = true;
 
   @override
@@ -64,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _storageUsed = 'មិនអាចគណនាបាន';
+          _storageUsed = '';
           _isLoadingStorage = false;
         });
       }
@@ -84,14 +86,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ការកំណត់'),
+        title: Text(l10n.settings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
-          tooltip: 'ត្រឡប់ក្រោយ',
+          tooltip: l10n.back,
         ),
       ),
       body: ListView(
@@ -101,9 +104,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader(
             context,
             icon: Icons.palette_outlined,
-            title: 'រូបរាង',
+            title: l10n.appearance,
           ),
-          _buildAppearanceSection(context, colorScheme),
+          _buildAppearanceSection(context, colorScheme, l10n),
 
           const SizedBox(height: AppSpacing.lg),
 
@@ -111,9 +114,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader(
             context,
             icon: Icons.storage_outlined,
-            title: 'ទំហំផ្ទុក',
+            title: l10n.storage,
           ),
-          _buildStorageSection(context, colorScheme),
+          _buildStorageSection(context, colorScheme, l10n),
 
           const SizedBox(height: AppSpacing.lg),
 
@@ -121,9 +124,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader(
             context,
             icon: Icons.info_outline,
-            title: 'អំពីកម្មវិធី',
+            title: l10n.aboutApp,
           ),
-          _buildAboutSection(context, colorScheme),
+          _buildAboutSection(context, colorScheme, l10n),
 
           const SizedBox(height: AppSpacing.lg),
 
@@ -131,9 +134,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader(
             context,
             icon: Icons.support_outlined,
-            title: 'ជំនួយ',
+            title: l10n.support,
           ),
-          _buildSupportSection(context, colorScheme),
+          _buildSupportSection(context, colorScheme, l10n),
 
           const SizedBox(height: AppSpacing.xxl),
         ],
@@ -156,19 +159,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
     ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.1, end: 0);
   }
 
-  Widget _buildAppearanceSection(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildAppearanceSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
@@ -180,13 +187,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsTile(
                     context,
                     icon: Icons.brightness_6_outlined,
-                    title: 'រូបភាពបង្ហាញ',
-                    subtitle: _getThemeModeLabel(state.mode),
-                    onTap: () => _showThemePicker(context, state.mode),
+                    title: l10n.displayMode,
+                    subtitle: _getThemeModeLabel(state.mode, l10n),
+                    onTap: () => _showThemePicker(context, state.mode, l10n),
                   ),
                   const Divider(height: 1, indent: 56),
-                  _buildThemePreview(context, state.mode),
+                  _buildThemePreview(context, state.mode, l10n),
                 ],
+              );
+            },
+          ),
+          const Divider(height: 1, indent: 56),
+          // Language selector
+          BlocBuilder<LocaleCubit, LocaleState>(
+            builder: (context, state) {
+              return _buildSettingsTile(
+                context,
+                icon: Icons.language_outlined,
+                title: l10n.language,
+                subtitle: _getLanguageLabel(state.language, l10n),
+                onTap: () => _showLanguagePicker(context, state.language, l10n),
               );
             },
           ),
@@ -195,7 +215,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildThemePreview(BuildContext context, AppThemeMode mode) {
+  Widget _buildThemePreview(
+      BuildContext context, AppThemeMode mode, AppLocalizations l10n) {
     return Padding(
       padding: AppSpacing.paddingMd,
       child: Row(
@@ -203,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildThemeOption(
             context,
-            label: 'ភ្លឺ',
+            label: l10n.light,
             icon: Icons.light_mode,
             isSelected: mode == AppThemeMode.light,
             onTap: () =>
@@ -211,7 +232,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _buildThemeOption(
             context,
-            label: 'ងងឹត',
+            label: l10n.dark,
             icon: Icons.dark_mode,
             isSelected: mode == AppThemeMode.dark,
             onTap: () =>
@@ -219,7 +240,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _buildThemeOption(
             context,
-            label: 'ប្រព័ន្ធ',
+            label: l10n.system,
             icon: Icons.settings_suggest,
             isSelected: mode == AppThemeMode.system,
             onTap: () =>
@@ -250,13 +271,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: AppRadius.borderRadiusMd,
           border: Border.all(
-            color: isSelected
-                ? colorScheme.primary
-                : colorScheme.outlineVariant,
+            color:
+                isSelected ? colorScheme.primary : colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
@@ -273,6 +294,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : colorScheme.onSurfaceVariant,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -280,18 +302,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _getThemeModeLabel(AppThemeMode mode) {
+  String _getThemeModeLabel(AppThemeMode mode, AppLocalizations l10n) {
     switch (mode) {
       case AppThemeMode.light:
-        return 'ភ្លឺ';
+        return l10n.light;
       case AppThemeMode.dark:
-        return 'ងងឹត';
+        return l10n.dark;
       case AppThemeMode.system:
-        return 'តាមប្រព័ន្ធ';
+        return l10n.system;
     }
   }
 
-  void _showThemePicker(BuildContext context, AppThemeMode currentMode) {
+  String _getLanguageLabel(AppLanguage language, AppLocalizations l10n) {
+    switch (language) {
+      case AppLanguage.km:
+        return l10n.khmer;
+      case AppLanguage.en:
+        return l10n.english;
+    }
+  }
+
+  void _showThemePicker(
+      BuildContext context, AppThemeMode currentMode, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -301,15 +333,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Padding(
               padding: AppSpacing.paddingMd,
               child: Text(
-                'ជ្រើសរើសរូបភាពបង្ហាញ',
+                l10n.chooseDisplayMode,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             ListTile(
               leading: const Icon(Icons.light_mode),
-              title: const Text('ភ្លឺ'),
+              title: Text(l10n.light),
               trailing: currentMode == AppThemeMode.light
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.light);
@@ -318,9 +351,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.dark_mode),
-              title: const Text('ងងឹត'),
+              title: Text(l10n.dark),
               trailing: currentMode == AppThemeMode.dark
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.dark);
@@ -329,10 +363,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.settings_suggest),
-              title: const Text('តាមប្រព័ន្ធ'),
-              subtitle: const Text('ប្រើការកំណត់ពីឧបករណ៍'),
+              title: Text(l10n.system),
+              subtitle: Text(l10n.useDeviceSettings),
               trailing: currentMode == AppThemeMode.system
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.system);
@@ -346,49 +381,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildStorageSection(BuildContext context, ColorScheme colorScheme) {
+  void _showLanguagePicker(BuildContext context, AppLanguage currentLanguage,
+      AppLocalizations l10n) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: AppSpacing.paddingMd,
+              child: Text(
+                l10n.chooseLanguage,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            ListTile(
+              leading: const Text('🇰🇭', style: TextStyle(fontSize: 24)),
+              title: Text(l10n.khmer),
+              trailing: currentLanguage == AppLanguage.km
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<LocaleCubit>().setLanguage(AppLanguage.km);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
+              title: Text(l10n.english),
+              trailing: currentLanguage == AppLanguage.en
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<LocaleCubit>().setLanguage(AppLanguage.en);
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStorageSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
           _buildSettingsTile(
             context,
             icon: Icons.folder_outlined,
-            title: 'ចំនួនឯកសារ',
-            subtitle: _isLoadingStorage ? 'កំពុងរាប់...' : '$_documentCount ឯកសារ',
+            title: l10n.documentCount,
+            subtitle: _isLoadingStorage
+                ? l10n.counting
+                : '$_documentCount ${l10n.documents}',
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.pie_chart_outline,
-            title: 'ទំហំផ្ទុកដែលប្រើ',
-            subtitle: _storageUsed,
+            title: l10n.storageUsed,
+            subtitle:
+                _storageUsed.isEmpty ? l10n.unableToCalculate : _storageUsed,
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.cleaning_services_outlined,
-            title: 'សម្អាតឃ្លាំង',
-            subtitle: 'លុបទិន្នន័យបណ្ដោះអាសន្ន',
-            onTap: () => _showClearCacheDialog(context),
+            title: l10n.clearCache,
+            subtitle: l10n.clearCacheSubtitle,
+            onTap: () => _showClearCacheDialog(context, l10n),
           ),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0);
   }
 
-  void _showClearCacheDialog(BuildContext context) {
+  void _showClearCacheDialog(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('សម្អាតឃ្លាំង'),
-        content: const Text(
-          'តើអ្នកពិតជាចង់លុបទិន្នន័យបណ្ដោះអាសន្នទាំងអស់មែនទេ? '
-          'សកម្មភាពនេះនឹងមិនលុបឯកសាររបស់អ្នកទេ។',
-        ),
+        title: Text(l10n.clearCacheTitle),
+        content: Text(l10n.clearCacheMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('បោះបង់'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -397,11 +479,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await _clearCache();
               if (mounted) {
                 scaffoldMessenger.showSnackBar(
-                  const SnackBar(content: Text('បានសម្អាតឃ្លាំង')),
+                  SnackBar(content: Text(l10n.cacheCleared)),
                 );
               }
             },
-            child: const Text('សម្អាត'),
+            child: Text(l10n.clear),
           ),
         ],
       ),
@@ -419,29 +501,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildAboutSection(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildAboutSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
           _buildSettingsTile(
             context,
             icon: Icons.apps,
-            title: 'កម្មវិធី',
+            title: l10n.app,
             subtitle: AppConstants.appName,
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.numbers,
-            title: 'កំណែ',
+            title: l10n.version,
             subtitle: AppConstants.appVersion,
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.description_outlined,
-            title: 'អាជ្ញាប័ណ្ណ',
-            subtitle: 'ចុចដើម្បីមើលអាជ្ញាប័ណ្ណ',
+            title: l10n.license,
+            subtitle: l10n.tapToViewLicense,
             onTap: () => _showLicensesPage(context),
           ),
         ],
@@ -459,7 +542,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ClipRRect(
           borderRadius: AppRadius.borderRadiusMd,
           child: Image.asset(
-            'assets/icon/icon.png',
+            'assets/icon/app_icon.png',
             width: 64,
             height: 64,
           ),
@@ -468,38 +551,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSupportSection(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildSupportSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
           _buildSettingsTile(
             context,
             icon: Icons.rate_review_outlined,
-            title: 'វាយតម្លៃកម្មវិធី',
-            subtitle: 'ជួយយើងកែលម្អដោយការវាយតម្លៃ',
-            onTap: () => _rateApp(),
+            title: l10n.rateApp,
+            subtitle: l10n.rateAppSubtitle,
+            onTap: () => _rateApp(l10n),
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.share_outlined,
-            title: 'ចែករំលែកកម្មវិធី',
-            subtitle: 'ប្រាប់មិត្តភក្តិអំពីកម្មវិធីនេះ',
-            onTap: () => _shareApp(),
+            title: l10n.shareApp,
+            subtitle: l10n.shareAppSubtitle,
+            onTap: () => _shareApp(l10n),
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.bug_report_outlined,
-            title: 'រាយការណ៍បញ្ហា',
-            subtitle: 'ប្រាប់យើងប្រសិនបើអ្នកជួបបញ្ហា',
+            title: l10n.reportBug,
+            subtitle: l10n.reportBugSubtitle,
             onTap: () => _reportBug(),
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.privacy_tip_outlined,
-            title: 'គោលការណ៍ភាពឯកជន',
+            title: l10n.privacyPolicy,
             onTap: () => _openPrivacyPolicy(),
           ),
         ],
@@ -530,13 +614,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: colorScheme.primary,
         ),
       ),
-      title: Text(title),
+      title: Text(
+        title,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: subtitle != null
           ? Text(
               subtitle,
               style: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
+              overflow: TextOverflow.ellipsis,
             )
           : null,
       trailing: trailing ??
@@ -550,17 +638,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _rateApp() {
+  void _rateApp(AppLocalizations l10n) {
     // TODO: Implement app store rating
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('មុខងារនេះនឹងមានក្នុងពេលឆាប់ៗ')),
+      SnackBar(content: Text(l10n.featureComingSoon)),
     );
   }
 
-  void _shareApp() {
+  void _shareApp(AppLocalizations l10n) {
     // TODO: Implement share functionality
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('មុខងារនេះនឹងមានក្នុងពេលឆាប់ៗ')),
+      SnackBar(content: Text(l10n.featureComingSoon)),
     );
   }
 

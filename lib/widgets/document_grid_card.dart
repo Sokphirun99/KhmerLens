@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/document.dart';
 import '../utils/helpers.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 /// A vertical grid-style document card for displaying documents in a masonry grid.
 class DocumentGridCard extends StatelessWidget {
@@ -30,7 +31,6 @@ class DocumentGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = document.category.color;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -48,45 +48,12 @@ class DocumentGridCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with category badge
+            // Image
             Stack(
               children: [
                 AspectRatio(
                   aspectRatio: 3 / 4,
                   child: _buildImage(context),
-                ),
-                // Category badge
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          document.category.icon,
-                          size: 12,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          document.category.nameEnglish,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
                 // Expiry warning badge
                 if (_isExpiringSoon())
@@ -124,16 +91,17 @@ class DocumentGridCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
                         Icons.calendar_today_outlined,
                         size: 12,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       const SizedBox(width: 4),
-                      Expanded(
+                      Flexible(
                         child: Text(
                           Helpers.formatDate(document.createdAt),
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -142,7 +110,6 @@ class DocumentGridCard extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          softWrap: false,
                         ),
                       ),
                     ],
@@ -158,37 +125,85 @@ class DocumentGridCard extends StatelessWidget {
         ),
       ),
     )
-        .animate(
-          delay:
-              isDeleting ? Duration.zero : Duration(milliseconds: 50 * index),
-        )
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: 0.1, end: 0, duration: 300.ms)
-        // Delete animation (triggered when isDeleting becomes true)
+        // Only show delete animation when needed
         .animate(target: isDeleting ? 1 : 0)
         .scaleXY(end: 0.8, duration: 250.ms, curve: Curves.easeInBack)
         .fadeOut(duration: 250.ms);
   }
 
   Widget _buildImage(BuildContext context) {
-    final imagePath = thumbnailPath ?? document.imagePath;
+    // Use first image from the list
+    final imagePath = thumbnailPath ??
+        (document.imagePaths.isNotEmpty ? document.imagePaths.first : '');
 
-    return Image.file(
-      File(imagePath),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        final theme = Theme.of(context);
-        return Container(
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: Center(
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 40,
-              color: theme.colorScheme.onSurfaceVariant,
+    if (imagePath.isEmpty) {
+      final theme = Theme.of(context);
+      return Container(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported_outlined,
+            size: 40,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        Image.file(
+          File(imagePath),
+          fit: BoxFit.cover,
+          cacheWidth: 400, // Optimize memory by downsampling images
+          cacheHeight: 400,
+          errorBuilder: (context, error, stackTrace) {
+            final theme = Theme.of(context);
+            return Container(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 40,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          },
+        ),
+        // Multi-image indicator
+        if (document.imagePaths.length > 1)
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.collections,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${document.imagePaths.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        );
-      },
+      ],
     );
   }
 
@@ -217,8 +232,9 @@ class DocumentGridCard extends StatelessWidget {
         Expanded(
           child: Text(
             isExpired
-                ? 'Expired'
-                : 'Expires ${Helpers.formatDate(document.expiryDate!)}',
+                ? AppLocalizations.of(context)!.expired
+                : AppLocalizations.of(context)!
+                    .expiresOn(Helpers.formatDate(document.expiryDate!)),
             style: theme.textTheme.bodySmall?.copyWith(
               color: textColor,
               fontWeight: isExpired || isExpiringSoon
@@ -258,7 +274,6 @@ class DocumentGridCardCompact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = document.category.color;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -275,7 +290,7 @@ class DocumentGridCardCompact extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with color overlay at bottom
+            // Image with overlay at bottom
             Stack(
               children: [
                 AspectRatio(
@@ -301,34 +316,19 @@ class DocumentGridCardCompact extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Category indicator
+                // Title
                 Positioned(
                   bottom: 8,
                   left: 8,
                   right: 8,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: categoryColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          document.title,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    document.title,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -340,28 +340,86 @@ class DocumentGridCardCompact extends StatelessWidget {
   }
 
   Widget _buildImage() {
-    final imagePath = thumbnailPath ?? document.imagePath;
+    // Use first image from the list
+    final imagePath = thumbnailPath ??
+        (document.imagePaths.isNotEmpty ? document.imagePaths.first : '');
 
-    return Image.file(
-      File(imagePath),
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Builder(
-          builder: (context) {
-            final theme = Theme.of(context);
-            return Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Center(
-                child: Icon(
-                  Icons.image_not_supported_outlined,
-                  size: 32,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+    if (imagePath.isEmpty) {
+      return Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          return Container(
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Center(
+              child: Icon(
+                Icons.image_not_supported_outlined,
+                size: 32,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
+            ),
+          );
+        },
+      );
+    }
+
+    return Stack(
+      children: [
+        Image.file(
+          File(imagePath),
+          fit: BoxFit.cover,
+          cacheWidth: 300, // Optimize memory for compact cards
+          cacheHeight: 300,
+          errorBuilder: (context, error, stackTrace) {
+            return Builder(
+              builder: (context) {
+                final theme = Theme.of(context);
+                return Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 32,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                );
+              },
             );
           },
-        );
-      },
+        ),
+        // Multi-image indicator
+        if (document.imagePaths.length > 1)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.collections,
+                    size: 10,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${document.imagePaths.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

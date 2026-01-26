@@ -435,6 +435,12 @@ class AppTheme {
       labelStyle: GoogleFonts.notoSansKhmer(
         fontSize: 14,
         fontWeight: FontWeight.w500,
+        color: colorScheme.onSurface,
+      ),
+      secondaryLabelStyle: GoogleFonts.notoSansKhmer(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: colorScheme.onPrimaryContainer,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     );

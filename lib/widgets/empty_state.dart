@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
+import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 /// Reusable empty state widget
 class EmptyState extends StatelessWidget {
@@ -68,23 +69,32 @@ class EmptyState extends StatelessWidget {
     ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0);
   }
 
-  static Widget documents({VoidCallback? onScan}) => EmptyState(
-        animationAsset: 'assets/animations/empty_documents.json',
-        title: 'គ្មានឯកសារ',
-        subtitle: 'ចុចប៊ូតុងខាងក្រោមដើម្បីស្កេនឯកសារ',
-        actionLabel: onScan != null ? 'ស្កេនឯកសារ' : null,
-        onAction: onScan,
-      );
+  static Widget documents(BuildContext context, {VoidCallback? onScan}) {
+    final l10n = AppLocalizations.of(context)!;
+    return EmptyState(
+      animationAsset: 'assets/animations/empty_documents.json',
+      title: l10n.emptyStateMessage,
+      subtitle: l10n.emptyStateDescription,
+      actionLabel: onScan != null ? l10n.scanDocument : null,
+      onAction: onScan,
+    );
+  }
 
-  static Widget noSearchResults() => const EmptyState(
-        animationAsset: 'assets/animations/empty_documents.json',
-        title: 'រកមិនឃើញលទ្ធផល',
-        subtitle: 'សូមព្យាយាមស្វែងរកដោយប្រើពាក្យគន្លឹះផ្សេង',
-      );
+  static Widget noSearchResults(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return EmptyState(
+      animationAsset: 'assets/animations/empty_documents.json',
+      title: l10n.noResultsFound,
+      subtitle: l10n.tryDifferentKeywords,
+    );
+  }
 
-  static Widget searchInitial() => const EmptyState(
-        icon: Icons.search,
-        title: 'វាយបញ្ចូលដើម្បីស្វែងរក',
-        subtitle: 'ស្វែងរកតាមឈ្មោះឯកសារ ឬអត្ថបទដែលបានស្កេន',
-      );
+  static Widget searchInitial(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return EmptyState(
+      icon: Icons.search,
+      title: l10n.typeToSearch,
+      subtitle: l10n.searchByNameOrText,
+    );
+  }
 }
