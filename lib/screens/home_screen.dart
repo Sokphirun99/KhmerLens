@@ -1,5 +1,6 @@
-// screens/home_screen.dart
+import 'dart:io';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -158,6 +159,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onFabPressed() async {
     try {
+      // Explicitly request camera permission on iOS to ensure the prompt appears
+      if (Platform.isIOS) {
+        final status = await Permission.camera.request();
+        if (status.isPermanentlyDenied) {
+          if (mounted) {
+            _showPermissionDeniedDialog(context);
+          }
+          return;
+        }
+        if (!status.isGranted) {
+          return; // User denied
+        }
+      }
+
       final imagePaths = await CunningDocumentScanner.getPictures() ?? [];
       if (imagePaths.isNotEmpty) {
         await _processNewDocument(imagePaths);
@@ -172,6 +187,30 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     }
+  }
+
+  void _showPermissionDeniedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Camera Permission Required'),
+        content: const Text(
+            'Please enable camera access in Settings to scan documents.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

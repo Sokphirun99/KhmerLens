@@ -174,7 +174,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).animate().fadeIn(duration: 300.ms).slideX(begin: -0.1, end: 0);
   }
 
-  Widget _buildAppearanceSection(BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
+  Widget _buildAppearanceSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
@@ -214,7 +215,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildThemePreview(BuildContext context, AppThemeMode mode, AppLocalizations l10n) {
+  Widget _buildThemePreview(
+      BuildContext context, AppThemeMode mode, AppLocalizations l10n) {
     return Padding(
       padding: AppSpacing.paddingMd,
       child: Row(
@@ -269,9 +271,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: AppRadius.borderRadiusMd,
           border: Border.all(
-            color: isSelected
-                ? colorScheme.primary
-                : colorScheme.outlineVariant,
+            color:
+                isSelected ? colorScheme.primary : colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -321,7 +322,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _showThemePicker(BuildContext context, AppThemeMode currentMode, AppLocalizations l10n) {
+  void _showThemePicker(
+      BuildContext context, AppThemeMode currentMode, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -339,7 +341,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Icon(Icons.light_mode),
               title: Text(l10n.light),
               trailing: currentMode == AppThemeMode.light
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.light);
@@ -350,7 +353,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Icon(Icons.dark_mode),
               title: Text(l10n.dark),
               trailing: currentMode == AppThemeMode.dark
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.dark);
@@ -362,7 +366,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: Text(l10n.system),
               subtitle: Text(l10n.useDeviceSettings),
               trailing: currentMode == AppThemeMode.system
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.system);
@@ -376,7 +381,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showLanguagePicker(BuildContext context, AppLanguage currentLanguage, AppLocalizations l10n) {
+  void _showLanguagePicker(BuildContext context, AppLanguage currentLanguage,
+      AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -394,7 +400,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Text('🇰🇭', style: TextStyle(fontSize: 24)),
               title: Text(l10n.khmer),
               trailing: currentLanguage == AppLanguage.km
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<LocaleCubit>().setLanguage(AppLanguage.km);
@@ -405,7 +412,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
               title: Text(l10n.english),
               trailing: currentLanguage == AppLanguage.en
-                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
                   : null,
               onTap: () {
                 context.read<LocaleCubit>().setLanguage(AppLanguage.en);
@@ -419,7 +427,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildStorageSection(BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
+  Widget _buildStorageSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
@@ -427,14 +436,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             context,
             icon: Icons.folder_outlined,
             title: l10n.documentCount,
-            subtitle: _isLoadingStorage ? l10n.counting : '$_documentCount ${l10n.documents}',
+            subtitle: _isLoadingStorage
+                ? l10n.counting
+                : '$_documentCount ${l10n.documents}',
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
             icon: Icons.pie_chart_outline,
             title: l10n.storageUsed,
-            subtitle: _storageUsed.isEmpty ? l10n.unableToCalculate : _storageUsed,
+            subtitle:
+                _storageUsed.isEmpty ? l10n.unableToCalculate : _storageUsed,
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
@@ -489,7 +501,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildAboutSection(BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
+  Widget _buildAboutSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
@@ -529,7 +542,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ClipRRect(
           borderRadius: AppRadius.borderRadiusMd,
           child: Image.asset(
-            'assets/icon/icon.png',
+            'assets/icon/app_icon.png',
             width: 64,
             height: 64,
           ),
@@ -538,7 +551,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSupportSection(BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
+  Widget _buildSupportSection(
+      BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
       child: Column(
         children: [
