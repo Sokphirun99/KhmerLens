@@ -40,6 +40,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- ML Kit dependencies -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -51,5 +55,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Required for ML Kit Document Scanner -->
+        <intent>
+            <action android:name="com.google.android.gms.actions.SEARCH_ACTION"/>
+        </intent>
+        <package android:name="com.google.android.gms" />
     </queries>
 </manifest>

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/document.dart';
-import '../screens/camera_screen.dart';
+
 import '../screens/document_detail_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/search_screen.dart';
@@ -34,13 +34,6 @@ class AppRouter {
         path: AppRoutes.home,
         name: 'home',
         builder: (context, state) => const HomeScreen(),
-      ),
-
-      // Camera screen
-      GoRoute(
-        path: AppRoutes.camera,
-        name: 'camera',
-        builder: (context, state) => const CameraScreen(),
       ),
 
       // Document detail screen
@@ -90,7 +83,11 @@ class AppRouter {
             const SizedBox(height: 8),
             Text(
               'The page "${state.uri}" does not exist.',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 24),
             FilledButton(
@@ -121,12 +118,6 @@ extension AppRouterExtension on BuildContext {
       extra: document,
     );
   }
-
-  /// Navigate to camera
-  void goToCamera() => go(AppRoutes.camera);
-
-  /// Push to camera (preserves back stack)
-  Future<T?> pushCamera<T>() => push<T>(AppRoutes.camera);
 
   /// Navigate to search
   void goToSearch() => go(AppRoutes.search);

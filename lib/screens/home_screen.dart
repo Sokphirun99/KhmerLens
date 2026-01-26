@@ -1,4 +1,5 @@
 // screens/home_screen.dart
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -156,9 +157,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onFabPressed() async {
-    final imagePaths = await context.pushCamera<List<String>>();
-    if (imagePaths != null && imagePaths.isNotEmpty) {
-      await _processNewDocument(imagePaths);
+    try {
+      final imagePaths = await CunningDocumentScanner.getPictures() ?? [];
+      if (imagePaths.isNotEmpty) {
+        await _processNewDocument(imagePaths);
+      }
+    } catch (e) {
+      debugPrint('Error scanning document: $e');
+      if (mounted) {
+        ErrorSnackBar.show(
+          context,
+          error: e,
+          locale: 'km', // Or use current locale
+        );
+      }
     }
   }
 
@@ -267,9 +279,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (state is DocumentLoaded) {
                 if (state.documents.isEmpty) {
-                  return EmptyState.documents(
-                    context,
-                    onScan: _onFabPressed,
+                  return SliverFillRemaining(
+                    child: EmptyState.documents(
+                      context,
+                      onScan: _onFabPressed,
+                    ),
                   );
                 }
                 return _buildDocumentGrid(state.documents, l10n);

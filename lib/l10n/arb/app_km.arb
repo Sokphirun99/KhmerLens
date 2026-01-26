@@ -154,5 +154,6 @@
     "categoryPassport": "លិខិតឆ្លងដែន",
     "categoryDriverLicense": "ប័ណ្ណបើកបរ",
     "categoryInvoice": "វិក្កយបត្រ",
-    "categoryContract": "កិច្ចសន្យា"
+    "categoryContract": "កិច្ចសន្យា",
+    "print": "បោះពុម្ព"
 }

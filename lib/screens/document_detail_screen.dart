@@ -15,7 +15,8 @@ import '../utils/error_handler.dart';
 import '../utils/helpers.dart';
 import '../widgets/error_dialog.dart';
 import '../widgets/destructive_action_sheet.dart';
-import '../router/app_router.dart';
+import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+
 import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
@@ -110,8 +111,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   Future<void> _exportPdf() async {
     try {
-      _showSnackBar(l10n.exportingPdf);
-      await _exportService.exportToPdf([_document.id]);
+      // Use printDocument to allow full PDF customization (Paper size, Layout, etc.)
+      await _exportService.printDocument(_document.id);
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
@@ -151,9 +152,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       List<String> newImagePaths = [];
 
       if (source == ImageSource.camera) {
-        // Use camera screen for multi-capture
+        // Use document scanner for capture
         if (!mounted) return;
-        final paths = await context.pushCamera<List<String>>();
+        final paths = await CunningDocumentScanner.getPictures();
         if (paths != null && paths.isNotEmpty) {
           newImagePaths = paths;
         }

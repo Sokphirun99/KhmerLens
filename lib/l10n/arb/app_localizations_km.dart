@@ -387,4 +387,7 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get categoryContract => 'កិច្ចសន្យា';
+
+  @override
+  String get print => 'បោះពុម្ព';
 }

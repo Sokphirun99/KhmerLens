@@ -387,4 +387,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryContract => 'Contract';
+
+  @override
+  String get print => 'Print';
 }

@@ -835,6 +835,12 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'កិច្ចសន្យា'**
   String get categoryContract;
+
+  /// No description provided for @print.
+  ///
+  /// In km, this message translates to:
+  /// **'បោះពុម្ព'**
+  String get print;
 }
 
 class _AppLocalizationsDelegate

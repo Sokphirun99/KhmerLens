@@ -154,5 +154,6 @@
     "categoryDriverLicense": "Driver's License",
     "categoryInvoice": "Invoice",
     "categoryContract": "Contract",
+    "print": "Print",
     "documentPrefix": "Document"
 }
