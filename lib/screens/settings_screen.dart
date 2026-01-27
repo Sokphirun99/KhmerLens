@@ -12,6 +12,8 @@ import '../bloc/locale/locale_cubit.dart';
 import '../bloc/theme/theme_cubit.dart';
 import '../utils/constants.dart';
 import '../utils/theme.dart';
+import '../services/rating_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -639,16 +641,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _rateApp(AppLocalizations l10n) {
-    // TODO: Implement app store rating
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.featureComingSoon)),
-    );
+    try {
+      RatingService().openStoreListing();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.error)),
+        );
+      }
+    }
   }
 
   void _shareApp(AppLocalizations l10n) {
-    // TODO: Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.featureComingSoon)),
+    Share.share(
+      'Check out ${AppConstants.appName} - the best document scanner app! https://khmerscan.app',
+      subject: 'Check out ${AppConstants.appName}',
     );
   }
 

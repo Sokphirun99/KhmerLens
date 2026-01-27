@@ -172,9 +172,14 @@ class AppTheme {
     );
   }
 
-  // Text theme with Khmer font
+  // Text theme with Roboto (English) and Siemreap (Khmer) font fallback
   static TextTheme _buildTextTheme(ColorScheme colorScheme) {
-    final baseTextTheme = GoogleFonts.notoSansKhmerTextTheme();
+    // Use Roboto as the primary font for English/Latin characters
+    final baseTextTheme = GoogleFonts.robotoTextTheme();
+
+    // Use Siemreap as fallback
+    final khmerFontFamily = GoogleFonts.siemreap().fontFamily;
+    final fallbacks = khmerFontFamily != null ? [khmerFontFamily] : null;
 
     return baseTextTheme.copyWith(
       // Display styles
@@ -183,16 +188,19 @@ class AppTheme {
         fontWeight: FontWeight.w400,
         letterSpacing: -0.25,
         height: 1.12,
+        fontFamilyFallback: fallbacks,
       ),
       displayMedium: baseTextTheme.displayMedium?.copyWith(
         fontSize: 45,
         fontWeight: FontWeight.w400,
         height: 1.16,
+        fontFamilyFallback: fallbacks,
       ),
       displaySmall: baseTextTheme.displaySmall?.copyWith(
         fontSize: 36,
         fontWeight: FontWeight.w400,
         height: 1.22,
+        fontFamilyFallback: fallbacks,
       ),
 
       // Headline styles
@@ -200,16 +208,19 @@ class AppTheme {
         fontSize: 32,
         fontWeight: FontWeight.w600,
         height: 1.25,
+        fontFamilyFallback: fallbacks,
       ),
       headlineMedium: baseTextTheme.headlineMedium?.copyWith(
         fontSize: 28,
         fontWeight: FontWeight.w600,
         height: 1.29,
+        fontFamilyFallback: fallbacks,
       ),
       headlineSmall: baseTextTheme.headlineSmall?.copyWith(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         height: 1.33,
+        fontFamilyFallback: fallbacks,
       ),
 
       // Title styles
@@ -217,18 +228,21 @@ class AppTheme {
         fontSize: 22,
         fontWeight: FontWeight.w600,
         height: 1.27,
+        fontFamilyFallback: fallbacks,
       ),
       titleMedium: baseTextTheme.titleMedium?.copyWith(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.15,
         height: 1.5,
+        fontFamilyFallback: fallbacks,
       ),
       titleSmall: baseTextTheme.titleSmall?.copyWith(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
         height: 1.43,
+        fontFamilyFallback: fallbacks,
       ),
 
       // Body styles
@@ -237,18 +251,21 @@ class AppTheme {
         fontWeight: FontWeight.w400,
         letterSpacing: 0.5,
         height: 1.5,
+        fontFamilyFallback: fallbacks,
       ),
       bodyMedium: baseTextTheme.bodyMedium?.copyWith(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.25,
         height: 1.43,
+        fontFamilyFallback: fallbacks,
       ),
       bodySmall: baseTextTheme.bodySmall?.copyWith(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         letterSpacing: 0.4,
         height: 1.33,
+        fontFamilyFallback: fallbacks,
       ),
 
       // Label styles
@@ -257,18 +274,21 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         letterSpacing: 0.1,
         height: 1.43,
+        fontFamilyFallback: fallbacks,
       ),
       labelMedium: baseTextTheme.labelMedium?.copyWith(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
         height: 1.33,
+        fontFamilyFallback: fallbacks,
       ),
       labelSmall: baseTextTheme.labelSmall?.copyWith(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
         height: 1.45,
+        fontFamilyFallback: fallbacks,
       ),
     );
   }

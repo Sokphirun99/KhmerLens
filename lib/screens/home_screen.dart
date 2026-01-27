@@ -17,6 +17,7 @@ import '../bloc/document/document_state.dart';
 import '../models/document.dart';
 import '../router/app_router.dart';
 import '../services/ad_service.dart';
+import '../services/rating_service.dart';
 import '../utils/constants.dart';
 import '../utils/error_handler.dart';
 import '../widgets/document_grid_card.dart';
@@ -134,6 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_scansCount % AppConstants.scansBeforeInterstitial == 0) {
         AdService().showInterstitialAd();
       }
+
+      // Track scan event for rating prompt
+      await RatingService().trackEvent(isScan: true);
     } catch (e) {
       debugPrint('HomeScreen: Error in _processNewDocument: $e');
       if (mounted) {
