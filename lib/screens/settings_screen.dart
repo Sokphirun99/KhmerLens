@@ -179,6 +179,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildAppearanceSection(
       BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           // Theme mode selector
@@ -196,6 +197,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 1, indent: 56),
                   _buildThemePreview(context, state.mode, l10n),
                 ],
+              );
+            },
+          ),
+          const Divider(height: 1, indent: 56),
+          // Text Size selector
+          BlocBuilder<ThemeCubit, ThemeState>(
+            builder: (context, state) {
+              return _buildSettingsTile(
+                context,
+                icon: Icons.text_fields,
+                title: l10n.textSize,
+                subtitle: _getTextSizeLabel(state.textScaleFactor, l10n),
+                onTap: () =>
+                    _showTextSizePicker(context, state.textScaleFactor, l10n),
               );
             },
           ),
@@ -432,6 +447,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildStorageSection(
       BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildSettingsTile(
@@ -506,6 +522,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildAboutSection(
       BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildSettingsTile(
@@ -556,6 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSupportSection(
       BuildContext context, ColorScheme colorScheme, AppLocalizations l10n) {
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildSettingsTile(
@@ -671,5 +689,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  String _getTextSizeLabel(double scale, AppLocalizations l10n) {
+    if (scale < 1.0) return l10n.textSizeSmall;
+    if (scale > 1.0) return l10n.textSizeLarge;
+    return l10n.textSizeMedium;
+  }
+
+  void _showTextSizePicker(
+      BuildContext context, double currentScale, AppLocalizations l10n) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: AppSpacing.paddingMd,
+              child: Text(
+                l10n.textSize,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.text_fields, size: 18),
+              title: Text(l10n.textSizeSmall),
+              trailing: currentScale < 1.0
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<ThemeCubit>().setTextScale(0.85);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.text_fields, size: 24),
+              title: Text(l10n.textSizeMedium),
+              trailing: currentScale == 1.0
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<ThemeCubit>().setTextScale(1.0);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.text_fields, size: 30),
+              title: Text(l10n.textSizeLarge),
+              trailing: currentScale > 1.0
+                  ? Icon(Icons.check,
+                      color: Theme.of(context).colorScheme.primary)
+                  : null,
+              onTap: () {
+                context.read<ThemeCubit>().setTextScale(1.15);
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -1,6 +1,6 @@
-// main.dart
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +37,16 @@ void main() async {
         DeviceOrientation.portraitUp,
         DeviceOrientation.portraitDown,
       ]);
+
+      // Initialize Firebase
+      try {
+        await Firebase.initializeApp();
+      } catch (e, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('Firebase initialization failed: $e');
+          ErrorHandler.logError(e, stackTrace: stackTrace);
+        }
+      }
 
       // Initialize AdMob with error handling
       try {
@@ -117,8 +127,18 @@ class _MyAppState extends State<MyApp> {
                   locale: context.read<LocaleCubit>().locale,
                   routerConfig: AppRouter.router,
                   debugShowCheckedModeBanner: false,
-                  localizationsDelegates: AppLocalizations.localizationsDelegates,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
                   supportedLocales: AppLocalizations.supportedLocales,
+                  builder: (context, child) {
+                    return MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler:
+                            TextScaler.linear(themeState.textScaleFactor),
+                      ),
+                      child: child!,
+                    );
+                  },
                 );
               },
             );

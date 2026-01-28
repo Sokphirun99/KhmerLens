@@ -230,12 +230,12 @@ class _HomeScreenState extends State<HomeScreen> {
             expandedHeight: 120,
             floating: true,
             pinned: true,
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 l10n.appTitle,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),

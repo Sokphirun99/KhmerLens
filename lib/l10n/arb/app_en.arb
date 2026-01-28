@@ -155,5 +155,9 @@
     "categoryInvoice": "Invoice",
     "categoryContract": "Contract",
     "print": "Print",
-    "documentPrefix": "Document"
+    "documentPrefix": "Document",
+    "textSize": "Text Size",
+    "textSizeSmall": "Small",
+    "textSizeMedium": "Medium",
+    "textSizeLarge": "Large"
 }

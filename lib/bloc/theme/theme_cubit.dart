@@ -16,6 +16,7 @@ class ThemeCubit extends Cubit<ThemeState> {
   }
 
   static const _themeKey = AppConstants.keyThemeMode;
+  static const _textScaleKey = 'text_scale_factor';
 
   /// Load saved theme preference
   Future<void> _loadTheme() async {
@@ -26,7 +27,14 @@ class ThemeCubit extends Cubit<ThemeState> {
         (e) => e.name == themeName,
         orElse: () => AppThemeMode.system,
       );
-      emit(ThemeState(mode: mode, isLoaded: true));
+
+      final textScale = prefs.getDouble(_textScaleKey) ?? 1.0;
+
+      emit(ThemeState(
+        mode: mode,
+        textScaleFactor: textScale,
+        isLoaded: true,
+      ));
     } catch (e) {
       // If SharedPreferences fails, use system theme as default
       if (kDebugMode) {
@@ -52,9 +60,23 @@ class ThemeCubit extends Cubit<ThemeState> {
 
   /// Toggle between light and dark (ignoring system)
   Future<void> toggleTheme() async {
-    final newMode =
-        state.mode == AppThemeMode.dark ? AppThemeMode.light : AppThemeMode.dark;
+    final newMode = state.mode == AppThemeMode.dark
+        ? AppThemeMode.light
+        : AppThemeMode.dark;
     await setThemeMode(newMode);
+  }
+
+  /// Set text scale factor
+  Future<void> setTextScale(double scale) async {
+    emit(state.copyWith(textScaleFactor: scale));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_textScaleKey, scale);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to save text scale preference: $e');
+      }
+    }
   }
 
   /// Get Flutter ThemeMode from AppThemeMode
@@ -73,19 +95,23 @@ class ThemeCubit extends Cubit<ThemeState> {
 /// Theme state
 class ThemeState {
   final AppThemeMode mode;
+  final double textScaleFactor;
   final bool isLoaded;
 
   const ThemeState({
     this.mode = AppThemeMode.system,
+    this.textScaleFactor = 1.0,
     this.isLoaded = false,
   });
 
   ThemeState copyWith({
     AppThemeMode? mode,
+    double? textScaleFactor,
     bool? isLoaded,
   }) {
     return ThemeState(
       mode: mode ?? this.mode,
+      textScaleFactor: textScaleFactor ?? this.textScaleFactor,
       isLoaded: isLoaded ?? this.isLoaded,
     );
   }
@@ -96,8 +122,10 @@ class ThemeState {
       other is ThemeState &&
           runtimeType == other.runtimeType &&
           mode == other.mode &&
+          textScaleFactor == other.textScaleFactor &&
           isLoaded == other.isLoaded;
 
   @override
-  int get hashCode => mode.hashCode ^ isLoaded.hashCode;
+  int get hashCode =>
+      mode.hashCode ^ textScaleFactor.hashCode ^ isLoaded.hashCode;
 }

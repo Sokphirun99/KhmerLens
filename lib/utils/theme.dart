@@ -51,17 +51,19 @@ class AppRadius {
 class AppShadows {
   static List<BoxShadow> get small => [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 4,
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 10,
           offset: const Offset(0, 2),
+          spreadRadius: 0,
         ),
       ];
 
   static List<BoxShadow> get medium => [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 8,
+          blurRadius: 20,
           offset: const Offset(0, 4),
+          spreadRadius: 0,
         ),
       ];
 
@@ -145,6 +147,8 @@ class AppTheme {
       seedColor: AppColors.primary,
       brightness: Brightness.dark,
       surface: AppColors.darkSurface,
+      onSurface: AppColors.lightSurface, // Force white text on dark surface
+      onSurfaceVariant: const Color(0xFFCAC4D0), // Light grey for variant text
     );
 
     return ThemeData(
@@ -175,7 +179,11 @@ class AppTheme {
   // Text theme with Roboto (English) and Siemreap (Khmer) font fallback
   static TextTheme _buildTextTheme(ColorScheme colorScheme) {
     // Use Roboto as the primary font for English/Latin characters
-    final baseTextTheme = GoogleFonts.robotoTextTheme();
+    // Use Roboto as the primary font for English/Latin characters
+    final baseTextTheme = GoogleFonts.robotoTextTheme().apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    );
 
     // Use Siemreap as fallback
     final khmerFontFamily = GoogleFonts.siemreap().fontFamily;
@@ -294,15 +302,14 @@ class AppTheme {
   }
 
   // Card theme
+  // Card theme
   static CardThemeData _buildCardTheme(ColorScheme colorScheme) {
     return CardThemeData(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.borderRadiusLg,
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          width: 1,
-        ),
+        // Removed border for cleaner look
       ),
       color: colorScheme.surface,
       surfaceTintColor: Colors.transparent,

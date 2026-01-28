@@ -390,4 +390,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get print => 'Print';
+
+  @override
+  String get textSize => 'Text Size';
+
+  @override
+  String get textSizeSmall => 'Small';
+
+  @override
+  String get textSizeMedium => 'Medium';
+
+  @override
+  String get textSizeLarge => 'Large';
 }

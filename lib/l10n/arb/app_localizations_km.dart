@@ -390,4 +390,16 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get print => 'បោះពុម្ព';
+
+  @override
+  String get textSize => 'ទំហំអក្សរ';
+
+  @override
+  String get textSizeSmall => 'តូច';
+
+  @override
+  String get textSizeMedium => 'មធ្យម';
+
+  @override
+  String get textSizeLarge => 'ធំ';
 }

@@ -155,5 +155,9 @@
     "categoryDriverLicense": "ប័ណ្ណបើកបរ",
     "categoryInvoice": "វិក្កយបត្រ",
     "categoryContract": "កិច្ចសន្យា",
-    "print": "បោះពុម្ព"
+    "print": "បោះពុម្ព",
+    "textSize": "ទំហំអក្សរ",
+    "textSizeSmall": "តូច",
+    "textSizeMedium": "មធ្យម",
+    "textSizeLarge": "ធំ"
 }
