@@ -284,7 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primaryContainer
+              ? colorScheme.primary
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: AppRadius.borderRadiusMd,
           border: Border.all(
@@ -299,7 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Icon(
               icon,
               color: isSelected
-                  ? colorScheme.primary
+                  ? colorScheme.onPrimary
                   : colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 4),
@@ -307,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: isSelected
-                        ? colorScheme.primary
+                        ? colorScheme.onPrimary
                         : colorScheme.onSurfaceVariant,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),

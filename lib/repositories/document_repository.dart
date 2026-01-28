@@ -8,8 +8,14 @@ import '../services/storage_service.dart';
 import '../utils/exceptions.dart';
 
 class DocumentRepository {
-  final DatabaseService _dbService = DatabaseService();
-  final StorageService _storageService = StorageService();
+  final DatabaseService _dbService;
+  final StorageService _storageService;
+
+  DocumentRepository({
+    DatabaseService? dbService,
+    StorageService? storageService,
+  })  : _dbService = dbService ?? DatabaseService(),
+        _storageService = storageService ?? StorageService();
 
   Future<List<Document>> getAllDocuments() async {
     try {
@@ -39,15 +45,20 @@ class DocumentRepository {
     }
   }
 
-  Future<String> createDocument(Document document, List<String> imagePaths) async {
+  Future<String> createDocument(
+      Document document, List<String> imagePaths) async {
+    // List to track saved images for rollback in case of failure
+    final savedPaths = <String>[];
+
     try {
-      debugPrint('DocumentRepository: Creating document with ${imagePaths.length} images');
+      debugPrint(
+          'DocumentRepository: Creating document with ${imagePaths.length} images');
 
       // Save all images to storage
-      final savedPaths = <String>[];
       for (int i = 0; i < imagePaths.length; i++) {
         final imagePath = imagePaths[i];
-        debugPrint('DocumentRepository: Saving image ${i + 1}/${imagePaths.length}: $imagePath');
+        debugPrint(
+            'DocumentRepository: Saving image ${i + 1}/${imagePaths.length}: $imagePath');
         final savedPath = await _storageService.saveImage(File(imagePath));
         debugPrint('DocumentRepository: Image saved to: $savedPath');
         savedPaths.add(savedPath);
@@ -68,11 +79,26 @@ class DocumentRepository {
 
       debugPrint('DocumentRepository: Inserting document into database');
       await _dbService.insertDocument(docToSave);
-      debugPrint('DocumentRepository: Document created successfully with ID: ${docToSave.id}');
+      debugPrint(
+          'DocumentRepository: Document created successfully with ID: ${docToSave.id}');
 
       return docToSave.id;
     } catch (e, stackTrace) {
       debugPrint('DocumentRepository: Error creating document: $e');
+
+      // CLEANUP: If we fail here, delete the images we just saved to avoid storage clutter
+      if (savedPaths.isNotEmpty) {
+        debugPrint('DocumentRepository: Cleaning up orphaned images...');
+        for (final path in savedPaths) {
+          try {
+            await _storageService.deleteImage(path);
+          } catch (cleanupError) {
+            debugPrint(
+                'DocumentRepository: Failed to delete orphaned image: $path');
+          }
+        }
+      }
+
       if (e is AppException) rethrow;
       throw DocumentException(
         'Failed to create document',
@@ -97,7 +123,8 @@ class DocumentRepository {
     }
   }
 
-  Future<void> addImagesToDocument(String documentId, List<String> newImagePaths) async {
+  Future<void> addImagesToDocument(
+      String documentId, List<String> newImagePaths) async {
     try {
       final document = await getDocument(documentId);
       if (document == null) {
@@ -131,7 +158,8 @@ class DocumentRepository {
     }
   }
 
-  Future<void> removeImageFromDocument(String documentId, String imagePath) async {
+  Future<void> removeImageFromDocument(
+      String documentId, String imagePath) async {
     try {
       final document = await getDocument(documentId);
       if (document == null) {
@@ -145,7 +173,8 @@ class DocumentRepository {
       await _storageService.deleteImage(imagePath);
 
       // Update document by removing the image path
-      final updatedImagePaths = document.imagePaths.where((path) => path != imagePath).toList();
+      final updatedImagePaths =
+          document.imagePaths.where((path) => path != imagePath).toList();
       final updatedDocument = document.copyWith(
         imagePaths: updatedImagePaths,
       );

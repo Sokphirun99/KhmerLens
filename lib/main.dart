@@ -52,16 +52,12 @@ void main() async {
         }
       }
 
-      // Initialize AdMob with error handling
-      try {
-        await AdService().initialize();
-      } catch (e, stackTrace) {
+      // Initialize AdMob (Non-blocking)
+      AdService().initialize().catchError((e) {
         if (kDebugMode) {
           debugPrint('AdService initialization failed: $e');
-          ErrorHandler.logError(e, stackTrace: stackTrace);
         }
-        // Continue running the app even if ads fail to initialize
-      }
+      });
 
       runApp(const MyApp());
     },

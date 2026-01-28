@@ -10,6 +10,16 @@ class DatabaseService {
 
   static Database? _database;
 
+  // CONSTANTS
+  static const String tableDocuments = 'documents';
+  static const String colId = 'id';
+  static const String colTitle = 'title';
+  static const String colImagePaths = 'imagePaths';
+  static const String colExtractedText = 'extractedText';
+  static const String colCreatedAt = 'createdAt';
+  static const String colExpiryDate = 'expiryDate';
+  static const String colMetadata = 'metadata';
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -39,21 +49,21 @@ class DatabaseService {
 
   Future<void> _onCreate(Database db, int version) async {
     try {
+      // Using constants in SQL creation string
       await db.execute('''
-        CREATE TABLE documents (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          imagePaths TEXT NOT NULL,
-          extractedText TEXT,
-          createdAt TEXT NOT NULL,
-          expiryDate TEXT,
-          metadata TEXT
+        CREATE TABLE $tableDocuments (
+          $colId TEXT PRIMARY KEY,
+          $colTitle TEXT NOT NULL,
+          $colImagePaths TEXT NOT NULL,
+          $colExtractedText TEXT,
+          $colCreatedAt TEXT NOT NULL,
+          $colExpiryDate TEXT,
+          $colMetadata TEXT
         )
       ''');
 
-      // Create indexes for faster queries
       await db.execute(
-          'CREATE INDEX idx_created_at ON documents(createdAt DESC)');
+          'CREATE INDEX idx_created_at ON $tableDocuments($colCreatedAt DESC)');
     } catch (e, stackTrace) {
       throw DatabaseException(
         'Failed to create database tables',
@@ -67,11 +77,11 @@ class DatabaseService {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     try {
       if (oldVersion < 2) {
-        // Migrate from imagePath (String) to imagePaths (JSON array)
-        // First, get all existing documents
+        // Migration logic...
+        // Note: Keeping raw strings here for the "old" table is usually safer
+        // to avoid accidental changes if constants change in the future.
         final existingDocs = await db.query('documents');
 
-        // Create new table with updated schema (without category)
         await db.execute('''
           CREATE TABLE documents_new (
             id TEXT PRIMARY KEY,
@@ -84,7 +94,6 @@ class DatabaseService {
           )
         ''');
 
-        // Migrate data: convert single imagePath to array [imagePath]
         for (var doc in existingDocs) {
           final imagePath = doc['imagePath'] as String?;
           final imagePaths = imagePath != null ? '["$imagePath"]' : '[]';
@@ -100,12 +109,10 @@ class DatabaseService {
           });
         }
 
-        // Drop old table and rename new table
         await db.execute('DROP TABLE documents');
-        await db.execute('ALTER TABLE documents_new RENAME TO documents');
-
-        // Recreate indexes
-        await db.execute('CREATE INDEX idx_created_at ON documents(createdAt DESC)');
+        await db.execute('ALTER TABLE documents_new RENAME TO $tableDocuments');
+        await db.execute(
+            'CREATE INDEX idx_created_at ON $tableDocuments($colCreatedAt DESC)');
       }
     } catch (e, stackTrace) {
       throw DatabaseException(
@@ -123,7 +130,7 @@ class DatabaseService {
     try {
       final db = await database;
       await db.insert(
-        'documents',
+        tableDocuments,
         document.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
@@ -139,14 +146,12 @@ class DatabaseService {
     }
   }
 
-  Future<List<Document>> getAllDocuments({
-    int? limit,
-  }) async {
+  Future<List<Document>> getAllDocuments({int? limit}) async {
     try {
       final db = await database;
       final maps = await db.query(
-        'documents',
-        orderBy: 'createdAt DESC',
+        tableDocuments,
+        orderBy: '$colCreatedAt DESC',
         limit: limit,
       );
 
@@ -166,8 +171,8 @@ class DatabaseService {
     try {
       final db = await database;
       final maps = await db.query(
-        'documents',
-        where: 'id = ?',
+        tableDocuments,
+        where: '$colId = ?',
         whereArgs: [id],
         limit: 1,
       );
@@ -189,9 +194,9 @@ class DatabaseService {
     try {
       final db = await database;
       return await db.update(
-        'documents',
+        tableDocuments,
         document.toMap(),
-        where: 'id = ?',
+        where: '$colId = ?',
         whereArgs: [document.id],
       );
     } catch (e, stackTrace) {
@@ -209,8 +214,8 @@ class DatabaseService {
     try {
       final db = await database;
       return await db.delete(
-        'documents',
-        where: 'id = ?',
+        tableDocuments,
+        where: '$colId = ?',
         whereArgs: [id],
       );
     } catch (e, stackTrace) {
@@ -228,10 +233,10 @@ class DatabaseService {
     try {
       final db = await database;
       final maps = await db.query(
-        'documents',
-        where: 'title LIKE ? OR extractedText LIKE ?',
+        tableDocuments,
+        where: '$colTitle LIKE ? OR $colExtractedText LIKE ?',
         whereArgs: ['%$query%', '%$query%'],
-        orderBy: 'createdAt DESC',
+        orderBy: '$colCreatedAt DESC',
       );
 
       return List.generate(maps.length, (i) => Document.fromMap(maps[i]));
@@ -250,7 +255,7 @@ class DatabaseService {
     try {
       final db = await database;
       final result = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM documents',
+        'SELECT COUNT(*) as count FROM $tableDocuments',
       );
       return Sqflite.firstIntValue(result) ?? 0;
     } catch (e, stackTrace) {
