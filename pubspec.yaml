@@ -26,7 +26,7 @@ dependencies:
   printing: ^5.11.1
 
   # AdMob
-  google_mobile_ads: ^4.0.0
+  google_mobile_ads: ^7.0.0
 
   # Modern UI
   flutter_staggered_grid_view: ^0.7.0
@@ -51,6 +51,8 @@ dependencies:
   permission_handler: ^12.0.1
   in_app_review: ^2.0.11
   firebase_core: ^4.4.0
+  firebase_crashlytics: ^5.0.7
+  firebase_analytics: ^12.1.1
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,14 +20,6 @@ import 'utils/error_handler.dart';
 import 'utils/theme.dart';
 
 void main() async {
-  // Catch Flutter framework errors
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    if (kDebugMode) {
-      ErrorHandler.logError(details.exception, stackTrace: details.stack);
-    }
-  };
-
   // Catch async errors not handled by Flutter framework
   runZonedGuarded(
     () async {
@@ -41,6 +34,17 @@ void main() async {
       // Initialize Firebase
       try {
         await Firebase.initializeApp();
+
+        // Pass all uncaught "fatal" errors from the framework to Crashlytics
+        if (kReleaseMode) {
+          FlutterError.onError =
+              FirebaseCrashlytics.instance.recordFlutterFatalError;
+        } else {
+          FlutterError.onError = (FlutterErrorDetails details) {
+            FlutterError.presentError(details);
+            ErrorHandler.logError(details.exception, stackTrace: details.stack);
+          };
+        }
       } catch (e, stackTrace) {
         if (kDebugMode) {
           debugPrint('Firebase initialization failed: $e');
@@ -62,7 +66,10 @@ void main() async {
       runApp(const MyApp());
     },
     (error, stackTrace) {
-      if (kDebugMode) {
+      if (kReleaseMode) {
+        FirebaseCrashlytics.instance
+            .recordError(error, stackTrace, fatal: true);
+      } else {
         debugPrint('Unhandled error: $error');
         ErrorHandler.logError(error, stackTrace: stackTrace);
       }
