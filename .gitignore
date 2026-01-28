@@ -56,6 +56,16 @@ api_keys.json
 android/local.properties
 **/local.properties
 
+# Android Signing Keys & Configs
+*.jks
+*.keystore
+key.properties
+
+# iOS Signing
+*.p12
+*.mobileprovision
+*.pem
+
 # Firebase
 **/google-services.json
 **/GoogleService-Info.plist
