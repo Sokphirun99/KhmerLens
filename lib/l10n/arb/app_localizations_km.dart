@@ -65,7 +65,7 @@ class AppLocalizationsKm extends AppLocalizations {
   String get appearance => 'រូបរាង';
 
   @override
-  String get displayMode => 'រូបភាពបង្ហាញ';
+  String get displayMode => 'របៀបបង្ហាញ';
 
   @override
   String get light => 'ភ្លឺ';
@@ -77,7 +77,7 @@ class AppLocalizationsKm extends AppLocalizations {
   String get system => 'ប្រព័ន្ធ';
 
   @override
-  String get chooseDisplayMode => 'ជ្រើសរើសរូបភាពបង្ហាញ';
+  String get chooseDisplayMode => 'ជ្រើសរើសរបៀបបង្ហាញ';
 
   @override
   String get useDeviceSettings => 'ប្រើការកំណត់ពីឧបករណ៍';
@@ -269,7 +269,7 @@ class AppLocalizationsKm extends AppLocalizations {
   String get add => 'បន្ថែម';
 
   @override
-  String get noCameraFound => 'No camera found';
+  String get noCameraFound => 'រកមិនឃើញកាមេរ៉ា';
 
   @override
   String get cameraInitError => 'មិនអាចចាប់ផ្តើមកាមេរ៉ាបានទេ';
@@ -390,4 +390,16 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get print => 'បោះពុម្ព';
+
+  @override
+  String get textSize => 'ទំហំអក្សរ';
+
+  @override
+  String get textSizeSmall => 'តូច';
+
+  @override
+  String get textSizeMedium => 'មធ្យម';
+
+  @override
+  String get textSizeLarge => 'ធំ';
 }

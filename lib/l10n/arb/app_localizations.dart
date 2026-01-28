@@ -209,7 +209,7 @@ abstract class AppLocalizations {
   /// No description provided for @displayMode.
   ///
   /// In km, this message translates to:
-  /// **'រូបភាពបង្ហាញ'**
+  /// **'របៀបបង្ហាញ'**
   String get displayMode;
 
   /// No description provided for @light.
@@ -233,7 +233,7 @@ abstract class AppLocalizations {
   /// No description provided for @chooseDisplayMode.
   ///
   /// In km, this message translates to:
-  /// **'ជ្រើសរើសរូបភាពបង្ហាញ'**
+  /// **'ជ្រើសរើសរបៀបបង្ហាញ'**
   String get chooseDisplayMode;
 
   /// No description provided for @useDeviceSettings.
@@ -611,7 +611,7 @@ abstract class AppLocalizations {
   /// No description provided for @noCameraFound.
   ///
   /// In km, this message translates to:
-  /// **'No camera found'**
+  /// **'រកមិនឃើញកាមេរ៉ា'**
   String get noCameraFound;
 
   /// No description provided for @cameraInitError.
@@ -841,6 +841,30 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'បោះពុម្ព'**
   String get print;
+
+  /// No description provided for @textSize.
+  ///
+  /// In km, this message translates to:
+  /// **'ទំហំអក្សរ'**
+  String get textSize;
+
+  /// No description provided for @textSizeSmall.
+  ///
+  /// In km, this message translates to:
+  /// **'តូច'**
+  String get textSizeSmall;
+
+  /// No description provided for @textSizeMedium.
+  ///
+  /// In km, this message translates to:
+  /// **'មធ្យម'**
+  String get textSizeMedium;
+
+  /// No description provided for @textSizeLarge.
+  ///
+  /// In km, this message translates to:
+  /// **'ធំ'**
+  String get textSizeLarge;
 }
 
 class _AppLocalizationsDelegate

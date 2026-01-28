@@ -107,29 +107,49 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          style: const TextStyle(fontSize: 16),
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.searchDocumentsHint,
-            border: InputBorder.none,
-            hintStyle: TextStyle(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.5),
-            ),
+        titleSpacing: 16,
+        title: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(24),
           ),
-          onChanged: _onSearchChanged,
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            style: const TextStyle(fontSize: 16),
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.searchDocumentsHint,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 0), // Centered vertically
+              prefixIcon: Icon(
+                Icons.search,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              hintStyle: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
+              ),
+            ),
+            onChanged: _onSearchChanged,
+          ),
         ),
         actions: [
           BlocBuilder<SearchBloc, SearchState>(
             builder: (context, state) {
               if (_searchController.text.isNotEmpty) {
-                return IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: _clearSearch,
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: _clearSearch,
+                  ),
                 );
               }
               return const SizedBox.shrink();

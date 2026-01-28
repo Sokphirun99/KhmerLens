@@ -1,4 +1,5 @@
 // utils/error_handler.dart
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'exceptions.dart';
 
@@ -116,10 +117,16 @@ class ErrorHandler {
       debugPrint('═══════════════════════════════════════');
     }
 
-    // TODO: Send to analytics service (Firebase Crashlytics, Sentry, etc.)
-    // if (kReleaseMode) {
-    //   FirebaseCrashlytics.instance.recordError(error, stackTrace);
-    // }
+    // Send to Firebase Crashlytics in Release mode
+    try {
+      if (kReleaseMode) {
+        FirebaseCrashlytics.instance.recordError(error, stackTrace);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to report error to Crashlytics: $e');
+      }
+    }
   }
 
   // Private helper methods

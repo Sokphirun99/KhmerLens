@@ -57,7 +57,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _deleteDocument() async {
+  Future<void> _deleteDocument(AppLocalizations l10n) async {
     final confirmed = await DestructiveActionSheet.show(
       context,
       title: l10n.deleteDocument,
@@ -97,7 +97,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     return totalSize;
   }
 
-  Future<void> _shareDocument() async {
+  Future<void> _shareDocument(AppLocalizations l10n) async {
     try {
       _showSnackBar(l10n.preparingToShare);
       await _exportService.shareDocument(_document.id);
@@ -109,7 +109,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     }
   }
 
-  Future<void> _exportPdf() async {
+  Future<void> _exportPdf(AppLocalizations l10n) async {
     try {
       // Use printDocument to allow full PDF customization (Paper size, Layout, etc.)
       await _exportService.printDocument(_document.id);
@@ -276,9 +276,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          scrolledUnderElevation: 0,
           title: Text(_document.title),
           actions: [
             // Add images button
@@ -334,13 +335,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               onSelected: (value) async {
                 switch (value) {
                   case 'share':
-                    await _shareDocument();
+                    await _shareDocument(l10n);
                     break;
                   case 'export_pdf':
-                    await _exportPdf();
+                    await _exportPdf(l10n);
                     break;
                   case 'delete':
-                    _deleteDocument();
+                    _deleteDocument(l10n);
                     break;
                 }
               },
@@ -543,10 +544,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          Theme.of(context).shadowColor.withValues(alpha: 0.1),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
-                      offset: const Offset(0, -2),
+                      offset: const Offset(0, -5),
                     ),
                   ],
                 ),
@@ -771,23 +771,29 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
           ),
           // Header
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   l10n.manageImages,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
                       ),
                 ),
                 const Spacer(),
-                FilledButton.icon(
+                FilledButton.tonalIcon(
                   onPressed: () {
                     Navigator.pop(context);
                     widget.onAddMore();
                   },
-                  icon: const Icon(Icons.add, size: 18),
+                  icon:
+                      const Icon(Icons.add_photo_alternate_outlined, size: 18),
                   label: Text(l10n.add),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
                 ),
               ],
             ),
@@ -822,9 +828,40 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
     );
   }
 
+  Future<void> _confirmAndDelete(String imagePath) async {
+    final confirmed = await DestructiveActionSheet.show(
+      context,
+      title: l10n.deleteImage,
+      message: l10n.deleteImageConfirmation,
+      confirmLabel: l10n.delete,
+      icon: Icons.delete_forever,
+    );
+
+    if (confirmed && mounted) {
+      // Optimistically remove from local state
+      setState(() {
+        _imagePaths.remove(imagePath);
+      });
+
+      // Call parent handler
+      widget.onDelete(imagePath);
+    }
+  }
+
   Widget _buildImageCard(String imagePath, int index) {
-    return Card(
+    return Container(
       key: ValueKey(imagePath),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
@@ -834,25 +871,47 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
             File(imagePath),
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              return Center(
                 child: Icon(
-                  Icons.broken_image,
+                  Icons.broken_image_outlined,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               );
             },
           ),
-          // Overlay with index
-          Positioned(
-            top: 4,
-            left: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+
+          // Gradient Overlay for visibility
+          Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.3),
+                  ],
+                ),
               ),
+            ),
+          ),
+
+          // Index Badge
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.5), width: 1),
+              ),
+              alignment: Alignment.center,
               child: Text(
                 '${index + 1}',
                 style: const TextStyle(
@@ -863,36 +922,55 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
               ),
             ),
           ),
+
           // Delete button
           if (_imagePaths.length > 1)
             Positioned(
               top: 4,
               right: 4,
-              child: IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.error,
-                    shape: BoxShape.circle,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _confirmAndDelete(imagePath),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.error,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                   ),
-                  child: const Icon(Icons.close, size: 16, color: Colors.white),
                 ),
-                onPressed: () {
-                  widget.onDelete(imagePath);
-                  Navigator.pop(context);
-                },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
               ),
             ),
+
           // Drag handle icon
           Positioned(
-            bottom: 4,
-            right: 4,
+            bottom: 8,
+            right: 8,
             child: Icon(
               Icons.drag_indicator,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withValues(alpha: 0.9),
               size: 20,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 2,
+                ),
+              ],
             ),
           ),
         ],
