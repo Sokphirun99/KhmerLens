@@ -1,6 +1,7 @@
 // bloc/document/document_bloc.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../models/document.dart';
 import '../../repositories/document_repository.dart';
 import '../../utils/error_handler.dart';
 import 'document_event.dart';
@@ -44,25 +45,36 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentCreating());
 
     try {
-      debugPrint('DocumentBloc: Creating document with ${event.imagePaths.length} images');
-      debugPrint('DocumentBloc: Image paths: ${event.imagePaths}');
+      debugPrint(
+          'DocumentBloc: Creating document with ${event.imagePaths.length} images');
 
       await repository.createDocument(event.document, event.imagePaths);
 
-      // Fetch the created document from repository to get the saved image paths
+      // Fetch the created document from repository to get the correct saved image paths
       final createdDocument = await repository.getDocument(event.document.id);
 
-      debugPrint('DocumentBloc: Document created with ID: ${event.document.id}');
-      debugPrint('DocumentBloc: Created document has ${createdDocument?.imagePaths.length ?? 0} images');
+      debugPrint(
+          'DocumentBloc: Document created with ID: ${event.document.id}');
 
+      // Emit creation success
       if (createdDocument != null) {
         emit(DocumentCreated(createdDocument));
       } else {
         emit(DocumentCreated(event.document));
       }
 
-      // Reload documents after creating
-      add(const RefreshDocuments());
+      // OPTIMIZATION: Manually update the list instead of reloading from DB
+      // Check if we have the previous list in memory
+      if (state is DocumentLoaded && createdDocument != null) {
+        final currentDocuments = (state as DocumentLoaded).documents;
+        final updatedDocuments = List<Document>.from(currentDocuments)
+          ..insert(0, createdDocument); // Insert new doc at the top
+
+        emit(DocumentLoaded(documents: updatedDocuments));
+      } else {
+        // Fallback: reload everything if we weren't in a loaded state
+        add(const RefreshDocuments());
+      }
     } catch (e, stackTrace) {
       debugPrint('DocumentBloc: Error creating document: $e');
       ErrorHandler.logError(e, stackTrace: stackTrace);
@@ -146,7 +158,8 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentUpdating());
 
     try {
-      await repository.removeImageFromDocument(event.documentId, event.imagePath);
+      await repository.removeImageFromDocument(
+          event.documentId, event.imagePath);
 
       // Reload documents after removing image
       add(const RefreshDocuments());

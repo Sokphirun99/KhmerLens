@@ -53,7 +53,6 @@ android {
             isShrinkResources = false
             // Faster debug builds
             isDebuggable = true
-            applicationIdSuffix = ".debug"
             // Disable unnecessary checks for faster builds
             isTestCoverageEnabled = false
             // Use faster signing

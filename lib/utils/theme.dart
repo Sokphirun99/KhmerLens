@@ -1,529 +1,198 @@
-// utils/theme.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Design spacing constants
+class AppTheme {
+  // --- COLOR PALETTE (The "Cozy Paper" Look) ---
+
+  // Backgrounds
+  static const Color _paperWhite = Color(0xFFF9F7F2); // Warm, like old paper
+  static const Color _pureWhite = Color(0xFFFFFFFF);
+  static const Color _darkPaper = Color(0xFF1E1E1E); // Soft black for dark mode
+
+  // Primary Accents (Sage Green & Sunset)
+  static const Color _sageGreen = Color(0xFF7FA087); // Calming primary
+  static const Color _sageDark = Color(0xFF5D7A63); // For dark mode
+  static const Color _sunsetOrange = Color(0xFFE09F7D); // Secondary accents
+
+  // Text Colors (Ink) - Maximum Contrast
+  static const Color _inkBlack = Color(0xFF1A1C1E); // Almost Pure Black
+  static const Color _inkGrey = Color(0xFF444746); // Deep Grey
+  static const Color _inkLight = Color(0xFF747775);
+
+  // Status Colors
+  static const Color _errorRed = Color(0xFFBA1A1A); // Darker Error Red
+  static const Color _successGreen = Color(0xFF146C2E);
+
+  // --- LIGHT THEME ---
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: _sageGreen,
+      scaffoldBackgroundColor: _paperWhite,
+
+      // Typography
+      // Primary: Roboto (English/Latin)
+      // Fallback: Siemreap (Khmer) - User requested specific combo
+      textTheme: GoogleFonts.robotoTextTheme().apply(
+        bodyColor: _inkBlack,
+        displayColor: _inkBlack,
+        fontFamilyFallback: [GoogleFonts.siemreap().fontFamily ?? 'Siemreap'],
+      ),
+
+      // Color Scheme
+      colorScheme: const ColorScheme.light(
+        primary: _sageGreen,
+        onPrimary: Colors.white,
+        secondary: _sunsetOrange,
+        onSecondary: Colors.white,
+        surface: _pureWhite,
+        onSurface: _inkBlack,
+        onSurfaceVariant: _inkGrey,
+        error: _errorRed,
+        outline: _inkLight,
+      ),
+
+      // App Bar
+      appBarTheme: AppBarTheme(
+        backgroundColor: _paperWhite,
+        foregroundColor: _inkBlack,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.roboto(
+          color: _inkBlack,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          // Fallback for Khmer title text
+          textStyle: TextStyle(
+            fontFamilyFallback: [
+              GoogleFonts.siemreap().fontFamily ?? 'Siemreap'
+            ],
+          ),
+        ),
+      ),
+
+      // Cards (The "Physical" feel)
+      cardTheme: CardThemeData(
+        color: _pureWhite,
+        elevation: 2,
+        shadowColor: _inkBlack.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16), // Softer corners
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      ),
+
+      // Floating Action Button
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: _sageGreen,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+      ),
+
+      // Inputs
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: _pureWhite,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.transparent),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _sageGreen, width: 2),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+
+      // Buttons
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _sageGreen,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- DARK THEME ---
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: _sageDark,
+      scaffoldBackgroundColor: const Color(0xFF121212), // Deep dark
+
+      textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme).apply(
+        fontFamilyFallback: [GoogleFonts.siemreap().fontFamily ?? 'Siemreap'],
+      ),
+
+      colorScheme: const ColorScheme.dark(
+        primary: _sageDark,
+        onPrimary: Colors.white,
+        secondary: _sunsetOrange,
+        surface: _darkPaper,
+        onSurface: Color(0xFFE3E3E3), // Brighter white for dark mode
+        onSurfaceVariant: Color(0xFFC4C7C5), // Lighter grey for subtitles
+        outline: _inkGrey,
+      ),
+
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF121212),
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+
+      cardTheme: CardThemeData(
+        color: _darkPaper,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+              color: _inkGrey.withValues(
+                  alpha: 0.2)), // Subtle border in dark mode
+        ),
+      ),
+
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: _sageDark,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+}
+
+// RESTORED HELPERS
 class AppSpacing {
-  static const double xs = 4.0;
   static const double sm = 8.0;
   static const double md = 16.0;
   static const double lg = 24.0;
-  static const double xl = 32.0;
   static const double xxl = 48.0;
 
-  // Padding presets
-  static const EdgeInsets paddingXs = EdgeInsets.all(xs);
-  static const EdgeInsets paddingSm = EdgeInsets.all(sm);
   static const EdgeInsets paddingMd = EdgeInsets.all(md);
-  static const EdgeInsets paddingLg = EdgeInsets.all(lg);
-
-  // Horizontal padding
-  static const EdgeInsets paddingHorizontalMd =
-      EdgeInsets.symmetric(horizontal: md);
-  static const EdgeInsets paddingHorizontalLg =
-      EdgeInsets.symmetric(horizontal: lg);
-
-  // Card/Screen padding
-  static const EdgeInsets screenPadding =
-      EdgeInsets.symmetric(horizontal: md, vertical: sm);
-  static const EdgeInsets cardPadding = EdgeInsets.all(md);
-  static const EdgeInsets listItemPadding =
-      EdgeInsets.symmetric(horizontal: md, vertical: sm);
 }
 
-/// Design radius constants
 class AppRadius {
-  static const double xs = 4.0;
-  static const double sm = 8.0;
-  static const double md = 12.0;
-  static const double lg = 16.0;
-  static const double xl = 24.0;
-  static const double full = 999.0;
-
-  static BorderRadius get borderRadiusXs => BorderRadius.circular(xs);
-  static BorderRadius get borderRadiusSm => BorderRadius.circular(sm);
-  static BorderRadius get borderRadiusMd => BorderRadius.circular(md);
-  static BorderRadius get borderRadiusLg => BorderRadius.circular(lg);
-  static BorderRadius get borderRadiusXl => BorderRadius.circular(xl);
-}
-
-/// Design shadow constants
-class AppShadows {
-  static List<BoxShadow> get small => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 10,
-          offset: const Offset(0, 2),
-          spreadRadius: 0,
-        ),
-      ];
-
-  static List<BoxShadow> get medium => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-          spreadRadius: 0,
-        ),
-      ];
-
-  static List<BoxShadow> get large => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.1),
-          blurRadius: 16,
-          offset: const Offset(0, 8),
-        ),
-      ];
-}
-
-/// App color palette
-class AppColors {
-  // Brand colors
-  static const Color primary = Color(0xFF2196F3);
-  static const Color primaryDark = Color(0xFF1976D2);
-  static const Color primaryLight = Color(0xFFBBDEFB);
-
-  // Semantic colors
-  static const Color success = Color(0xFF4CAF50);
-  static const Color warning = Color(0xFFFF9800);
-  static const Color error = Color(0xFFF44336);
-  static const Color info = Color(0xFF2196F3);
-
-  // Category colors
-  static const Color categoryBirth = Color(0xFFE91E63);
-  static const Color categoryID = Color(0xFF2196F3);
-  static const Color categoryFamily = Color(0xFF4CAF50);
-  static const Color categoryMarriage = Color(0xFFF44336);
-  static const Color categoryOther = Color(0xFFFF9800);
-
-  // Light theme colors
-  static const Color lightBackground = Color(0xFFFAFAFA);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceVariant = Color(0xFFF5F5F5);
-
-  // Dark theme colors
-  static const Color darkBackground = Color(0xFF121212);
-  static const Color darkSurface = Color(0xFF1E1E1E);
-  static const Color darkSurfaceVariant = Color(0xFF2C2C2C);
-}
-
-/// App theme configuration
-class AppTheme {
-  // Light theme
-  static ThemeData get lightTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-      surface: AppColors.lightSurface,
-    );
-
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.lightBackground,
-      textTheme: _buildTextTheme(colorScheme),
-      cardTheme: _buildCardTheme(colorScheme),
-      appBarTheme: _buildAppBarTheme(colorScheme),
-      floatingActionButtonTheme: _buildFabTheme(colorScheme),
-      elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
-      filledButtonTheme: _buildFilledButtonTheme(colorScheme),
-      outlinedButtonTheme: _buildOutlinedButtonTheme(colorScheme),
-      textButtonTheme: _buildTextButtonTheme(colorScheme),
-      inputDecorationTheme: _buildInputTheme(colorScheme),
-      chipTheme: _buildChipTheme(colorScheme),
-      dialogTheme: _buildDialogTheme(colorScheme),
-      snackBarTheme: _buildSnackBarTheme(colorScheme),
-      bottomSheetTheme: _buildBottomSheetTheme(colorScheme),
-      dividerTheme: const DividerThemeData(
-        thickness: 1,
-        space: 1,
-      ),
-    );
-  }
-
-  // Dark theme
-  static ThemeData get darkTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.dark,
-      surface: AppColors.darkSurface,
-      onSurface: AppColors.lightSurface, // Force white text on dark surface
-      onSurfaceVariant: const Color(0xFFCAC4D0), // Light grey for variant text
-    );
-
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.darkBackground,
-      textTheme: _buildTextTheme(colorScheme),
-      cardTheme: _buildCardTheme(colorScheme),
-      appBarTheme: _buildAppBarTheme(colorScheme),
-      floatingActionButtonTheme: _buildFabTheme(colorScheme),
-      elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
-      filledButtonTheme: _buildFilledButtonTheme(colorScheme),
-      outlinedButtonTheme: _buildOutlinedButtonTheme(colorScheme),
-      textButtonTheme: _buildTextButtonTheme(colorScheme),
-      inputDecorationTheme: _buildInputTheme(colorScheme),
-      chipTheme: _buildChipTheme(colorScheme),
-      dialogTheme: _buildDialogTheme(colorScheme),
-      snackBarTheme: _buildSnackBarTheme(colorScheme),
-      bottomSheetTheme: _buildBottomSheetTheme(colorScheme),
-      dividerTheme: DividerThemeData(
-        thickness: 1,
-        space: 1,
-        color: colorScheme.outlineVariant,
-      ),
-    );
-  }
-
-  // Text theme with Roboto (English) and Siemreap (Khmer) font fallback
-  static TextTheme _buildTextTheme(ColorScheme colorScheme) {
-    // Use Roboto as the primary font for English/Latin characters
-    // Use Roboto as the primary font for English/Latin characters
-    final baseTextTheme = GoogleFonts.robotoTextTheme().apply(
-      bodyColor: colorScheme.onSurface,
-      displayColor: colorScheme.onSurface,
-    );
-
-    // Use Siemreap as fallback
-    final khmerFontFamily = GoogleFonts.siemreap().fontFamily;
-    final fallbacks = khmerFontFamily != null ? [khmerFontFamily] : null;
-
-    return baseTextTheme.copyWith(
-      // Display styles
-      displayLarge: baseTextTheme.displayLarge?.copyWith(
-        fontSize: 57,
-        fontWeight: FontWeight.w400,
-        letterSpacing: -0.25,
-        height: 1.12,
-        fontFamilyFallback: fallbacks,
-      ),
-      displayMedium: baseTextTheme.displayMedium?.copyWith(
-        fontSize: 45,
-        fontWeight: FontWeight.w400,
-        height: 1.16,
-        fontFamilyFallback: fallbacks,
-      ),
-      displaySmall: baseTextTheme.displaySmall?.copyWith(
-        fontSize: 36,
-        fontWeight: FontWeight.w400,
-        height: 1.22,
-        fontFamilyFallback: fallbacks,
-      ),
-
-      // Headline styles
-      headlineLarge: baseTextTheme.headlineLarge?.copyWith(
-        fontSize: 32,
-        fontWeight: FontWeight.w600,
-        height: 1.25,
-        fontFamilyFallback: fallbacks,
-      ),
-      headlineMedium: baseTextTheme.headlineMedium?.copyWith(
-        fontSize: 28,
-        fontWeight: FontWeight.w600,
-        height: 1.29,
-        fontFamilyFallback: fallbacks,
-      ),
-      headlineSmall: baseTextTheme.headlineSmall?.copyWith(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        height: 1.33,
-        fontFamilyFallback: fallbacks,
-      ),
-
-      // Title styles
-      titleLarge: baseTextTheme.titleLarge?.copyWith(
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        height: 1.27,
-        fontFamilyFallback: fallbacks,
-      ),
-      titleMedium: baseTextTheme.titleMedium?.copyWith(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.15,
-        height: 1.5,
-        fontFamilyFallback: fallbacks,
-      ),
-      titleSmall: baseTextTheme.titleSmall?.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
-        height: 1.43,
-        fontFamilyFallback: fallbacks,
-      ),
-
-      // Body styles
-      bodyLarge: baseTextTheme.bodyLarge?.copyWith(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.5,
-        height: 1.5,
-        fontFamilyFallback: fallbacks,
-      ),
-      bodyMedium: baseTextTheme.bodyMedium?.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.25,
-        height: 1.43,
-        fontFamilyFallback: fallbacks,
-      ),
-      bodySmall: baseTextTheme.bodySmall?.copyWith(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0.4,
-        height: 1.33,
-        fontFamilyFallback: fallbacks,
-      ),
-
-      // Label styles
-      labelLarge: baseTextTheme.labelLarge?.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.1,
-        height: 1.43,
-        fontFamilyFallback: fallbacks,
-      ),
-      labelMedium: baseTextTheme.labelMedium?.copyWith(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.5,
-        height: 1.33,
-        fontFamilyFallback: fallbacks,
-      ),
-      labelSmall: baseTextTheme.labelSmall?.copyWith(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.5,
-        height: 1.45,
-        fontFamilyFallback: fallbacks,
-      ),
-    );
-  }
-
-  // Card theme
-  // Card theme
-  static CardThemeData _buildCardTheme(ColorScheme colorScheme) {
-    return CardThemeData(
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderRadiusLg,
-        // Removed border for cleaner look
-      ),
-      color: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      margin: EdgeInsets.zero,
-    );
-  }
-
-  // AppBar theme
-  static AppBarTheme _buildAppBarTheme(ColorScheme colorScheme) {
-    return AppBarTheme(
-      centerTitle: false,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-      backgroundColor: colorScheme.surface,
-      foregroundColor: colorScheme.onSurface,
-      surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.notoSansKhmer(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-    );
-  }
-
-  // FAB theme
-  static FloatingActionButtonThemeData _buildFabTheme(ColorScheme colorScheme) {
-    return FloatingActionButtonThemeData(
-      elevation: 2,
-      highlightElevation: 4,
-      backgroundColor: colorScheme.primaryContainer,
-      foregroundColor: colorScheme.onPrimaryContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderRadiusLg,
-      ),
-    );
-  }
-
-  // Elevated button theme
-  static ElevatedButtonThemeData _buildElevatedButtonTheme(
-      ColorScheme colorScheme) {
-    return ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        elevation: 1,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.borderRadiusMd,
-        ),
-        textStyle: GoogleFonts.notoSansKhmer(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  // Filled button theme
-  static FilledButtonThemeData _buildFilledButtonTheme(
-      ColorScheme colorScheme) {
-    return FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.borderRadiusMd,
-        ),
-        textStyle: GoogleFonts.notoSansKhmer(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  // Outlined button theme
-  static OutlinedButtonThemeData _buildOutlinedButtonTheme(
-      ColorScheme colorScheme) {
-    return OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.borderRadiusMd,
-        ),
-        side: BorderSide(color: colorScheme.outline),
-        textStyle: GoogleFonts.notoSansKhmer(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  // Text button theme
-  static TextButtonThemeData _buildTextButtonTheme(ColorScheme colorScheme) {
-    return TextButtonThemeData(
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.borderRadiusSm,
-        ),
-        textStyle: GoogleFonts.notoSansKhmer(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  // Input decoration theme
-  static InputDecorationTheme _buildInputTheme(ColorScheme colorScheme) {
-    return InputDecorationTheme(
-      filled: true,
-      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: AppRadius.borderRadiusMd,
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: AppRadius.borderRadiusMd,
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: AppRadius.borderRadiusMd,
-        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: AppRadius.borderRadiusMd,
-        borderSide: BorderSide(color: colorScheme.error),
-      ),
-      hintStyle: GoogleFonts.notoSansKhmer(
-        color: colorScheme.onSurfaceVariant,
-        fontSize: 14,
-      ),
-    );
-  }
-
-  // Chip theme
-  static ChipThemeData _buildChipTheme(ColorScheme colorScheme) {
-    return ChipThemeData(
-      elevation: 0,
-      pressElevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderRadiusMd,
-      ),
-      side: BorderSide(
-        color: colorScheme.outlineVariant,
-      ),
-      backgroundColor: colorScheme.surface,
-      selectedColor: colorScheme.primaryContainer,
-      checkmarkColor: colorScheme.primary,
-      labelStyle: GoogleFonts.notoSansKhmer(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: colorScheme.onSurface,
-      ),
-      secondaryLabelStyle: GoogleFonts.notoSansKhmer(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: colorScheme.onPrimaryContainer,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    );
-  }
-
-  // Dialog theme
-  static DialogThemeData _buildDialogTheme(ColorScheme colorScheme) {
-    return DialogThemeData(
-      elevation: 3,
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderRadiusXl,
-      ),
-      titleTextStyle: GoogleFonts.notoSansKhmer(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
-      contentTextStyle: GoogleFonts.notoSansKhmer(
-        fontSize: 14,
-        color: colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-
-  // SnackBar theme
-  static SnackBarThemeData _buildSnackBarTheme(ColorScheme colorScheme) {
-    return SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: colorScheme.inverseSurface,
-      contentTextStyle: GoogleFonts.notoSansKhmer(
-        fontSize: 14,
-        color: colorScheme.onInverseSurface,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.borderRadiusMd,
-      ),
-      elevation: 4,
-    );
-  }
-
-  // Bottom sheet theme
-  static BottomSheetThemeData _buildBottomSheetTheme(ColorScheme colorScheme) {
-    return BottomSheetThemeData(
-      backgroundColor: colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
-      ),
-      dragHandleColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-      dragHandleSize: const Size(32, 4),
-      showDragHandle: true,
-    );
-  }
+  static final BorderRadius borderRadiusXs = BorderRadius.circular(4.0);
+  static final BorderRadius borderRadiusSm = BorderRadius.circular(8.0);
+  static final BorderRadius borderRadiusMd = BorderRadius.circular(12.0);
+  static final BorderRadius borderRadiusLg = BorderRadius.circular(16.0);
+  static final BorderRadius borderRadiusXl = BorderRadius.circular(24.0);
 }
