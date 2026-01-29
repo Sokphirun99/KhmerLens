@@ -52,6 +52,10 @@ app.*.map.json
 secrets.json
 api_keys.json
 
+# Configuration files with sensitive IDs and API keys
+lib/config/
+
+
 # Android local properties
 android/local.properties
 **/local.properties

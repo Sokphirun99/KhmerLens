@@ -1,4 +1,5 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../config/ad_config.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();
@@ -19,7 +20,7 @@ class AdService {
   BannerAd createBannerAd() {
     return BannerAd(
       size: AdSize.banner,
-      adUnitId: '<YOUR-BANNER-AD-UNIT-ID>',
+      adUnitId: AdConfig.bannerAdUnitId,
       listener: const BannerAdListener(),
       request: const AdRequest(),
     );
@@ -28,7 +29,7 @@ class AdService {
   /// Load an interstitial ad for later showing.
   Future<void> loadInterstitialAd() async {
     await InterstitialAd.load(
-      adUnitId: '<YOUR-INTERSTITIAL-AD-UNIT-ID>',
+      adUnitId: AdConfig.interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {

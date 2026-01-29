@@ -34,6 +34,7 @@ class DocumentDetailScreen extends StatefulWidget {
 class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   final ExportService _exportService = ExportService();
   late PageController _pageController;
+  final GlobalKey _menuKey = GlobalKey();
   int _currentImageIndex = 0;
 
   // Track current document state (can be updated when images are added/removed)
@@ -100,7 +101,19 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   Future<void> _shareDocument(AppLocalizations l10n) async {
     try {
       _showSnackBar(l10n.preparingToShare);
-      await _exportService.shareDocument(_document.id);
+
+      // Calculate share origin for iPad
+      Rect? shareOrigin;
+      final box = _menuKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box != null) {
+        final position = box.localToGlobal(Offset.zero);
+        shareOrigin = position & box.size;
+      }
+
+      await _exportService.shareDocument(
+        _document.id,
+        sharePositionOrigin: shareOrigin,
+      );
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       if (mounted) {
@@ -296,6 +309,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 tooltip: l10n.manageImages,
               ),
             PopupMenuButton<String>(
+              key: _menuKey,
               icon: const Icon(Icons.more_vert),
               itemBuilder: (context) => [
                 PopupMenuItem(

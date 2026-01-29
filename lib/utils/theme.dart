@@ -46,6 +46,8 @@ class AppTheme {
         onPrimary: Colors.white,
         secondary: _sunsetOrange,
         onSecondary: Colors.white,
+        tertiary: _successGreen,
+        onTertiary: Colors.white,
         surface: _pureWhite,
         onSurface: _inkBlack,
         onSurfaceVariant: _inkGrey,
@@ -148,6 +150,8 @@ class AppTheme {
         primary: _sageDark,
         onPrimary: Colors.white,
         secondary: _sunsetOrange,
+        tertiary: _successGreen,
+        onTertiary: Colors.white,
         surface: _darkPaper,
         onSurface: Color(0xFFE3E3E3), // Brighter white for dark mode
         onSurfaceVariant: Color(0xFFC4C7C5), // Lighter grey for subtitles
