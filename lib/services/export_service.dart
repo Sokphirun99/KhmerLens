@@ -41,7 +41,8 @@ class ExportService {
   }
 
   /// Export selected documents to a single PDF file and share it.
-  Future<void> exportToPdf(List<String> documentIds) async {
+  Future<void> exportToPdf(List<String> documentIds,
+      {ui.Rect? sharePositionOrigin}) async {
     if (documentIds.isEmpty) return;
 
     try {
@@ -71,6 +72,7 @@ class ExportService {
         await Share.shareXFiles(
           [XFile(outputPath)],
           text: 'Exported from KhmerScan',
+          sharePositionOrigin: sharePositionOrigin,
         );
       } else {
         // On web, just trigger the print/save dialog
@@ -87,7 +89,12 @@ class ExportService {
   /// Helper to generate PDF bytes given a format and list of documents
   Future<Uint8List> _generatePdf(
       PdfPageFormat baseFormat, List<Document> docs) async {
-    final pdf = pw.Document();
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.notoSansKhmerRegular(),
+        bold: await PdfGoogleFonts.notoSansKhmerBold(),
+      ),
+    );
 
     for (final doc in docs) {
       // Handle multiple images per document
@@ -202,8 +209,9 @@ class ExportService {
   }
 
   /// Share a document as PDF (single-document helper).
-  Future<void> shareDocument(String documentId) async {
-    await exportToPdf([documentId]);
+  Future<void> shareDocument(String documentId,
+      {ui.Rect? sharePositionOrigin}) async {
+    await exportToPdf([documentId], sharePositionOrigin: sharePositionOrigin);
   }
 
   /// Export all documents in the database to a single PDF and share it.
