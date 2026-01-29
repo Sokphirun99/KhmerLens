@@ -1,32 +1,38 @@
+import '../config/app_config.dart';
+
+/// Legacy constants class - now uses AppConfig
+///
+/// This class is maintained for backward compatibility.
+/// Consider migrating to AppConfig directly in new code.
 class AppConstants {
   // App info
-  static const String appName = 'KhmerScan';
-  static const String appVersion = '1.0.0';
+  static const String appName = AppConfig.appName;
+  static const String appVersion = AppConfig.appVersion;
 
   // Storage Keys
-  static const String keyThemeMode = 'theme_mode';
-  static const String keyLanguage = 'language';
-  static const String keyFirstLaunch = 'first_launch';
+  static const String keyThemeMode = AppConfig.keyThemeMode;
+  static const String keyLanguage = AppConfig.keyLanguage;
+  static const String keyFirstLaunch = AppConfig.keyFirstLaunch;
 
   // Database
-  static const String databaseName = 'khmerscan.db';
-  static const int databaseVersion = 1;
+  static const String databaseName = AppConfig.databaseName;
+  static const int databaseVersion = AppConfig.databaseVersion;
 
   // Storage limits (free tier)
-  static const int maxDocuments = 999999; // Unlimited
-  static const int maxImageWidth = 1920;
-  static const int maxImageHeight = 2560;
-  static const int jpegQuality = 85;
+  static const int maxDocuments = AppConfig.maxDocuments;
+  static const int maxImageWidth = AppConfig.maxImageWidth;
+  static const int maxImageHeight = AppConfig.maxImageHeight;
+  static const int jpegQuality = AppConfig.jpegQuality;
 
   // OCR Settings
-  static const String defaultLanguage = 'km';
-  static const double minConfidence = 0.5;
+  static const String defaultLanguage = AppConfig.defaultLanguage;
+  static const double minConfidence = AppConfig.minConfidence;
 
   // Ad settings
-  static const int scansBeforeInterstitial = 3;
+  static const int scansBeforeInterstitial = AppConfig.scansBeforeInterstitial;
 
   // Animation durations
-  static const Duration shortAnimation = Duration(milliseconds: 200);
-  static const Duration mediumAnimation = Duration(milliseconds: 400);
-  static const Duration longAnimation = Duration(milliseconds: 600);
+  static const Duration shortAnimation = AppConfig.shortAnimation;
+  static const Duration mediumAnimation = AppConfig.mediumAnimation;
+  static const Duration longAnimation = AppConfig.longAnimation;
 }

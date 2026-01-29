@@ -55,6 +55,10 @@
 	<array>
 		<string>_dartobservatory._tcp</string>
 	</array>
+    <!-- AdMob App ID
+         IMPORTANT: This is currently a TEST ID. Replace with your production AdMob App ID.
+         Get your App ID from: https://apps.admob.com/
+         Also update the corresponding value in lib/config/ad_config.dart -->
     <key>GADApplicationIdentifier</key>
     <string>ca-app-pub-3940256099942544~1458002511</string>
 </dict>

@@ -31,7 +31,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- AdMob App ID (using test ID for development) -->
+        <!-- AdMob App ID
+             IMPORTANT: This is currently a TEST ID. Replace with your production AdMob App ID.
+             Get your App ID from: https://apps.admob.com/
+             Also update the corresponding value in lib/config/ad_config.dart -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
