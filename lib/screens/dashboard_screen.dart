@@ -12,32 +12,32 @@ class DashboardScreen extends StatelessWidget {
   /// Returns (greeting key, icon, gradient colors)
   _GreetingInfo _getGreetingInfo(int hour) {
     if (hour >= 5 && hour < 12) {
-      // Morning: 5 AM - 11:59 AM
+      // Morning: 5 AM - 11:59 AM - Light orange/yellow
       return _GreetingInfo(
         type: _GreetingType.morning,
         icon: Icons.wb_sunny_outlined,
-        colors: [const Color(0xFFFFB347), const Color(0xFFFFCC33)],
+        colors: [const Color(0xFFFFD9A3), const Color(0xFFFFE599)],
       );
     } else if (hour >= 12 && hour < 17) {
-      // Afternoon: 12 PM - 4:59 PM
+      // Afternoon: 12 PM - 4:59 PM - Light orange
       return _GreetingInfo(
         type: _GreetingType.afternoon,
         icon: Icons.wb_sunny,
-        colors: [const Color(0xFFFF8C00), const Color(0xFFFF6B35)],
+        colors: [const Color(0xFFFFC680), const Color(0xFFFFB599)],
       );
     } else if (hour >= 17 && hour < 21) {
-      // Evening: 5 PM - 8:59 PM
+      // Evening: 5 PM - 8:59 PM - Light pink/rose
       return _GreetingInfo(
         type: _GreetingType.evening,
         icon: Icons.wb_twilight,
-        colors: [const Color(0xFFFF6B6B), const Color(0xFFC44569)],
+        colors: [const Color(0xFFFFB5B5), const Color(0xFFE2A2B4)],
       );
     } else {
-      // Night: 9 PM - 4:59 AM
+      // Night: 9 PM - 4:59 AM - Light blue/purple
       return _GreetingInfo(
         type: _GreetingType.night,
         icon: Icons.nightlight_round,
-        colors: [const Color(0xFF667eea), const Color(0xFF764ba2)],
+        colors: [const Color(0xFFB3BFF5), const Color(0xFFBBA5D1)],
       );
     }
   }
