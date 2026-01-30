@@ -4,18 +4,22 @@ import 'package:go_router/go_router.dart';
 
 import '../models/document.dart';
 
+import '../screens/dashboard_screen.dart';
 import '../screens/document_detail_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/product_scan_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
 
 /// App route paths
 class AppRoutes {
-  static const String home = '/';
+  static const String dashboard = '/';
+  static const String documents = '/documents';
   static const String camera = '/camera';
   static const String documentDetail = '/document/:id';
   static const String search = '/search';
   static const String settings = '/settings';
+  static const String productScan = '/product-scan';
 }
 
 /// GoRouter configuration for the app
@@ -26,13 +30,20 @@ class AppRouter {
 
   static final GoRouter _router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.dashboard,
     debugLogDiagnostics: true,
     routes: [
-      // Home screen
+      // Dashboard (new home)
       GoRoute(
-        path: AppRoutes.home,
-        name: 'home',
+        path: AppRoutes.dashboard,
+        name: 'dashboard',
+        builder: (context, state) => const DashboardScreen(),
+      ),
+
+      // Documents list (previous home)
+      GoRoute(
+        path: AppRoutes.documents,
+        name: 'documents',
         builder: (context, state) => const HomeScreen(),
       ),
 
@@ -58,6 +69,13 @@ class AppRouter {
         path: AppRoutes.settings,
         name: 'settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+
+      // Product scan screen
+      GoRoute(
+        path: AppRoutes.productScan,
+        name: 'product-scan',
+        builder: (context, state) => const ProductScanScreen(),
       ),
     ],
 
@@ -91,7 +109,7 @@ class AppRouter {
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => context.go(AppRoutes.home),
+              onPressed: () => context.go(AppRoutes.dashboard),
               child: const Text('Go Home'),
             ),
           ],
@@ -103,6 +121,15 @@ class AppRouter {
 
 /// Extension for easy navigation
 extension AppRouterExtension on BuildContext {
+  /// Navigate to dashboard
+  void goToDashboard() => go(AppRoutes.dashboard);
+
+  /// Navigate to documents list
+  void goToDocuments() => go(AppRoutes.documents);
+
+  /// Push to documents list (preserves back stack)
+  void pushDocuments() => push(AppRoutes.documents);
+
   /// Navigate to document detail
   void goToDocumentDetail(Document document) {
     go(
@@ -131,6 +158,12 @@ extension AppRouterExtension on BuildContext {
   /// Push to settings (preserves back stack)
   void pushSettings() => push(AppRoutes.settings);
 
-  /// Navigate to home
-  void goToHome() => go(AppRoutes.home);
+  /// Navigate to product scan
+  void goToProductScan() => go(AppRoutes.productScan);
+
+  /// Push to product scan (preserves back stack)
+  void pushProductScan() => push(AppRoutes.productScan);
+
+  /// Navigate to home (dashboard)
+  void goToHome() => go(AppRoutes.dashboard);
 }

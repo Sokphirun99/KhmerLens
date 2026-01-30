@@ -402,4 +402,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textSizeLarge => 'Large';
+
+  @override
+  String get dashboardWelcome => 'What would you like to do?';
+
+  @override
+  String get myDocuments => 'My Documents';
+
+  @override
+  String get myDocumentsDescription => 'View and manage scanned files';
+
+  @override
+  String get scanDocumentDescription => 'Digitize papers and receipts';
+
+  @override
+  String get scanProduct => 'Scan Product';
+
+  @override
+  String get scanProductDescription => 'Barcode & QR Code reader';
+
+  @override
+  String get moreFeatures => 'More Soon';
+
+  @override
+  String get moreFeaturesDescription => 'New tools are coming';
+
+  @override
+  String get productScanComingSoonDescription =>
+      'Barcode and QR code scanning will be available in a future update.';
+
+  @override
+  String get greetingMorning => 'Good Morning!';
+
+  @override
+  String get greetingAfternoon => 'Good Afternoon!';
+
+  @override
+  String get greetingEvening => 'Good Evening!';
+
+  @override
+  String get greetingNight => 'Good Night!';
+
+  @override
+  String get dashboardFeatures => 'Features';
 }

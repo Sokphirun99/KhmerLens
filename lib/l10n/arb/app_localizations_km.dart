@@ -402,4 +402,47 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get textSizeLarge => 'ធំ';
+
+  @override
+  String get dashboardWelcome => 'តើអ្នកចង់ធ្វើអ្វី?';
+
+  @override
+  String get myDocuments => 'ឯកសារខ្ញុំ';
+
+  @override
+  String get myDocumentsDescription => 'មើល និងគ្រប់គ្រងឯកសារដែលបានស្កេន';
+
+  @override
+  String get scanDocumentDescription => 'ស្កេនក្រដាស និងបង្កាន់ដៃ';
+
+  @override
+  String get scanProduct => 'ស្កេនផលិតផល';
+
+  @override
+  String get scanProductDescription => 'អានកូដ Barcode និង QR';
+
+  @override
+  String get moreFeatures => 'មុខងារបន្ថែម';
+
+  @override
+  String get moreFeaturesDescription => 'មុខងារថ្មីៗនឹងមកដល់ឆាប់ៗ';
+
+  @override
+  String get productScanComingSoonDescription =>
+      'មុខងារស្កេន Barcode និង QR នឹងមានក្នុងការអាប់ដេតនាពេលអនាគត។';
+
+  @override
+  String get greetingMorning => 'អរុណសួស្តី!';
+
+  @override
+  String get greetingAfternoon => 'ទិវាសួស្តី!';
+
+  @override
+  String get greetingEvening => 'សាយ័ណសួស្តី!';
+
+  @override
+  String get greetingNight => 'រាត្រីសួស្តី!';
+
+  @override
+  String get dashboardFeatures => 'មុខងារ';
 }
