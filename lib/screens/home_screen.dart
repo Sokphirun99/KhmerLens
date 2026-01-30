@@ -222,9 +222,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
+      body: Stack(
+        children: [
+          // Main scrollable content
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
           // Modern app bar
           SliverAppBar.large(
             expandedHeight: 120,
@@ -336,13 +339,24 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
-          // Banner ad
+          // Add bottom padding to accommodate banner ad
           if (_isBannerAdReady)
             SliverToBoxAdapter(
+              child: SizedBox(height: _bannerAd!.size.height.toDouble() + 8),
+            ),
+        ],
+          ),
+
+          // Banner ad positioned at bottom
+          if (_isBannerAdReady)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: Container(
                 width: _bannerAd!.size.width.toDouble(),
                 height: _bannerAd!.size.height.toDouble(),
-                margin: const EdgeInsets.only(top: 8),
+                color: Theme.of(context).colorScheme.surface,
                 child: AdWidget(ad: _bannerAd!),
               ).animate().fadeIn(duration: 300.ms),
             ),
