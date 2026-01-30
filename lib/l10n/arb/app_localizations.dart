@@ -865,6 +865,90 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'ធំ'**
   String get textSizeLarge;
+
+  /// No description provided for @dashboardWelcome.
+  ///
+  /// In km, this message translates to:
+  /// **'តើអ្នកចង់ធ្វើអ្វី?'**
+  String get dashboardWelcome;
+
+  /// No description provided for @myDocuments.
+  ///
+  /// In km, this message translates to:
+  /// **'ឯកសារខ្ញុំ'**
+  String get myDocuments;
+
+  /// No description provided for @myDocumentsDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'មើល និងគ្រប់គ្រងឯកសារដែលបានស្កេន'**
+  String get myDocumentsDescription;
+
+  /// No description provided for @scanDocumentDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'ស្កេនក្រដាស និងបង្កាន់ដៃ'**
+  String get scanDocumentDescription;
+
+  /// No description provided for @scanProduct.
+  ///
+  /// In km, this message translates to:
+  /// **'ស្កេនផលិតផល'**
+  String get scanProduct;
+
+  /// No description provided for @scanProductDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'អានកូដ Barcode និង QR'**
+  String get scanProductDescription;
+
+  /// No description provided for @moreFeatures.
+  ///
+  /// In km, this message translates to:
+  /// **'មុខងារបន្ថែម'**
+  String get moreFeatures;
+
+  /// No description provided for @moreFeaturesDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'មុខងារថ្មីៗនឹងមកដល់ឆាប់ៗ'**
+  String get moreFeaturesDescription;
+
+  /// No description provided for @productScanComingSoonDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'មុខងារស្កេន Barcode និង QR នឹងមានក្នុងការអាប់ដេតនាពេលអនាគត។'**
+  String get productScanComingSoonDescription;
+
+  /// No description provided for @greetingMorning.
+  ///
+  /// In km, this message translates to:
+  /// **'អរុណសួស្តី!'**
+  String get greetingMorning;
+
+  /// No description provided for @greetingAfternoon.
+  ///
+  /// In km, this message translates to:
+  /// **'ទិវាសួស្តី!'**
+  String get greetingAfternoon;
+
+  /// No description provided for @greetingEvening.
+  ///
+  /// In km, this message translates to:
+  /// **'សាយ័ណសួស្តី!'**
+  String get greetingEvening;
+
+  /// No description provided for @greetingNight.
+  ///
+  /// In km, this message translates to:
+  /// **'រាត្រីសួស្តី!'**
+  String get greetingNight;
+
+  /// No description provided for @dashboardFeatures.
+  ///
+  /// In km, this message translates to:
+  /// **'មុខងារ'**
+  String get dashboardFeatures;
 }
 
 class _AppLocalizationsDelegate

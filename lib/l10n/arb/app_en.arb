@@ -159,5 +159,19 @@
     "textSize": "Text Size",
     "textSizeSmall": "Small",
     "textSizeMedium": "Medium",
-    "textSizeLarge": "Large"
+    "textSizeLarge": "Large",
+    "dashboardWelcome": "What would you like to do?",
+    "myDocuments": "My Documents",
+    "myDocumentsDescription": "View and manage scanned files",
+    "scanDocumentDescription": "Digitize papers and receipts",
+    "scanProduct": "Scan Product",
+    "scanProductDescription": "Barcode & QR Code reader",
+    "moreFeatures": "More Soon",
+    "moreFeaturesDescription": "New tools are coming",
+    "productScanComingSoonDescription": "Barcode and QR code scanning will be available in a future update.",
+    "greetingMorning": "Good Morning!",
+    "greetingAfternoon": "Good Afternoon!",
+    "greetingEvening": "Good Evening!",
+    "greetingNight": "Good Night!",
+    "dashboardFeatures": "Features"
 }

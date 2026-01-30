@@ -233,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Theme.of(context).colorScheme.surface,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                l10n.appTitle,
+                l10n.myDocuments,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
@@ -245,10 +245,6 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: const Icon(Icons.search),
                 onPressed: () => context.pushSearch(),
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () => context.pushSettings(),
               ),
               const SizedBox(width: 8),
             ],

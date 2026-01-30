@@ -159,5 +159,19 @@
     "textSize": "ទំហំអក្សរ",
     "textSizeSmall": "តូច",
     "textSizeMedium": "មធ្យម",
-    "textSizeLarge": "ធំ"
+    "textSizeLarge": "ធំ",
+    "dashboardWelcome": "តើអ្នកចង់ធ្វើអ្វី?",
+    "myDocuments": "ឯកសារខ្ញុំ",
+    "myDocumentsDescription": "មើល និងគ្រប់គ្រងឯកសារដែលបានស្កេន",
+    "scanDocumentDescription": "ស្កេនក្រដាស និងបង្កាន់ដៃ",
+    "scanProduct": "ស្កេនផលិតផល",
+    "scanProductDescription": "អានកូដ Barcode និង QR",
+    "moreFeatures": "មុខងារបន្ថែម",
+    "moreFeaturesDescription": "មុខងារថ្មីៗនឹងមកដល់ឆាប់ៗ",
+    "productScanComingSoonDescription": "មុខងារស្កេន Barcode និង QR នឹងមានក្នុងការអាប់ដេតនាពេលអនាគត។",
+    "greetingMorning": "អរុណសួស្តី!",
+    "greetingAfternoon": "ទិវាសួស្តី!",
+    "greetingEvening": "សាយ័ណសួស្តី!",
+    "greetingNight": "រាត្រីសួស្តី!",
+    "dashboardFeatures": "មុខងារ"
 }
