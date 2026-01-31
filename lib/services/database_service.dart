@@ -167,6 +167,68 @@ class DatabaseService {
     }
   }
 
+  /// Gets documents with cursor-based pagination.
+  /// Returns documents created before [cursorCreatedAt] (or all if null).
+  /// [limit] controls page size (default 20).
+  Future<List<Document>> getDocumentsPaginated({
+    DateTime? cursorCreatedAt,
+    int limit = 20,
+  }) async {
+    try {
+      final db = await database;
+      List<Map<String, dynamic>> maps;
+
+      if (cursorCreatedAt != null) {
+        // Get documents older than cursor
+        maps = await db.query(
+          tableDocuments,
+          where: '$colCreatedAt < ?',
+          whereArgs: [cursorCreatedAt.toIso8601String()],
+          orderBy: '$colCreatedAt DESC',
+          limit: limit,
+        );
+      } else {
+        // First page - no cursor
+        maps = await db.query(
+          tableDocuments,
+          orderBy: '$colCreatedAt DESC',
+          limit: limit,
+        );
+      }
+
+      return List.generate(maps.length, (i) => Document.fromMap(maps[i]));
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to query documents',
+        code: 'DATABASE_QUERY_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Checks if more documents exist after the given cursor.
+  Future<bool> hasMoreDocuments(DateTime cursorCreatedAt) async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM $tableDocuments WHERE $colCreatedAt < ?',
+        [cursorCreatedAt.toIso8601String()],
+      );
+      final count = Sqflite.firstIntValue(result) ?? 0;
+      return count > 0;
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to check for more documents',
+        code: 'DATABASE_QUERY_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<Document?> getDocument(String id) async {
     try {
       final db = await database;

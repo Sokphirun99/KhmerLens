@@ -10,7 +10,23 @@ abstract class DocumentEvent extends Equatable {
 }
 
 class LoadDocuments extends DocumentEvent {
-  const LoadDocuments();
+  /// Optional page size for pagination (default: 20)
+  final int pageSize;
+
+  const LoadDocuments({this.pageSize = 20});
+
+  @override
+  List<Object?> get props => [pageSize];
+}
+
+/// Load more documents for infinite scroll pagination
+class LoadMoreDocuments extends DocumentEvent {
+  final int pageSize;
+
+  const LoadMoreDocuments({this.pageSize = 20});
+
+  @override
+  List<Object?> get props => [pageSize];
 }
 
 class CreateDocument extends DocumentEvent {

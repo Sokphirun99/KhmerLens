@@ -173,5 +173,7 @@
     "greetingAfternoon": "ទិវាសួស្តី!",
     "greetingEvening": "សាយ័ណសួស្តី!",
     "greetingNight": "រាត្រីសួស្តី!",
-    "dashboardFeatures": "មុខងារ"
+    "dashboardFeatures": "មុខងារ",
+    "scrollForMore": "រំកិលដើម្បីមើលបន្ថែម",
+    "dragToReorder": "ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព"
 }

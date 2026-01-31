@@ -12,6 +12,7 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
   DocumentBloc({required this.repository}) : super(DocumentInitial()) {
     on<LoadDocuments>(_onLoadDocuments);
+    on<LoadMoreDocuments>(_onLoadMoreDocuments);
     on<CreateDocument>(_onCreateDocument);
     on<UpdateDocument>(_onUpdateDocument);
     on<DeleteDocument>(_onDeleteDocument);
@@ -27,14 +28,63 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     emit(DocumentLoading());
 
     try {
-      final documents = await repository.getAllDocuments();
+      final documents = await repository.getDocumentsPaginated(
+        limit: event.pageSize,
+      );
+
+      // Check if there are more documents
+      bool hasMore = false;
+      if (documents.isNotEmpty) {
+        hasMore = await repository.hasMoreDocuments(documents.last.createdAt);
+      }
 
       emit(DocumentLoaded(
         documents: documents,
+        hasMore: hasMore,
       ));
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);
       emit(DocumentError(e));
+    }
+  }
+
+  Future<void> _onLoadMoreDocuments(
+    LoadMoreDocuments event,
+    Emitter<DocumentState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DocumentLoaded) return;
+    if (!currentState.hasMore || currentState.isLoadingMore) return;
+
+    // Emit loading more state while preserving current documents
+    emit(currentState.copyWith(isLoadingMore: true));
+
+    try {
+      // Use the last document's createdAt as cursor
+      final cursor = currentState.documents.isNotEmpty
+          ? currentState.documents.last.createdAt
+          : null;
+
+      final newDocuments = await repository.getDocumentsPaginated(
+        cursorCreatedAt: cursor,
+        limit: event.pageSize,
+      );
+
+      // Check if there are more documents after this batch
+      bool hasMore = false;
+      if (newDocuments.isNotEmpty) {
+        hasMore = await repository.hasMoreDocuments(newDocuments.last.createdAt);
+      }
+
+      emit(DocumentLoaded(
+        documents: [...currentState.documents, ...newDocuments],
+        hasMore: hasMore,
+        isLoadingMore: false,
+      ));
+    } catch (e, stackTrace) {
+      ErrorHandler.logError(e, stackTrace: stackTrace);
+      // On error, revert to previous state without loading indicator
+      emit(currentState.copyWith(isLoadingMore: false));
     }
   }
 
@@ -66,11 +116,14 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
       // OPTIMIZATION: Manually update the list instead of reloading from DB
       // Check if we have the previous list in memory
       if (state is DocumentLoaded && createdDocument != null) {
-        final currentDocuments = (state as DocumentLoaded).documents;
-        final updatedDocuments = List<Document>.from(currentDocuments)
+        final currentState = state as DocumentLoaded;
+        final updatedDocuments = List<Document>.from(currentState.documents)
           ..insert(0, createdDocument); // Insert new doc at the top
 
-        emit(DocumentLoaded(documents: updatedDocuments));
+        emit(DocumentLoaded(
+          documents: updatedDocuments,
+          hasMore: currentState.hasMore,
+        ));
       } else {
         // Fallback: reload everything if we weren't in a loaded state
         add(const RefreshDocuments());
@@ -123,10 +176,24 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     Emitter<DocumentState> emit,
   ) async {
     try {
-      final documents = await repository.getAllDocuments();
+      // Preserve current page size if we have loaded documents
+      int pageSize = 20;
+      if (state is DocumentLoaded) {
+        final loadedCount = (state as DocumentLoaded).documents.length;
+        // Keep at least the same number of documents loaded, or minimum 20
+        pageSize = loadedCount > 20 ? loadedCount : 20;
+      }
+
+      final documents = await repository.getDocumentsPaginated(limit: pageSize);
+
+      bool hasMore = false;
+      if (documents.isNotEmpty) {
+        hasMore = await repository.hasMoreDocuments(documents.last.createdAt);
+      }
 
       emit(DocumentLoaded(
         documents: documents,
+        hasMore: hasMore,
       ));
     } catch (e, stackTrace) {
       ErrorHandler.logError(e, stackTrace: stackTrace);

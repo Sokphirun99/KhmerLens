@@ -15,19 +15,27 @@ class DocumentLoading extends DocumentState {}
 
 class DocumentLoaded extends DocumentState {
   final List<Document> documents;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   const DocumentLoaded({
     required this.documents,
+    this.hasMore = true,
+    this.isLoadingMore = false,
   });
 
   @override
-  List<Object?> get props => [documents];
+  List<Object?> get props => [documents, hasMore, isLoadingMore];
 
   DocumentLoaded copyWith({
     List<Document>? documents,
+    bool? hasMore,
+    bool? isLoadingMore,
   }) {
     return DocumentLoaded(
       documents: documents ?? this.documents,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 }

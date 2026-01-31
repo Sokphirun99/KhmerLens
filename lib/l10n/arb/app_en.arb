@@ -173,5 +173,7 @@
     "greetingAfternoon": "Good Afternoon!",
     "greetingEvening": "Good Evening!",
     "greetingNight": "Good Night!",
-    "dashboardFeatures": "Features"
+    "dashboardFeatures": "Features",
+    "scrollForMore": "Scroll for more",
+    "dragToReorder": "Long press and drag to reorder images"
 }

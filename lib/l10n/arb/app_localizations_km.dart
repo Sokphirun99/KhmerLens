@@ -445,4 +445,10 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get dashboardFeatures => 'មុខងារ';
+
+  @override
+  String get scrollForMore => 'រំកិលដើម្បីមើលបន្ថែម';
+
+  @override
+  String get dragToReorder => 'ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព';
 }

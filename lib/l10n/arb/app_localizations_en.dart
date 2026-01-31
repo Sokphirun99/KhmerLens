@@ -445,4 +445,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardFeatures => 'Features';
+
+  @override
+  String get scrollForMore => 'Scroll for more';
+
+  @override
+  String get dragToReorder => 'Long press and drag to reorder images';
 }

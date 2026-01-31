@@ -31,6 +31,44 @@ class DocumentRepository {
     }
   }
 
+  /// Gets documents with cursor-based pagination.
+  /// Returns documents created before [cursorCreatedAt] (or first page if null).
+  /// [limit] controls page size (default 20).
+  Future<List<Document>> getDocumentsPaginated({
+    DateTime? cursorCreatedAt,
+    int limit = 20,
+  }) async {
+    try {
+      return await _dbService.getDocumentsPaginated(
+        cursorCreatedAt: cursorCreatedAt,
+        limit: limit,
+      );
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to load documents',
+        code: 'DOCUMENT_LOAD_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Checks if more documents exist after the given cursor.
+  Future<bool> hasMoreDocuments(DateTime cursorCreatedAt) async {
+    try {
+      return await _dbService.hasMoreDocuments(cursorCreatedAt);
+    } catch (e, stackTrace) {
+      if (e is AppException) rethrow;
+      throw DocumentException(
+        'Failed to check for more documents',
+        code: 'DOCUMENT_LOAD_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<Document?> getDocument(String id) async {
     try {
       return await _dbService.getDocument(id);

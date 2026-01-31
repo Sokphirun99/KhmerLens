@@ -39,10 +39,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isDisposed = false;
   int _scansCount = 0;
 
-  // Scroll controller for FAB animation
+  // Scroll controller for FAB animation and pagination
   final ScrollController _scrollController = ScrollController();
   bool _isFabExtended = true;
   double _lastScrollOffset = 0;
+
+  // Pagination threshold - load more when 200px from bottom
+  static const double _loadMoreThreshold = 200.0;
 
   @override
   void initState() {
@@ -64,6 +67,24 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
       _lastScrollOffset = currentOffset;
+    }
+
+    // Check for pagination - load more when near bottom
+    _checkAndLoadMore();
+  }
+
+  void _checkAndLoadMore() {
+    if (!_scrollController.hasClients) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    // Load more when within threshold of bottom
+    if (maxScroll - currentScroll <= _loadMoreThreshold) {
+      final state = context.read<DocumentBloc>().state;
+      if (state is DocumentLoaded && state.hasMore && !state.isLoadingMore) {
+        context.read<DocumentBloc>().add(const LoadMoreDocuments());
+      }
     }
   }
 
@@ -328,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }
-                return _buildDocumentGrid(state.documents, l10n);
+                return _buildDocumentGrid(state, l10n);
               }
 
               if (state is DocumentError) {
@@ -477,7 +498,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDocumentGrid(List<Document> documents, AppLocalizations l10n) {
+  Widget _buildDocumentGrid(DocumentLoaded state, AppLocalizations l10n) {
+    final documents = state.documents;
+
     // Responsive grid
     final width = MediaQuery.of(context).size.width;
     final int crossAxisCount = width > 900
@@ -486,58 +509,94 @@ class _HomeScreenState extends State<HomeScreen> {
             ? 3
             : 2;
 
-    return SliverPadding(
-      padding: const EdgeInsets.all(16),
-      sliver: SliverMasonryGrid.count(
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childCount: documents.length,
-        itemBuilder: (context, index) {
-          final document = documents[index];
-          // Limit animations to first 10 items for better performance
-          final shouldAnimate = index < 10;
-          final card = DocumentGridCard(
-            document: document,
-            index: index,
-            onTap: () async {
-              await context.push(
-                AppRoutes.documentDetail.replaceFirst(':id', document.id),
-                extra: document,
-              );
-              if (context.mounted) {
-                context.read<DocumentBloc>().add(const RefreshDocuments());
-              }
-            },
-            onDelete: () async {
-              final confirmed = await DestructiveActionSheet.show(
-                context,
-                title: l10n.deleteDocument,
-                message: l10n.deleteDocumentConfirmation,
-                confirmLabel: l10n.deleteDocument,
-                icon: Icons.delete_forever,
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverMasonryGrid.count(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childCount: documents.length,
+            itemBuilder: (context, index) {
+              final document = documents[index];
+              // Limit animations to first 10 items for better performance
+              final shouldAnimate = index < 10;
+              final card = DocumentGridCard(
+                document: document,
+                index: index,
+                onTap: () async {
+                  await context.push(
+                    AppRoutes.documentDetail.replaceFirst(':id', document.id),
+                    extra: document,
+                  );
+                  if (context.mounted) {
+                    context.read<DocumentBloc>().add(const RefreshDocuments());
+                  }
+                },
+                onDelete: () async {
+                  final confirmed = await DestructiveActionSheet.show(
+                    context,
+                    title: l10n.deleteDocument,
+                    message: l10n.deleteDocumentConfirmation,
+                    confirmLabel: l10n.deleteDocument,
+                    icon: Icons.delete_forever,
+                  );
+
+                  if (confirmed && context.mounted) {
+                    context.read<DocumentBloc>().add(
+                          DeleteDocument(document),
+                        );
+                  }
+                },
+                onShare: () async {
+                  // Share implementation
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.shareComingSoon)),
+                  );
+                },
               );
 
-              if (confirmed && context.mounted) {
-                context.read<DocumentBloc>().add(
-                      DeleteDocument(document),
-                    );
-              }
+              // Only animate first 10 items for performance
+              return shouldAnimate
+                  ? card.animate().fadeIn(delay: (30 * index).ms, duration: 200.ms)
+                  : card;
             },
-            onShare: () async {
-              // Share implementation
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.shareComingSoon)),
-              );
-            },
-          );
-
-          // Only animate first 10 items for performance
-          return shouldAnimate
-              ? card.animate().fadeIn(delay: (30 * index).ms, duration: 200.ms)
-              : card;
-        },
-      ),
+          ),
+        ),
+        // Loading indicator for pagination
+        if (state.isLoadingMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        // "Load more" hint when there are more documents
+        if (state.hasMore && !state.isLoadingMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Center(
+                child: Text(
+                  l10n.scrollForMore,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
