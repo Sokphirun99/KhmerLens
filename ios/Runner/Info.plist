@@ -60,6 +60,6 @@
          Get your App ID from: https://apps.admob.com/
          Also update the corresponding value in lib/config/ad_config.dart -->
     <key>GADApplicationIdentifier</key>
-    <string>ca-app-pub-3940256099942544~1458002511</string>
+    <string>ca-app-pub-9315602388069795~2528244653</string>
 </dict>
 </plist>

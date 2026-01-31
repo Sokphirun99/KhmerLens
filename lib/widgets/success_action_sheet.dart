@@ -1,52 +1,44 @@
-// widgets/destructive_action_sheet.dart
+// widgets/success_action_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
-import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
-/// A bottom sheet for confirming destructive actions like delete.
-/// More ergonomic on large phones than a centered dialog.
-class DestructiveActionSheet extends StatelessWidget {
+/// A bottom sheet for confirming successful actions.
+class SuccessActionSheet extends StatelessWidget {
   final String title;
   final String message;
   final String confirmLabel;
-  final String cancelLabel;
-  final IconData icon;
   final VoidCallback? onConfirm;
 
-  const DestructiveActionSheet({
+  const SuccessActionSheet({
     super.key,
     required this.title,
     required this.message,
-    this.confirmLabel = 'លុប',
-    this.cancelLabel = 'បោះបង់',
-    this.icon = Icons.delete_outline,
+    this.confirmLabel = 'OK',
     this.onConfirm,
   });
 
-  /// Shows the destructive action sheet and returns true if confirmed
-  static Future<bool> show(
+  /// Shows the success action sheet
+  static Future<void> show(
     BuildContext context, {
     required String title,
     required String message,
     String? confirmLabel,
-    String? cancelLabel,
-    IconData icon = Icons.delete_outline,
+    VoidCallback? onConfirm,
   }) async {
-    final result = await showModalBottomSheet<bool>(
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => DestructiveActionSheet(
+      builder: (context) => SuccessActionSheet(
         title: title,
         message: message,
-        confirmLabel: confirmLabel ?? AppLocalizations.of(context)!.delete,
-        cancelLabel: cancelLabel ?? AppLocalizations.of(context)!.cancel,
-        icon: icon,
+        confirmLabel:
+            confirmLabel ?? 'OK', // Default generic OK if not provided
+        onConfirm: onConfirm,
       ),
     );
-    return result ?? false;
   }
 
   @override
@@ -77,19 +69,20 @@ class DestructiveActionSheet extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Warning icon
+              // Success Icon (Lottie)
               Container(
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withValues(alpha: 0.2),
+                  color: Colors.green.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Lottie.asset(
-                  'assets/animations/delete.json',
+                  'assets/animations/success.json',
                   width: 60,
                   height: 60,
                   fit: BoxFit.contain,
+                  repeat: false, // Play once for success
                 ),
               ).animate().scale(
                     duration: 300.ms,
@@ -117,48 +110,25 @@ class DestructiveActionSheet extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Action buttons
-              Row(
-                children: [
-                  // Cancel button
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.pop(context, false);
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(cancelLabel),
+              // Action button (Full width for success)
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.pop(context);
+                    onConfirm?.call();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  // Confirm (destructive) button
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.pop(context, true);
-                        onConfirm?.call();
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.red.shade300,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(confirmLabel),
-                    ),
-                  ),
-                ],
+                  child: Text(confirmLabel),
+                ),
               ),
             ],
           ),

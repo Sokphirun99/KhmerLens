@@ -19,7 +19,10 @@ class DocumentRepository {
 
   Future<List<Document>> getAllDocuments() async {
     try {
-      return await _dbService.getAllDocuments();
+      final documents = await _dbService.getAllDocuments();
+
+      // Convert stored relative paths back to absolute
+      return await _resolveAbsolutePathsForDocuments(documents);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -39,10 +42,12 @@ class DocumentRepository {
     int limit = 20,
   }) async {
     try {
-      return await _dbService.getDocumentsPaginated(
+      final documents = await _dbService.getDocumentsPaginated(
         cursorCreatedAt: cursorCreatedAt,
         limit: limit,
       );
+
+      return await _resolveAbsolutePathsForDocuments(documents);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -71,7 +76,10 @@ class DocumentRepository {
 
   Future<Document?> getDocument(String id) async {
     try {
-      return await _dbService.getDocument(id);
+      final document = await _dbService.getDocument(id);
+      if (document == null) return null;
+
+      return await _resolveAbsolutePathsForDocument(document);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -93,13 +101,18 @@ class DocumentRepository {
           'DocumentRepository: Creating document with ${imagePaths.length} images');
 
       // Save all images to storage
+      // Save all images to storage and track relative paths for DB
       for (int i = 0; i < imagePaths.length; i++) {
         final imagePath = imagePaths[i];
         debugPrint(
             'DocumentRepository: Saving image ${i + 1}/${imagePaths.length}: $imagePath');
+
         final savedPath = await _storageService.saveImage(File(imagePath));
         debugPrint('DocumentRepository: Image saved to: $savedPath');
-        savedPaths.add(savedPath);
+
+        // Convert to relative path for database storage
+        final relativePath = await _storageService.getRelativePath(savedPath);
+        savedPaths.add(relativePath);
       }
 
       debugPrint('DocumentRepository: All ${savedPaths.length} images saved');
@@ -129,7 +142,9 @@ class DocumentRepository {
         debugPrint('DocumentRepository: Cleaning up orphaned images...');
         for (final path in savedPaths) {
           try {
-            await _storageService.deleteImage(path);
+            // Reconstruct absolute path for deletion during cleanup
+            final absolutePath = await _storageService.getAbsolutePath(path);
+            await _storageService.deleteImage(absolutePath);
           } catch (cleanupError) {
             debugPrint(
                 'DocumentRepository: Failed to delete orphaned image: $path');
@@ -149,7 +164,14 @@ class DocumentRepository {
 
   Future<void> updateDocument(Document document) async {
     try {
-      await _dbService.updateDocument(document);
+      // Normalize image paths to relative before saving to DB
+      final relativePaths = <String>[];
+      for (final path in document.imagePaths) {
+        relativePaths.add(await _storageService.getRelativePath(path));
+      }
+
+      final docToUpdate = document.copyWith(imagePaths: relativePaths);
+      await _dbService.updateDocument(docToUpdate);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -176,7 +198,9 @@ class DocumentRepository {
       final savedPaths = <String>[];
       for (final imagePath in newImagePaths) {
         final savedPath = await _storageService.saveImage(File(imagePath));
-        savedPaths.add(savedPath);
+        // Store relative path in DB
+        final relativePath = await _storageService.getRelativePath(savedPath);
+        savedPaths.add(relativePath);
       }
 
       // Update document with new image paths
@@ -207,17 +231,31 @@ class DocumentRepository {
         );
       }
 
-      // Remove image from storage
-      await _storageService.deleteImage(imagePath);
+      // Remove image from storage (resolve to absolute first if needed)
+      // Note: imagePath coming from UI model should already be absolute if we mapped it correctly on load.
+      // But we should be safe.
+      final absolutePath = await _storageService.getAbsolutePath(imagePath);
+      await _storageService.deleteImage(absolutePath);
 
       // Update document by removing the image path
-      final updatedImagePaths =
-          document.imagePaths.where((path) => path != imagePath).toList();
+      // We need to check against both potential stored formats to be safe
+      final updatedImagePaths = document.imagePaths.where((path) {
+        // This logic is tricky because document.imagePaths loaded in memory are ABSOLUTE (mapped).
+        // But we need to save what?
+        // Actually, if we update the document using its existing imagePaths, we might be saving back absolute paths!
+        // CRITICAL: We must re-relativize ALL paths before saving updateDocument.
+        return path != imagePath;
+      }).toList();
+
+      // Re-construct document with normalized RELATIVE paths for storage
+      // Wait, let's fix updateDocument method to normalize paths instead.
+
       final updatedDocument = document.copyWith(
         imagePaths: updatedImagePaths,
       );
 
-      await _dbService.updateDocument(updatedDocument);
+      await updateDocument(
+          updatedDocument); // This calls our wrapper which should handle normalization
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -233,7 +271,8 @@ class DocumentRepository {
     try {
       // Delete all images associated with the document
       for (final imagePath in document.imagePaths) {
-        await _storageService.deleteImage(imagePath);
+        final absolutePath = await _storageService.getAbsolutePath(imagePath);
+        await _storageService.deleteImage(absolutePath);
       }
       await _dbService.deleteDocument(document.id);
     } catch (e, stackTrace) {
@@ -249,7 +288,8 @@ class DocumentRepository {
 
   Future<List<Document>> searchDocuments(String query) async {
     try {
-      return await _dbService.searchDocuments(query);
+      final documents = await _dbService.searchDocuments(query);
+      return await _resolveAbsolutePathsForDocuments(documents);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -304,5 +344,24 @@ class DocumentRepository {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  // --- Helpers ---
+
+  Future<Document> _resolveAbsolutePathsForDocument(Document doc) async {
+    final absolutePaths = <String>[];
+    for (final path in doc.imagePaths) {
+      absolutePaths.add(await _storageService.getAbsolutePath(path));
+    }
+    return doc.copyWith(imagePaths: absolutePaths);
+  }
+
+  Future<List<Document>> _resolveAbsolutePathsForDocuments(
+      List<Document> docs) async {
+    final resolvedDocs = <Document>[];
+    for (final doc in docs) {
+      resolvedDocs.add(await _resolveAbsolutePathsForDocument(doc));
+    }
+    return resolvedDocs;
   }
 }
