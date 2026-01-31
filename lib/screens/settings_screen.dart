@@ -697,14 +697,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _reportBug() async {
-    final uri = Uri.parse('mailto:support@khmerscan.app?subject=Bug Report');
+    final uri = Uri.parse('mailto:khiev.sokpirun999@gmail.com');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
   }
 
   void _openPrivacyPolicy() async {
-    final uri = Uri.parse('https://khmerscan.app/privacy');
+    final uri = Uri.parse(
+        'https://docs.google.com/document/d/1yT6oBjz7ktdnJnzW61m7eY8HTEaLN33q-J8oKqL97is/edit?usp=sharing');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
