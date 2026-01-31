@@ -1,10 +1,10 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
@@ -237,19 +237,19 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) {
-          return _ImageManagerSheet(
-            document: _document,
-            onDelete: _deleteImage,
-            onReorder: _reorderImages,
-            onAddMore: _addMoreImages,
-          );
-        },
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: _ImageManagerSheet(
+          document: _document,
+          onDelete: _deleteImage,
+          onReorder: _reorderImages,
+          onAddMore: _addMoreImages,
+        ),
       ),
     );
   }
@@ -763,26 +763,21 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurfaceVariant
-                  .withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
+    return Column(
+      children: [
+        // Handle bar
+        Container(
+          margin: const EdgeInsets.only(top: 12),
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .onSurfaceVariant
+                .withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(2),
           ),
+        ),
           // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -813,19 +808,42 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
             ),
           ),
           const Divider(height: 1),
-          // Grid of images
+          // Instruction text
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Text(
+              l10n.dragToReorder,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          // Grid of images with drag to reorder using Flutter's ReorderableListView
           Expanded(
-            child: ReorderableGridView.builder(
+            child: ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.75,
-              ),
+              buildDefaultDragHandles: false,
               itemCount: _imagePaths.length,
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final animValue = Curves.easeInOut.transform(animation.value);
+                    final elevation = lerpDouble(0, 8, animValue)!;
+                    return Material(
+                      elevation: elevation,
+                      borderRadius: BorderRadius.circular(12),
+                      child: child,
+                    );
+                  },
+                  child: child,
+                );
+              },
               onReorder: (oldIndex, newIndex) {
                 setState(() {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
                   final item = _imagePaths.removeAt(oldIndex);
                   _imagePaths.insert(newIndex, item);
                 });
@@ -833,13 +851,12 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
               },
               itemBuilder: (context, index) {
                 final imagePath = _imagePaths[index];
-                return _buildImageCard(imagePath, index);
+                return _buildDraggableImageCard(imagePath, index, key: ValueKey(imagePath));
               },
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Future<void> _confirmAndDelete(String imagePath) async {
@@ -862,12 +879,47 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
     }
   }
 
-  Widget _buildImageCard(String imagePath, int index) {
+  /// Build a draggable image card for ReorderableListView
+  Widget _buildDraggableImageCard(String imagePath, int index, {Key? key}) {
+    return Padding(
+      key: key,
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          // Drag handle on the left
+          ReorderableDragStartListener(
+            index: index,
+            child: Container(
+              width: 40,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+              ),
+              child: Icon(
+                Icons.drag_handle,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          // Image card
+          Expanded(
+            child: SizedBox(
+              height: 120,
+              child: _buildImageCardContent(imagePath, index),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build the image card content (used by draggable card)
+  Widget _buildImageCardContent(String imagePath, int index) {
     return Container(
-      key: ValueKey(imagePath),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -894,18 +946,17 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
             },
           ),
 
-          // Gradient Overlay for visibility
+          // Gradient Overlay
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                   colors: [
-                    Colors.black.withValues(alpha: 0.3),
+                    Colors.black.withValues(alpha: 0.4),
                     Colors.transparent,
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.3),
                   ],
                 ),
               ),
@@ -917,20 +968,18 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
             top: 8,
             left: 8,
             child: Container(
-              width: 24,
-              height: 24,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.primary,
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.5), width: 1),
               ),
               alignment: Alignment.center,
               child: Text(
                 '${index + 1}',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -940,55 +989,28 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
           // Delete button
           if (_imagePaths.length > 1)
             Positioned(
-              top: 4,
-              right: 4,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _confirmAndDelete(imagePath),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 2,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.white,
-                    ),
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () => _confirmAndDelete(imagePath),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Colors.white,
                   ),
                 ),
               ),
             ),
-
-          // Drag handle icon
-          Positioned(
-            bottom: 8,
-            right: 8,
-            child: Icon(
-              Icons.drag_indicator,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 20,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 2,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
+
 }

@@ -949,6 +949,18 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'មុខងារ'**
   String get dashboardFeatures;
+
+  /// No description provided for @scrollForMore.
+  ///
+  /// In km, this message translates to:
+  /// **'រំកិលដើម្បីមើលបន្ថែម'**
+  String get scrollForMore;
+
+  /// No description provided for @dragToReorder.
+  ///
+  /// In km, this message translates to:
+  /// **'ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព'**
+  String get dragToReorder;
 }
 
 class _AppLocalizationsDelegate

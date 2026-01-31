@@ -1,10 +1,103 @@
 import 'dart:io';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/constants.dart';
 import '../utils/exceptions.dart';
+
+/// Data class for passing image processing parameters to isolate
+class _ImageProcessParams {
+  final String sourcePath;
+  final String destPath;
+  final String thumbnailPath;
+  final int maxWidth;
+  final int maxHeight;
+  final int jpegQuality;
+  final int thumbnailSize;
+
+  const _ImageProcessParams({
+    required this.sourcePath,
+    required this.destPath,
+    required this.thumbnailPath,
+    required this.maxWidth,
+    required this.maxHeight,
+    required this.jpegQuality,
+    required this.thumbnailSize,
+  });
+}
+
+/// Result from image processing isolate
+class _ImageProcessResult {
+  final bool success;
+  final String? error;
+  final int? imageSize;
+  final int? thumbnailSize;
+
+  const _ImageProcessResult({
+    required this.success,
+    this.error,
+    this.imageSize,
+    this.thumbnailSize,
+  });
+}
+
+/// Top-level function for processing images in isolate
+/// Must be top-level or static to work with compute()
+_ImageProcessResult _processImageInIsolate(_ImageProcessParams params) {
+  try {
+    // Read source image
+    final sourceFile = File(params.sourcePath);
+    final bytes = sourceFile.readAsBytesSync();
+    img.Image? image = img.decodeImage(bytes);
+
+    if (image == null) {
+      // If decoding fails, just copy the file as-is
+      sourceFile.copySync(params.destPath);
+      return _ImageProcessResult(
+        success: true,
+        imageSize: bytes.length,
+        thumbnailSize: 0,
+      );
+    }
+
+    // Resize if larger than max dimensions
+    if (image.width > params.maxWidth || image.height > params.maxHeight) {
+      image = img.copyResize(
+        image,
+        width: image.width > image.height ? params.maxWidth : null,
+        height: image.height >= image.width ? params.maxHeight : null,
+      );
+    }
+
+    // Save compressed image
+    final compressedBytes = img.encodeJpg(image, quality: params.jpegQuality);
+    File(params.destPath).writeAsBytesSync(compressedBytes);
+
+    // Generate thumbnail
+    final thumbnail = img.copyResize(
+      image,
+      width: params.thumbnailSize,
+      height: params.thumbnailSize,
+    );
+    final thumbnailBytes = img.encodeJpg(thumbnail, quality: 70);
+    File(params.thumbnailPath).writeAsBytesSync(thumbnailBytes);
+
+    return _ImageProcessResult(
+      success: true,
+      imageSize: compressedBytes.length,
+      thumbnailSize: thumbnailBytes.length,
+    );
+  } catch (e) {
+    return _ImageProcessResult(
+      success: false,
+      error: e.toString(),
+    );
+  }
+}
 
 class StorageService {
   static final StorageService _instance = StorageService._internal();
@@ -14,10 +107,15 @@ class StorageService {
   static const String _imageFolder = 'documents';
   static const String _thumbnailFolder = 'thumbnails';
   static const int _thumbnailSize = 200;
+  static const String _storageSizeKey = 'cached_storage_size';
+  static const int _maxConcurrentProcessing = 3;
 
   Directory? _appDocDir;
   Directory? _imageDir;
   Directory? _thumbnailDir;
+
+  // Cached storage size for performance
+  int? _cachedStorageSize;
 
   Future<void> _ensureDirectories() async {
     try {
@@ -44,43 +142,39 @@ class StorageService {
 
   /// Saves an image to local storage with compression and generates a thumbnail.
   /// Returns the saved image path.
+  /// Processing is done in a background isolate for better performance.
   Future<String> saveImage(File imageFile) async {
     try {
       await _ensureDirectories();
 
       final String fileName = '${const Uuid().v4()}.jpg';
       final String savedPath = path.join(_imageDir!.path, fileName);
+      final String thumbnailPath = path.join(_thumbnailDir!.path, fileName);
 
-      // Read and process image
-      final bytes = await imageFile.readAsBytes();
-      img.Image? image = img.decodeImage(bytes);
+      // Process image in background isolate
+      final params = _ImageProcessParams(
+        sourcePath: imageFile.path,
+        destPath: savedPath,
+        thumbnailPath: thumbnailPath,
+        maxWidth: AppConstants.maxImageWidth,
+        maxHeight: AppConstants.maxImageHeight,
+        jpegQuality: AppConstants.jpegQuality,
+        thumbnailSize: _thumbnailSize,
+      );
 
-      if (image == null) {
-        // If decoding fails, just copy the file as-is
-        await imageFile.copy(savedPath);
-        return savedPath;
-      }
+      final result = await compute(_processImageInIsolate, params);
 
-      // Resize if larger than max dimensions
-      if (image.width > AppConstants.maxImageWidth ||
-          image.height > AppConstants.maxImageHeight) {
-        image = img.copyResize(
-          image,
-          width: image.width > image.height ? AppConstants.maxImageWidth : null,
-          height:
-              image.height >= image.width ? AppConstants.maxImageHeight : null,
+      if (!result.success) {
+        throw StorageException(
+          result.error ?? 'Failed to process image',
+          code: 'STORAGE_PROCESS_FAILED',
         );
       }
 
-      // Save compressed image
-      final compressedBytes = img.encodeJpg(
-        image,
-        quality: AppConstants.jpegQuality,
-      );
-      await File(savedPath).writeAsBytes(compressedBytes);
-
-      // Generate thumbnail
-      await _generateThumbnail(image, fileName);
+      // Update cached storage size
+      if (result.imageSize != null && result.thumbnailSize != null) {
+        await _updateCachedStorageSize(result.imageSize! + result.thumbnailSize!);
+      }
 
       return savedPath;
     } catch (e, stackTrace) {
@@ -96,14 +190,48 @@ class StorageService {
 
   /// Saves multiple images to local storage with compression and generates thumbnails.
   /// Returns the list of saved image paths.
+  /// Images are processed in parallel with a concurrency limit for better performance.
   Future<List<String>> saveImages(List<File> imageFiles) async {
     try {
-      final savedPaths = <String>[];
-      for (final imageFile in imageFiles) {
-        final savedPath = await saveImage(imageFile);
-        savedPaths.add(savedPath);
+      await _ensureDirectories();
+
+      // Process images in parallel with concurrency limit
+      final results = <String>[];
+      final errors = <String>[];
+
+      // Create batches based on concurrency limit
+      for (var i = 0; i < imageFiles.length; i += _maxConcurrentProcessing) {
+        final batch = imageFiles.skip(i).take(_maxConcurrentProcessing).toList();
+
+        // Process batch in parallel
+        final batchFutures = batch.map((imageFile) async {
+          try {
+            return await saveImage(imageFile);
+          } catch (e) {
+            errors.add('Failed to save ${imageFile.path}: $e');
+            return null;
+          }
+        });
+
+        final batchResults = await Future.wait(batchFutures);
+
+        // Collect successful results
+        for (final result in batchResults) {
+          if (result != null) {
+            results.add(result);
+          }
+        }
       }
-      return savedPaths;
+
+      // If all images failed, throw an error
+      if (results.isEmpty && imageFiles.isNotEmpty) {
+        throw StorageException(
+          'Failed to save any images',
+          code: 'STORAGE_SAVE_FAILED',
+        );
+      }
+
+      return results;
     } catch (e, stackTrace) {
       if (e is StorageException) rethrow;
       throw StorageException(
@@ -115,36 +243,53 @@ class StorageService {
     }
   }
 
-  /// Generates a thumbnail for the given image.
-  Future<void> _generateThumbnail(img.Image image, String fileName) async {
+  /// Updates the cached storage size by adding a delta.
+  Future<void> _updateCachedStorageSize(int delta) async {
     try {
-      await _ensureDirectories();
-
-      final thumbnail = img.copyResize(
-        image,
-        width: _thumbnailSize,
-        height: _thumbnailSize,
-      );
-
-      final thumbnailPath = path.join(_thumbnailDir!.path, fileName);
-      final thumbnailBytes = img.encodeJpg(thumbnail, quality: 70);
-      await File(thumbnailPath).writeAsBytes(thumbnailBytes);
-    } catch (e, stackTrace) {
-      if (e is StorageException) rethrow;
-      throw StorageException(
-        'Failed to generate thumbnail',
-        code: 'STORAGE_THUMBNAIL_FAILED',
-        originalError: e,
-        stackTrace: stackTrace,
-      );
+      final prefs = await SharedPreferences.getInstance();
+      final currentSize = prefs.getInt(_storageSizeKey) ?? 0;
+      final newSize = currentSize + delta;
+      await prefs.setInt(_storageSizeKey, newSize > 0 ? newSize : 0);
+      _cachedStorageSize = newSize > 0 ? newSize : 0;
+    } catch (e) {
+      // Silently fail - cache is not critical
+      debugPrint('Failed to update cached storage size: $e');
     }
+  }
+
+  /// Invalidates the storage size cache, forcing recalculation on next access.
+  Future<void> invalidateStorageSizeCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_storageSizeKey);
+      _cachedStorageSize = null;
+    } catch (e) {
+      debugPrint('Failed to invalidate storage size cache: $e');
+    }
+  }
+
+  /// Gets the file size for updating cache when deleting.
+  Future<int> _getFileSize(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        return await file.length();
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return 0;
   }
 
   /// Deletes an image and its thumbnail from storage.
   Future<void> deleteImage(String imagePath) async {
     try {
+      int totalDeleted = 0;
+
+      // Get image size before deleting for cache update
       final imageFile = File(imagePath);
       if (await imageFile.exists()) {
+        totalDeleted += await _getFileSize(imagePath);
         await imageFile.delete();
       }
 
@@ -152,10 +297,16 @@ class StorageService {
       final fileName = path.basename(imagePath);
       final thumbnailPath = await getThumbnailPath(fileName);
       if (thumbnailPath != null) {
+        totalDeleted += await _getFileSize(thumbnailPath);
         final thumbnailFile = File(thumbnailPath);
         if (await thumbnailFile.exists()) {
           await thumbnailFile.delete();
         }
+      }
+
+      // Update cached storage size (subtract deleted size)
+      if (totalDeleted > 0) {
+        await _updateCachedStorageSize(-totalDeleted);
       }
     } catch (e, stackTrace) {
       if (e is StorageException) rethrow;
@@ -296,6 +447,11 @@ class StorageService {
           await entity.delete();
         }
       }
+
+      // Reset storage cache to 0
+      _cachedStorageSize = 0;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_storageSizeKey, 0);
     } catch (e, stackTrace) {
       if (e is StorageException) rethrow;
       throw StorageException(
@@ -308,8 +464,25 @@ class StorageService {
   }
 
   /// Returns the total size of stored images in bytes.
-  Future<int> getStorageSize() async {
+  /// Uses cached value for performance, recalculates if cache is invalid.
+  Future<int> getStorageSize({bool forceRecalculate = false}) async {
     try {
+      // Return cached value if available and not forcing recalculation
+      if (!forceRecalculate && _cachedStorageSize != null) {
+        return _cachedStorageSize!;
+      }
+
+      // Try to get from SharedPreferences
+      if (!forceRecalculate) {
+        final prefs = await SharedPreferences.getInstance();
+        final cachedSize = prefs.getInt(_storageSizeKey);
+        if (cachedSize != null) {
+          _cachedStorageSize = cachedSize;
+          return cachedSize;
+        }
+      }
+
+      // Calculate actual storage size
       await _ensureDirectories();
 
       int totalSize = 0;
@@ -327,6 +500,11 @@ class StorageService {
           totalSize += await entity.length();
         }
       }
+
+      // Cache the result
+      _cachedStorageSize = totalSize;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_storageSizeKey, totalSize);
 
       return totalSize;
     } catch (e, stackTrace) {
@@ -386,6 +564,7 @@ class StorageService {
   }
 
   /// Regenerates missing thumbnails for all stored images.
+  /// Uses background isolate for processing.
   Future<void> regenerateThumbnails() async {
     try {
       await _ensureDirectories();
@@ -396,11 +575,19 @@ class StorageService {
         final thumbnailPath = path.join(_thumbnailDir!.path, fileName);
 
         if (!await File(thumbnailPath).exists()) {
-          final bytes = await File(imagePath).readAsBytes();
-          final image = img.decodeImage(bytes);
-          if (image != null) {
-            await _generateThumbnail(image, fileName);
-          }
+          // Use isolate for thumbnail regeneration
+          final params = _ImageProcessParams(
+            sourcePath: imagePath,
+            destPath: imagePath, // Not used for thumbnail-only regeneration
+            thumbnailPath: thumbnailPath,
+            maxWidth: AppConstants.maxImageWidth,
+            maxHeight: AppConstants.maxImageHeight,
+            jpegQuality: AppConstants.jpegQuality,
+            thumbnailSize: _thumbnailSize,
+          );
+
+          // Process in background - we're only generating thumbnail
+          await compute(_regenerateThumbnailInIsolate, params);
         }
       }
     } catch (e, stackTrace) {
@@ -412,5 +599,27 @@ class StorageService {
         stackTrace: stackTrace,
       );
     }
+  }
+}
+
+/// Top-level function to regenerate a single thumbnail in isolate
+void _regenerateThumbnailInIsolate(_ImageProcessParams params) {
+  try {
+    final sourceFile = File(params.sourcePath);
+    final bytes = sourceFile.readAsBytesSync();
+    final image = img.decodeImage(bytes);
+
+    if (image != null) {
+      final thumbnail = img.copyResize(
+        image,
+        width: params.thumbnailSize,
+        height: params.thumbnailSize,
+      );
+      final thumbnailBytes = img.encodeJpg(thumbnail, quality: 70);
+      File(params.thumbnailPath).writeAsBytesSync(thumbnailBytes);
+    }
+  } catch (e) {
+    // Silently fail for individual thumbnails
+    debugPrint('Failed to regenerate thumbnail: $e');
   }
 }
