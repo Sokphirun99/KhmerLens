@@ -120,12 +120,14 @@ class DestructiveActionSheet extends StatelessWidget {
                 children: [
                   // Cancel button
                   Expanded(
-                    child: OutlinedButton(
+                    child: FilledButton(
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(context, false);
                       },
-                      style: OutlinedButton.styleFrom(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -144,8 +146,8 @@ class DestructiveActionSheet extends StatelessWidget {
                         onConfirm?.call();
                       },
                       style: FilledButton.styleFrom(
-                        backgroundColor: colorScheme.error,
-                        foregroundColor: colorScheme.onError,
+                        backgroundColor: Colors.red.shade300,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

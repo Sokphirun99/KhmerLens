@@ -778,85 +778,88 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.manageImages,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 20,
-                      ),
+        // Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                l10n.manageImages,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                    ),
+              ),
+              const Spacer(),
+              FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  widget.onAddMore();
+                },
+                icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                label: Text(l10n.add),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                const Spacer(),
-                FilledButton.tonalIcon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    widget.onAddMore();
-                  },
-                  icon:
-                      const Icon(Icons.add_photo_alternate_outlined, size: 18),
-                  label: Text(l10n.add),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // Instruction text
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Text(
+            l10n.dragToReorder,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-              ],
-            ),
           ),
-          const Divider(height: 1),
-          // Instruction text
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Text(
-              l10n.dragToReorder,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+        ),
+        // Grid of images with drag to reorder using Flutter's ReorderableListView
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.all(16),
+            buildDefaultDragHandles: false,
+            itemCount: _imagePaths.length,
+            proxyDecorator: (child, index, animation) {
+              return AnimatedBuilder(
+                animation: animation,
+                builder: (context, child) {
+                  final animValue = Curves.easeInOut.transform(animation.value);
+                  final elevation = lerpDouble(0, 8, animValue)!;
+                  return Material(
+                    elevation: elevation,
+                    borderRadius: BorderRadius.circular(12),
+                    child: child,
+                  );
+                },
+                child: child,
+              );
+            },
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = _imagePaths.removeAt(oldIndex);
+                _imagePaths.insert(newIndex, item);
+              });
+              widget.onReorder(_imagePaths);
+            },
+            itemBuilder: (context, index) {
+              final imagePath = _imagePaths[index];
+              // Use indexOf to get the actual current position in the list
+              // This ensures the index badge updates correctly after reordering
+              final actualIndex = _imagePaths.indexOf(imagePath);
+              return _buildDraggableImageCard(imagePath, actualIndex,
+                  key: ValueKey(imagePath));
+            },
           ),
-          // Grid of images with drag to reorder using Flutter's ReorderableListView
-          Expanded(
-            child: ReorderableListView.builder(
-              padding: const EdgeInsets.all(16),
-              buildDefaultDragHandles: false,
-              itemCount: _imagePaths.length,
-              proxyDecorator: (child, index, animation) {
-                return AnimatedBuilder(
-                  animation: animation,
-                  builder: (context, child) {
-                    final animValue = Curves.easeInOut.transform(animation.value);
-                    final elevation = lerpDouble(0, 8, animValue)!;
-                    return Material(
-                      elevation: elevation,
-                      borderRadius: BorderRadius.circular(12),
-                      child: child,
-                    );
-                  },
-                  child: child,
-                );
-              },
-              onReorder: (oldIndex, newIndex) {
-                setState(() {
-                  if (oldIndex < newIndex) {
-                    newIndex -= 1;
-                  }
-                  final item = _imagePaths.removeAt(oldIndex);
-                  _imagePaths.insert(newIndex, item);
-                });
-                widget.onReorder(_imagePaths);
-              },
-              itemBuilder: (context, index) {
-                final imagePath = _imagePaths[index];
-                return _buildDraggableImageCard(imagePath, index, key: ValueKey(imagePath));
-              },
-            ),
-          ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   Future<void> _confirmAndDelete(String imagePath) async {
@@ -894,7 +897,8 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
               height: 120,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(12)),
               ),
               child: Icon(
                 Icons.drag_handle,
@@ -1000,9 +1004,10 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
                     color: Theme.of(context).colorScheme.error,
                     shape: BoxShape.circle,
                   ),
+                  alignment: Alignment.center,
                   child: const Icon(
                     Icons.close,
-                    size: 18,
+                    size: 20,
                     color: Colors.white,
                   ),
                 ),
@@ -1012,5 +1017,4 @@ class _ImageManagerSheetState extends State<_ImageManagerSheet> {
       ),
     );
   }
-
 }
