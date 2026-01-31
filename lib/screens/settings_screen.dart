@@ -14,6 +14,7 @@ import '../utils/constants.dart';
 import '../utils/theme.dart';
 import '../services/rating_service.dart';
 import 'package:share_plus/share_plus.dart';
+import '../widgets/success_action_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -492,12 +493,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(this.context);
               Navigator.pop(context);
               await _clearCache();
               if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(content: Text(l10n.cacheCleared)),
+                // Use the new Success Action Sheet!
+                // ignore: use_build_context_synchronously
+                SuccessActionSheet.show(
+                  context,
+                  title: 'Success',
+                  message: l10n.cacheCleared,
+                  confirmLabel: 'OK',
                 );
               }
             },
@@ -512,7 +517,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final cacheDir = await getTemporaryDirectory();
       if (await cacheDir.exists()) {
-        await cacheDir.delete(recursive: true);
+        // Fix: Delete contents of cache directory instead of the directory itself
+        // Deleting the root 'Caches' folder is not allowed on iOS and causes PathAccessException
+        final entities = await cacheDir.list().toList();
+        for (final entity in entities) {
+          try {
+            if (entity is File) {
+              await entity.delete();
+            } else if (entity is Directory) {
+              await entity.delete(recursive: true);
+            }
+          } catch (e) {
+            // Ignore errors for individual files (e.g. if locked)
+            debugPrint('Failed to delete cache item ${entity.path}: $e');
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error clearing cache: $e');

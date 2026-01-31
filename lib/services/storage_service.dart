@@ -173,7 +173,8 @@ class StorageService {
 
       // Update cached storage size
       if (result.imageSize != null && result.thumbnailSize != null) {
-        await _updateCachedStorageSize(result.imageSize! + result.thumbnailSize!);
+        await _updateCachedStorageSize(
+            result.imageSize! + result.thumbnailSize!);
       }
 
       return savedPath;
@@ -201,7 +202,8 @@ class StorageService {
 
       // Create batches based on concurrency limit
       for (var i = 0; i < imageFiles.length; i += _maxConcurrentProcessing) {
-        final batch = imageFiles.skip(i).take(_maxConcurrentProcessing).toList();
+        final batch =
+            imageFiles.skip(i).take(_maxConcurrentProcessing).toList();
 
         // Process batch in parallel
         final batchFutures = batch.map((imageFile) async {
@@ -599,6 +601,41 @@ class StorageService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Converts a relative image path to an absolute path for display/loading.
+  /// If the path is already absolute, it returns it as is (for backwards compatibility).
+  Future<String> getAbsolutePath(String inputPath) async {
+    await _ensureDirectories();
+    if (inputPath.startsWith('/')) {
+      return inputPath; // Already absolute
+    }
+    // Assume relative to appDocDir/documents by default if just filename,
+    // or relative to appDocDir if it contains directory separator
+    if (inputPath.contains(Platform.pathSeparator)) {
+      return path.join(_appDocDir!.path, inputPath);
+    } else {
+      // Legacy fallback or just filename -> assume in image dir
+      return path.join(_imageDir!.path, inputPath);
+    }
+  }
+
+  /// Converts an absolute path to a path relative to the application documents directory.
+  Future<String> getRelativePath(String absolutePath) async {
+    await _ensureDirectories();
+    final docDir = _appDocDir!.path;
+
+    if (absolutePath.startsWith(docDir)) {
+      // Remove the docDir prefix
+      // Check if there is a separator after docDir
+      if (absolutePath.length > docDir.length &&
+          absolutePath[docDir.length] == Platform.pathSeparator) {
+        return absolutePath.substring(docDir.length + 1);
+      }
+      return absolutePath.substring(docDir.length);
+    }
+
+    return absolutePath; // Could not convert, return original
   }
 }
 

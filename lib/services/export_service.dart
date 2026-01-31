@@ -9,8 +9,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:khmerscan/repositories/document_repository.dart';
+
 import '../models/document.dart';
-import '../services/database_service.dart';
 import '../services/storage_service.dart';
 
 class ExportService {
@@ -18,14 +19,14 @@ class ExportService {
   factory ExportService() => _instance;
   ExportService._internal();
 
-  final DatabaseService _databaseService = DatabaseService();
+  final DocumentRepository _documentRepository = DocumentRepository();
   final StorageService _storageService = StorageService();
 
   /// Print a single document directly using the system print dialog.
   /// Allows the user to select paper size (Letter, A4, etc.) dynamically.
   Future<void> printDocument(String documentId) async {
     try {
-      final doc = await _databaseService.getDocument(documentId);
+      final doc = await _documentRepository.getDocument(documentId);
       if (doc == null) return;
 
       await Printing.layoutPdf(
@@ -48,7 +49,7 @@ class ExportService {
     try {
       final docs = <Document>[];
       for (final id in documentIds) {
-        final doc = await _databaseService.getDocument(id);
+        final doc = await _documentRepository.getDocument(id);
         if (doc != null) {
           docs.add(doc);
         }
@@ -177,7 +178,7 @@ class ExportService {
   /// Export a single document's images (share the original image files).
   Future<void> exportToImage(String documentId) async {
     try {
-      final doc = await _databaseService.getDocument(documentId);
+      final doc = await _documentRepository.getDocument(documentId);
       if (doc == null) return;
 
       if (doc.imagePaths.isEmpty) return;
@@ -217,7 +218,7 @@ class ExportService {
   /// Export all documents in the database to a single PDF and share it.
   Future<void> exportAllDocuments() async {
     try {
-      final docs = await _databaseService.getAllDocuments();
+      final docs = await _documentRepository.getAllDocuments();
       if (docs.isEmpty) return;
       final ids = docs.map((d) => d.id).toList();
       await exportToPdf(ids);
