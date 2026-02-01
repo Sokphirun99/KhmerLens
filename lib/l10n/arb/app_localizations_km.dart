@@ -451,4 +451,14 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get dragToReorder => 'ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព';
+
+  @override
+  String get chooseImageSource => 'បន្ថែមឯកសារ';
+
+  @override
+  String get scanDocumentOption => 'ស្កេនឯកសារ';
+
+  @override
+  String get scanDocumentOptionDescription =>
+      'ប្រើកាមេរ៉ាដើម្បីស្កេនច្រើនទំព័រ';
 }

@@ -45,6 +45,20 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
+  /// Check if document has actually changed (paths added, removed, or reordered)
+  bool _hasDocumentChanged(Document updatedDoc) {
+    if (updatedDoc.imagePaths.length != _currentDocument.imagePaths.length) {
+      return true;
+    }
+    // Check if paths are in different order or different content
+    for (int i = 0; i < updatedDoc.imagePaths.length; i++) {
+      if (updatedDoc.imagePaths[i] != _currentDocument.imagePaths[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -196,31 +210,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     }
   }
 
-  Future<void> _deleteImage(String imagePath) async {
-    // Don't allow deleting the last image
-    if (_document.imagePaths.length <= 1) {
-      _showSnackBar(l10n.cannotDeleteLastImage);
-      return;
-    }
-
-    final confirmed = await DestructiveActionSheet.show(
-      context,
-      title: l10n.deleteImage,
-      message: l10n.deleteImageConfirmation,
-      confirmLabel: l10n.deleteImage,
-      icon: Icons.image_not_supported,
-    );
-
-    if (confirmed && mounted) {
-      context.read<DocumentBloc>().add(
-            RemoveImageFromDocument(
-              documentId: _document.id,
-              imagePath: imagePath,
-            ),
-          );
-    }
-  }
-
   Future<void> _reorderImages(List<String> newOrder) async {
     try {
       final updatedDocument = _document.copyWith(imagePaths: newOrder);
@@ -231,6 +220,22 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         _showSnackBar(l10n.unableToReorderImages);
       }
     }
+  }
+
+  /// Delete image directly without confirmation (used by image manager which already confirmed)
+  void _deleteImageDirect(String imagePath) {
+    // Don't allow deleting the last image
+    if (_document.imagePaths.length <= 1) {
+      _showSnackBar(l10n.cannotDeleteLastImage);
+      return;
+    }
+
+    context.read<DocumentBloc>().add(
+          RemoveImageFromDocument(
+            documentId: _document.id,
+            imagePath: imagePath,
+          ),
+        );
   }
 
   void _showImageManager() {
@@ -246,7 +251,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         ),
         child: _ImageManagerSheet(
           document: _document,
-          onDelete: _deleteImage,
+          onDelete: _deleteImageDirect,
           onReorder: _reorderImages,
           onAddMore: _addMoreImages,
         ),
@@ -258,29 +263,43 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   Widget build(BuildContext context) {
     return BlocListener<DocumentBloc, DocumentState>(
       listener: (context, state) {
+        if (!mounted) return; // Prevent operations after dispose
+
         if (state is DocumentDeleted) {
           _showSnackBar(l10n.deletedSuccess);
-          context.pop(true);
+          if (mounted) {
+            context.pop(true);
+          }
         } else if (state is DocumentLoaded) {
+          if (!mounted) return;
           // When documents list is refreshed after image add/remove, update current document
           final updatedDoc = state.documents.firstWhere(
             (doc) => doc.id == _document.id,
             orElse: () => _document,
           );
-          if (updatedDoc.imagePaths.length !=
-              _currentDocument.imagePaths.length) {
+
+          // Only update if document actually changed (different paths or different order)
+          final hasChanged = _hasDocumentChanged(updatedDoc);
+          if (hasChanged && mounted) {
             setState(() {
               _currentDocument = updatedDoc;
               // Reset page controller if current index is out of bounds
               if (_currentImageIndex >= updatedDoc.imagePaths.length) {
-                _currentImageIndex = updatedDoc.imagePaths.length - 1;
+                _currentImageIndex = updatedDoc.imagePaths.isNotEmpty
+                    ? updatedDoc.imagePaths.length - 1
+                    : 0;
                 if (_pageController.hasClients) {
-                  _pageController.jumpToPage(_currentImageIndex);
+                  try {
+                    _pageController.jumpToPage(_currentImageIndex);
+                  } catch (e) {
+                    // Silently handle page controller errors
+                  }
                 }
               }
             });
           }
         } else if (state is DocumentError) {
+          if (!mounted) return;
           ErrorSnackBar.show(
             context,
             error: state.error,
@@ -428,9 +447,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                               });
                             },
                             itemBuilder: (context, index) {
-                              debugPrint(
-                                  'DocumentDetail: Displaying image ${index + 1}/${_document.imagePaths.length}: ${_document.imagePaths[index]}');
-
                               return InteractiveViewer(
                                 minScale: 0.5,
                                 maxScale: 4.0,
@@ -439,8 +455,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                     File(_document.imagePaths[index]),
                                     fit: BoxFit.contain,
                                     errorBuilder: (context, error, stackTrace) {
-                                      debugPrint(
-                                          'DocumentDetail: Error loading image: $error');
                                       return Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,

@@ -175,5 +175,8 @@
     "greetingNight": "Good Night!",
     "dashboardFeatures": "Features",
     "scrollForMore": "Scroll for more",
-    "dragToReorder": "Long press and drag to reorder images"
+    "dragToReorder": "Long press and drag to reorder images",
+    "chooseImageSource": "Add Document",
+    "scanDocumentOption": "Scan Document",
+    "scanDocumentOptionDescription": "Use camera to scan multiple pages"
 }

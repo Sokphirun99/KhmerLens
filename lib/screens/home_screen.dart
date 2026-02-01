@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _checkAndLoadMore() {
     if (!_scrollController.hasClients) return;
+    if (!mounted) return; // Prevent accessing context after dispose
 
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
@@ -97,8 +99,10 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }).catchError((e) {
-        // Silently handle ad load errors
+        // Dispose ad on error to prevent memory leak
         debugPrint('Banner ad failed to load: $e');
+        _bannerAd?.dispose();
+        _bannerAd = null;
       });
   }
 
@@ -183,6 +187,89 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onFabPressed() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    // Show bottom sheet with options
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  l10n.chooseImageSource,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Scan Document option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.document_scanner,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                title: Text(l10n.scanDocumentOption),
+                subtitle: Text(l10n.scanDocumentOptionDescription),
+                onTap: () {
+                  Navigator.pop(context);
+                  _scanDocument();
+                },
+              ),
+              // Choose from Gallery option
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.photo_library,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                title: Text(l10n.chooseFromGallery),
+                onTap: () {
+                  Navigator.pop(context);
+                  _chooseFromGallery();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scanDocument() async {
     try {
       // Explicitly request camera permission on iOS to ensure the prompt appears
       if (Platform.isIOS) {
@@ -208,7 +295,30 @@ class _HomeScreenState extends State<HomeScreen> {
         ErrorSnackBar.show(
           context,
           error: e,
-          locale: 'km', // Or use current locale
+          locale: 'km',
+        );
+      }
+    }
+  }
+
+  Future<void> _chooseFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final List<XFile> images = await picker.pickMultiImage(
+        imageQuality: 85,
+      );
+
+      if (images.isNotEmpty) {
+        final imagePaths = images.map((img) => img.path).toList();
+        await _processNewDocument(imagePaths);
+      }
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+      if (mounted) {
+        ErrorSnackBar.show(
+          context,
+          error: e,
+          locale: 'km',
         );
       }
     }
@@ -295,11 +405,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     'HomeScreen: Image paths: ${state.document.imagePaths}');
 
                 // Safely close loading dialog if open
-                final navigator = Navigator.of(context, rootNavigator: true);
-                if (navigator.canPop()) {
-                  debugPrint('HomeScreen: Closing loading dialog');
-                  navigator.pop();
+                try {
+                  final navigator = Navigator.of(context, rootNavigator: true);
+                  if (navigator.canPop()) {
+                    debugPrint('HomeScreen: Closing loading dialog');
+                    navigator.pop();
+                  }
+                } catch (e) {
+                  debugPrint('HomeScreen: Failed to close dialog: $e');
                 }
+
+                if (!mounted) return;
 
                 // Reload documents list and navigate to created document
                 debugPrint('HomeScreen: Reloading documents list');
@@ -315,10 +431,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     'HomeScreen: DocumentError state received: ${state.error}');
 
                 // Try to close loading dialog if open
-                if (Navigator.of(context).canPop()) {
-                  debugPrint('HomeScreen: Closing loading dialog after error');
-                  Navigator.of(context).pop();
+                try {
+                  if (Navigator.of(context).canPop()) {
+                    debugPrint('HomeScreen: Closing loading dialog after error');
+                    Navigator.of(context).pop();
+                  }
+                } catch (e) {
+                  debugPrint('HomeScreen: Failed to close dialog: $e');
                 }
+
+                if (!mounted) return;
 
                 ErrorSnackBar.show(
                   context,
@@ -330,6 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Handle document deleted
               if (state is DocumentDeleted) {
                 debugPrint('HomeScreen: Document deleted: ${state.documentId}');
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(l10n.deletedSuccess)),
                 );
@@ -408,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: l10n.scanDocument,
                 child: const Icon(Icons.document_scanner),
               ),
-      ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.3, end: 0),
+      ), // Removed heavy FAB animation for better performance
     );
   }
 
@@ -520,9 +643,10 @@ class _HomeScreenState extends State<HomeScreen> {
             childCount: documents.length,
             itemBuilder: (context, index) {
               final document = documents[index];
-              // Limit animations to first 10 items for better performance
-              final shouldAnimate = index < 10;
+              // Limit animations to first 6 items for better performance on old phones
+              final shouldAnimate = index < 6;
               final card = DocumentGridCard(
+                key: ValueKey(document.id), // Add key for better list performance
                 document: document,
                 index: index,
                 onTap: () async {
@@ -557,9 +681,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               );
 
-              // Only animate first 10 items for performance
+              // Reduced animation for better performance - only first 6 items with shorter delay
               return shouldAnimate
-                  ? card.animate().fadeIn(delay: (30 * index).ms, duration: 200.ms)
+                  ? card.animate().fadeIn(delay: (20 * index).ms, duration: 150.ms)
                   : card;
             },
           ),
