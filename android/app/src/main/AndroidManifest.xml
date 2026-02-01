@@ -7,7 +7,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
 
     <application
-        android:label="KhmerScan"
+        android:label="KhmerLens"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
