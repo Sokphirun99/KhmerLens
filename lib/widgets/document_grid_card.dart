@@ -175,8 +175,9 @@ class DocumentGridCard extends StatelessWidget {
         Image.file(
           File(imagePath),
           fit: BoxFit.cover,
-          cacheWidth: 400, // Optimize memory by downsampling images
-          cacheHeight: 400,
+          cacheWidth: 200, // Reduced for better memory on old phones
+          cacheHeight: 200,
+          filterQuality: FilterQuality.low, // Faster decoding on old devices
           errorBuilder: (context, error, stackTrace) {
             final theme = Theme.of(context);
             return Container(
@@ -387,8 +388,9 @@ class DocumentGridCardCompact extends StatelessWidget {
         Image.file(
           File(imagePath),
           fit: BoxFit.cover,
-          cacheWidth: 300, // Optimize memory for compact cards
-          cacheHeight: 300,
+          cacheWidth: 150, // Reduced for better memory on old phones
+          cacheHeight: 150,
+          filterQuality: FilterQuality.low, // Faster decoding on old devices
           errorBuilder: (context, error, stackTrace) {
             return Builder(
               builder: (context) {

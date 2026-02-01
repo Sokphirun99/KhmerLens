@@ -349,19 +349,18 @@ class DocumentRepository {
   // --- Helpers ---
 
   Future<Document> _resolveAbsolutePathsForDocument(Document doc) async {
-    final absolutePaths = <String>[];
-    for (final path in doc.imagePaths) {
-      absolutePaths.add(await _storageService.getAbsolutePath(path));
-    }
+    // Resolve all paths in parallel for better performance
+    final absolutePaths = await Future.wait(
+      doc.imagePaths.map((path) => _storageService.getAbsolutePath(path)),
+    );
     return doc.copyWith(imagePaths: absolutePaths);
   }
 
   Future<List<Document>> _resolveAbsolutePathsForDocuments(
       List<Document> docs) async {
-    final resolvedDocs = <Document>[];
-    for (final doc in docs) {
-      resolvedDocs.add(await _resolveAbsolutePathsForDocument(doc));
-    }
-    return resolvedDocs;
+    // Resolve all documents in parallel for better performance
+    return await Future.wait(
+      docs.map((doc) => _resolveAbsolutePathsForDocument(doc)),
+    );
   }
 }

@@ -451,4 +451,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dragToReorder => 'Long press and drag to reorder images';
+
+  @override
+  String get chooseImageSource => 'Add Document';
+
+  @override
+  String get scanDocumentOption => 'Scan Document';
+
+  @override
+  String get scanDocumentOptionDescription =>
+      'Use camera to scan multiple pages';
 }
