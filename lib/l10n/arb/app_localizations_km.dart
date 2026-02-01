@@ -9,7 +9,7 @@ class AppLocalizationsKm extends AppLocalizations {
   AppLocalizationsKm([String locale = 'km']) : super(locale);
 
   @override
-  String get appTitle => 'KhmerScan';
+  String get appTitle => 'KhmerLens';
 
   @override
   String get scanDocument => 'ស្កេនឯកសារ';

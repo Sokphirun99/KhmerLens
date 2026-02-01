@@ -14,6 +14,20 @@
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.android.gms.** { *; }
 
+# Firebase
+-keep class com.google.firebase.** { *; }
+
+# General
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
+-dontwarn io.flutter.**
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
+-dontwarn androidx.**
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+
 # Keep native methods
 -keepclasseswithmembernames class * {
     native <methods>;

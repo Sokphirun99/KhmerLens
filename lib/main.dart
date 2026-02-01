@@ -126,7 +126,7 @@ class _MyAppState extends State<MyApp> {
             return BlocBuilder<LocaleCubit, LocaleState>(
               builder: (context, localeState) {
                 return MaterialApp.router(
-                  title: 'KhmerScan',
+                  title: 'KhmerLens',
                   theme: AppTheme.lightTheme,
                   darkTheme: AppTheme.darkTheme,
                   themeMode: context.read<ThemeCubit>().themeMode,
