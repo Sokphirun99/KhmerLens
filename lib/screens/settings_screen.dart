@@ -483,21 +483,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showClearCacheDialog(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.clearCacheTitle),
         content: Text(l10n.clearCacheMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await _clearCache();
-              if (mounted) {
+              if (context.mounted) {
                 // Use the new Success Action Sheet!
-                // ignore: use_build_context_synchronously
                 SuccessActionSheet.show(
                   context,
                   title: 'Success',

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
@@ -292,6 +293,15 @@ class StorageService {
       final imageFile = File(imagePath);
       if (await imageFile.exists()) {
         totalDeleted += await _getFileSize(imagePath);
+
+        // Invalidate Flutter's image cache for this file
+        try {
+          final fileImage = FileImage(imageFile);
+          imageCache.evict(fileImage);
+        } catch (e) {
+          debugPrint('Failed to evict image from cache: $e');
+        }
+
         await imageFile.delete();
       }
 
@@ -302,6 +312,14 @@ class StorageService {
         totalDeleted += await _getFileSize(thumbnailPath);
         final thumbnailFile = File(thumbnailPath);
         if (await thumbnailFile.exists()) {
+          // Invalidate thumbnail cache too
+          try {
+            final thumbImage = FileImage(thumbnailFile);
+            imageCache.evict(thumbImage);
+          } catch (e) {
+            debugPrint('Failed to evict thumbnail from cache: $e');
+          }
+
           await thumbnailFile.delete();
         }
       }

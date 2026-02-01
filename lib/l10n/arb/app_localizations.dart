@@ -961,6 +961,24 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព'**
   String get dragToReorder;
+
+  /// No description provided for @chooseImageSource.
+  ///
+  /// In km, this message translates to:
+  /// **'បន្ថែមឯកសារ'**
+  String get chooseImageSource;
+
+  /// No description provided for @scanDocumentOption.
+  ///
+  /// In km, this message translates to:
+  /// **'ស្កេនឯកសារ'**
+  String get scanDocumentOption;
+
+  /// No description provided for @scanDocumentOptionDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'ប្រើកាមេរ៉ាដើម្បីស្កេនច្រើនទំព័រ'**
+  String get scanDocumentOptionDescription;
 }
 
 class _AppLocalizationsDelegate

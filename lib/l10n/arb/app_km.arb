@@ -175,5 +175,8 @@
     "greetingNight": "រាត្រីសួស្តី!",
     "dashboardFeatures": "មុខងារ",
     "scrollForMore": "រំកិលដើម្បីមើលបន្ថែម",
-    "dragToReorder": "ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព"
+    "dragToReorder": "ចុចឱ្យជាប់ រួចអូសដើម្បីរៀបចំលំដាប់រូបភាព",
+    "chooseImageSource": "បន្ថែមឯកសារ",
+    "scanDocumentOption": "ស្កេនឯកសារ",
+    "scanDocumentOptionDescription": "ប្រើកាមេរ៉ាដើម្បីស្កេនច្រើនទំព័រ"
 }
