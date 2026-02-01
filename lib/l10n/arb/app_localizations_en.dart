@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'KhmerScan';
+  String get appTitle => 'KhmerLens';
 
   @override
   String get scanDocument => 'Scan Document';

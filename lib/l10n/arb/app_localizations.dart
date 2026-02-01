@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In km, this message translates to:
-  /// **'KhmerScan'**
+  /// **'KhmerLens'**
   String get appTitle;
 
   /// No description provided for @scanDocument.

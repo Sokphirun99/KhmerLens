@@ -21,17 +21,17 @@ class LocaleCubit extends Cubit<LocaleState> {
   Future<void> _loadLocale() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final languageCode = prefs.getString(_localeKey) ?? 'km';
+      final languageCode = prefs.getString(_localeKey) ?? 'en';
       final language = AppLanguage.values.firstWhere(
         (e) => e.name == languageCode,
-        orElse: () => AppLanguage.km,
+        orElse: () => AppLanguage.en,
       );
       emit(LocaleState(language: language, isLoaded: true));
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Failed to load locale preference: $e');
       }
-      emit(const LocaleState(language: AppLanguage.km, isLoaded: true));
+      emit(const LocaleState(language: AppLanguage.en, isLoaded: true));
     }
   }
 
@@ -65,7 +65,7 @@ class LocaleState {
   final bool isLoaded;
 
   const LocaleState({
-    this.language = AppLanguage.km,
+    this.language = AppLanguage.en,
     this.isLoaded = false,
   });
 
