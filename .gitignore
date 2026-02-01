@@ -113,3 +113,32 @@ SETUP_STATUS.md
 
 # AI/Claude cache
 .claude/
+
+# ==========================================
+# EXTRA SECURITY & SAFETY CHECKS
+# ==========================================
+
+# Apple Keys & Certificates
+*.p8
+*.cer
+*.crt
+*.pem
+*.p12
+
+# Android additional exclusions
+**/*.keystore
+**/*.jks
+**/key.properties
+**/local.properties
+
+# Web/Other Secrets
+client_secret.json
+credentials.json
+token.json
+.npmrc
+.yarnrc
+
+# Environment Files (Reinforce)
+.env
+.env.*
+!.env.example
