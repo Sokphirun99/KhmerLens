@@ -1,4 +1,4 @@
-# khmerscan
+# khmerLens
 
 A new Flutter project.
 
