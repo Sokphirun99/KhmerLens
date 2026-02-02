@@ -33,8 +33,8 @@
             </intent-filter>
         </activity>
         <!-- AdMob App ID
-             IMPORTANT: This is currently a TEST ID. Replace with your production AdMob App ID.
-             Get your App ID from: https://apps.admob.com/
+             This matches the production ID configured in lib/config/ad_config.dart.
+             Get your App ID from: https://apps.admob.com/ -->
              Also update the corresponding value in lib/config/ad_config.dart -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -44,6 +44,15 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/accent" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
         <!-- ML Kit dependencies -->
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"

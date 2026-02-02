@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart';
+import 'services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -61,6 +63,16 @@ void main() async {
           debugPrint('AdService initialization failed: $e');
         }
       });
+
+      // Register background message handler
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+      // Initialize Notification Service
+      try {
+        await NotificationService().initialize();
+      } catch (e) {
+        debugPrint('NotificationService initialization failed: $e');
+      }
 
       runApp(const MyApp());
     },
