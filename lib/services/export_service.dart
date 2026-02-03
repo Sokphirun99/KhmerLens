@@ -41,6 +41,8 @@ class ExportService {
     }
   }
 
+  static const int _maxExportPageLimit = 50;
+
   /// Export selected documents to a single PDF file and share it.
   Future<void> exportToPdf(List<String> documentIds,
       {ui.Rect? sharePositionOrigin}) async {
@@ -48,16 +50,37 @@ class ExportService {
 
     try {
       final docs = <Document>[];
+      int totalImages = 0;
+
       for (final id in documentIds) {
         final doc = await _documentRepository.getDocument(id);
         if (doc != null) {
           docs.add(doc);
+          totalImages += doc.imagePaths.length;
         }
       }
       if (docs.isEmpty) return;
 
+      // Safety check for OOM risk
+      if (totalImages > _maxExportPageLimit) {
+        throw Exception(
+            'Export limit exceeded: Cannot export more than $_maxExportPageLimit pages at once to prevent memory issues (Selected: $totalImages).');
+      }
+
       // For file export, default to A4
-      final pdfBytes = await _generatePdf(PdfPageFormat.a4, docs);
+      Uint8List pdfBytes;
+      try {
+        pdfBytes = await _generatePdf(PdfPageFormat.a4, docs);
+      } catch (e) {
+        // Catch PDF generation errors specifically
+        debugPrint('ExportService: PDF Generation failed: $e');
+        if (e.toString().contains('memory') ||
+            e.toString().contains('allocation')) {
+          throw Exception(
+              'Failed to generate PDF due to memory constraints. Please try exporting fewer documents.');
+        }
+        rethrow;
+      }
 
       // Save to temporary file
       final tempDir = await getTemporaryDirectory();
