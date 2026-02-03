@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
 
 class DashboardFeatureCard extends StatelessWidget {
   final String title;
   final String description;
-  final IconData icon;
+  final String icon;
   final Color color;
   final VoidCallback onTap;
 
@@ -40,7 +41,7 @@ class DashboardFeatureCard extends StatelessWidget {
                   color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 32),
+                child: Iconify(icon, color: color, size: 32),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

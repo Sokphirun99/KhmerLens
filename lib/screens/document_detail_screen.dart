@@ -5,6 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 
 import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
@@ -156,12 +158,12 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: const Iconify(Mdi.camera),
               title: Text(l10n.takePhoto),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: const Iconify(Mdi.image_multiple),
               title: Text(l10n.chooseFromGallery),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -316,25 +318,25 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           actions: [
             // Add images button
             IconButton(
-              icon: const Icon(Icons.add_photo_alternate),
+              icon: const Iconify(Mdi.image_plus, color: Colors.black54),
               onPressed: _addMoreImages,
               tooltip: l10n.addImages,
             ),
             // Manage images button
             if (_document.imagePaths.length > 1)
               IconButton(
-                icon: const Icon(Icons.view_carousel),
+                icon: const Iconify(Mdi.view_carousel, color: Colors.black54),
                 onPressed: _showImageManager,
                 tooltip: l10n.manageImages,
               ),
             PopupMenuButton<String>(
               key: _menuKey,
-              icon: const Icon(Icons.more_vert),
+              icon: const Iconify(Mdi.dots_vertical, color: Colors.black54),
               itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'share',
                   child: ListTile(
-                    leading: const Icon(Icons.share),
+                    leading: const Iconify(Mdi.share_variant),
                     title: Text(l10n.share),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -342,7 +344,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 PopupMenuItem(
                   value: 'export_pdf',
                   child: ListTile(
-                    leading: const Icon(Icons.picture_as_pdf),
+                    leading: const Iconify(Mdi.file_pdf_box),
                     title: Text(l10n.exportPdf),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -351,8 +353,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
-                    leading: Icon(
-                      Icons.delete,
+                    leading: Iconify(
+                      Mdi.delete,
                       color: Theme.of(context).colorScheme.error,
                     ),
                     title: Text(
@@ -393,8 +395,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.image_not_supported_outlined,
+                            Iconify(
+                              Mdi.image_off_outline,
                               size: 80,
                               color: Theme.of(context)
                                   .colorScheme
@@ -429,7 +431,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                             const SizedBox(height: 24),
                             FilledButton.icon(
                               onPressed: _addMoreImages,
-                              icon: const Icon(Icons.add_photo_alternate),
+                              icon: const Iconify(Mdi.image_plus,
+                                  color: Colors.white),
                               label: Text(l10n.addImages),
                             ),
                           ],
@@ -459,8 +462,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Icon(
-                                            Icons.broken_image_outlined,
+                                          Iconify(
+                                            Mdi.image_broken_variant,
                                             size: 64,
                                             color: Theme.of(context)
                                                 .colorScheme
@@ -599,8 +602,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.info_outline,
+                          Iconify(
+                            Mdi.information_outline,
                             size: 20,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -640,13 +643,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           l10n.generalInfo,
           [
             _buildInfoRow(
-              Icons.calendar_today,
+              Mdi.calendar,
               l10n.created,
               Helpers.formatDateTime(_document.createdAt),
             ),
             if (_document.expiryDate != null)
               _buildInfoRow(
-                Icons.event_busy,
+                Mdi.calendar_alert,
                 l10n.expires,
                 Helpers.formatDate(_document.expiryDate!),
               ),
@@ -657,12 +660,12 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           l10n.technicalInfo,
           [
             _buildInfoRow(
-              Icons.badge,
+              Mdi.id_card,
               l10n.id,
               _document.id.substring(0, 8),
             ),
             _buildInfoRow(
-              Icons.image,
+              Mdi.image,
               l10n.images,
               l10n.imageCount(_document.imagePaths.length),
             ),
@@ -678,7 +681,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   sizeText = l10n.loading;
                 }
                 return _buildInfoRow(
-                  Icons.storage,
+                  Mdi.database,
                   l10n.size,
                   sizeText,
                 );
@@ -711,14 +714,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(String icon, String label, String value) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon,
+          Iconify(icon,
               size: 20,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
           const SizedBox(width: 12),
