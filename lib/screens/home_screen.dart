@@ -1,177 +1,355 @@
 import 'dart:io';
+
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:khmerscan/l10n/arb/app_localizations.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:uuid/uuid.dart';
 
 import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
 import '../bloc/document/document_state.dart';
+import '../hooks/use_banner_ad.dart';
+import '../hooks/use_scroll_control.dart';
 import '../models/document.dart';
 import '../router/app_router.dart';
 import '../services/ad_service.dart';
 import '../services/rating_service.dart';
 import '../utils/constants.dart';
 import '../utils/error_handler.dart';
-import '../widgets/document_grid_card.dart';
 import '../widgets/destructive_action_sheet.dart';
+import '../widgets/document_grid_card.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/error_dialog.dart';
 import '../widgets/loading_dialog.dart';
-import '../widgets/empty_state.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends HookWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scansCount = useState(0);
 
-class _HomeScreenState extends State<HomeScreen> {
-  BannerAd? _bannerAd;
-  bool _isBannerAdReady = false;
-  bool _isDisposed = false;
-  int _scansCount = 0;
+    // BLoC State for pagination
+    final documentState = context.watch<DocumentBloc>().state;
+    final canLoadMore = documentState is DocumentLoaded &&
+        documentState.hasMore &&
+        !documentState.isLoadingMore;
 
-  // Scroll controller for FAB animation and pagination
-  final ScrollController _scrollController = ScrollController();
-  bool _isFabExtended = true;
-  double _lastScrollOffset = 0;
-
-  // Pagination threshold - load more when 200px from bottom
-  static const double _loadMoreThreshold = 200.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBannerAd();
-    _scrollController.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final currentOffset = _scrollController.offset;
-    final scrollDelta = currentOffset - _lastScrollOffset;
-
-    // Only trigger state change if scroll delta is significant (avoid jitter)
-    if (scrollDelta.abs() > 5) {
-      final shouldExtend = scrollDelta < 0 || currentOffset <= 0;
-      if (_isFabExtended != shouldExtend) {
-        setState(() {
-          _isFabExtended = shouldExtend;
-        });
-      }
-      _lastScrollOffset = currentOffset;
-    }
-
-    // Check for pagination - load more when near bottom
-    _checkAndLoadMore();
-  }
-
-  void _checkAndLoadMore() {
-    if (!_scrollController.hasClients) return;
-    if (!mounted) return; // Prevent accessing context after dispose
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-
-    // Load more when within threshold of bottom
-    if (maxScroll - currentScroll <= _loadMoreThreshold) {
-      final state = context.read<DocumentBloc>().state;
-      if (state is DocumentLoaded && state.hasMore && !state.isLoadingMore) {
+    // Use custom scroll hook
+    final (scrollController, isFabExtended) = useScrollControl(
+      onLoadMore: () {
         context.read<DocumentBloc>().add(const LoadMoreDocuments());
-      }
-    }
-  }
+      },
+      canLoadMore: canLoadMore,
+    );
 
-  void _loadBannerAd() {
-    _bannerAd = AdService().createBannerAd()
-      ..load().then((_) {
-        if (mounted && !_isDisposed) {
-          setState(() {
-            _isBannerAdReady = true;
-          });
+    // Initialize Banner Ad
+    final (bannerAd, isBannerAdReady) = useBannerAd();
+
+    // Define methods that need access to hooks/context
+    Future<void> processNewDocument(List<String> imagePaths) async {
+      try {
+        debugPrint('HomeScreen: Processing ${imagePaths.length} images');
+        if (imagePaths.isEmpty) return;
+
+        if (context.mounted) {
+          _showLoadingDialog(context);
         }
-      }).catchError((e) {
-        // Dispose ad on error to prevent memory leak
-        debugPrint('Banner ad failed to load: $e');
-        _bannerAd?.dispose();
-        _bannerAd = null;
-      });
-  }
 
-  @override
-  void dispose() {
-    _isDisposed = true;
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    _bannerAd?.dispose();
-    _bannerAd = null;
-    super.dispose();
-  }
-
-  Future<void> _processNewDocument(List<String> imagePaths) async {
-    try {
-      debugPrint('HomeScreen: Processing ${imagePaths.length} images');
-      debugPrint('HomeScreen: Image paths: $imagePaths');
-
-      if (imagePaths.isEmpty) {
-        debugPrint('HomeScreen: No images to process');
-        return;
-      }
-
-      // Show loading
-      if (mounted) {
-        _showLoadingDialog(context);
-      }
-
-      final documentId = const Uuid().v4();
-
-      // Create document
-      final document = Document(
-        id: documentId,
-        title:
-            '${AppLocalizations.of(context)!.documentPrefix} - ${_formatDate(DateTime.now())}',
-        imagePaths: [], // Will be updated by repository
-        createdAt: DateTime.now(),
-      );
-
-      debugPrint('HomeScreen: Created document with ID: $documentId');
-
-      if (!mounted) return;
-
-      // Create document using BLoC
-      debugPrint('HomeScreen: Dispatching CreateDocument event');
-      context.read<DocumentBloc>().add(
-            CreateDocument(
-              document: document,
-              imagePaths: imagePaths,
-            ),
-          );
-
-      // Show interstitial ad every 3 scans
-      _scansCount++;
-      if (_scansCount % AppConstants.scansBeforeInterstitial == 0) {
-        AdService().showInterstitialAd();
-      }
-
-      // Track scan event for rating prompt
-      await RatingService().trackEvent(isScan: true);
-    } catch (e) {
-      debugPrint('HomeScreen: Error in _processNewDocument: $e');
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+        final documentId = const Uuid().v4();
+        final document = Document(
+          id: documentId,
+          title: '${l10n.documentPrefix} - ${_formatDate(DateTime.now())}',
+          imagePaths: [],
+          createdAt: DateTime.now(),
         );
+
+        if (!context.mounted) return;
+
+        context.read<DocumentBloc>().add(
+              CreateDocument(
+                document: document,
+                imagePaths: imagePaths,
+              ),
+            );
+
+        scansCount.value++;
+        if (scansCount.value % AppConstants.scansBeforeInterstitial == 0) {
+          AdService().showInterstitialAd();
+        }
+
+        await RatingService().trackEvent(isScan: true);
+      } catch (e) {
+        debugPrint('HomeScreen: Error in processNewDocument: $e');
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
       }
     }
+
+    Future<void> scanDocument() async {
+      try {
+        if (Platform.isIOS) {
+          final status = await Permission.camera.request();
+          if (status.isPermanentlyDenied) {
+            if (context.mounted) _showPermissionDeniedDialog(context);
+            return;
+          }
+          if (!status.isGranted) return;
+        }
+
+        final imagePaths = await CunningDocumentScanner.getPictures() ?? [];
+        if (imagePaths.isNotEmpty) {
+          await processNewDocument(imagePaths);
+        }
+      } catch (e) {
+        debugPrint('Error scanning document: $e');
+        if (context.mounted) {
+          ErrorSnackBar.show(context, error: e, locale: 'km');
+        }
+      }
+    }
+
+    Future<void> chooseFromGallery() async {
+      try {
+        final picker = ImagePicker();
+        final List<XFile> images =
+            await picker.pickMultiImage(imageQuality: 85);
+
+        if (images.isNotEmpty) {
+          final imagePaths = images.map((img) => img.path).toList();
+          await processNewDocument(imagePaths);
+        }
+      } catch (e) {
+        debugPrint('Error picking images: $e');
+        if (context.mounted) {
+          ErrorSnackBar.show(context, error: e, locale: 'km');
+        }
+      }
+    }
+
+    void onFabPressed() {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    l10n.chooseImageSource,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.document_scanner,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(l10n.scanDocumentOption),
+                  subtitle: Text(l10n.scanDocumentOptionDescription),
+                  onTap: () {
+                    Navigator.pop(context);
+                    scanDocument();
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.photo_library,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  title: Text(l10n.chooseFromGallery),
+                  onTap: () {
+                    Navigator.pop(context);
+                    chooseFromGallery();
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverAppBar.large(
+                expandedHeight: 120,
+                floating: true,
+                pinned: true,
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Text(
+                    l10n.myDocuments,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () => context.pushSearch(),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+              BlocConsumer<DocumentBloc, DocumentState>(
+                listener: (context, state) {
+                  // ... logic for listener remains mostly similar ...
+                  // Since we are in build, we can define listener logic here or keep it inline
+                  // But separating it might be cleaner if it's complex.
+                  // For now, I'll inline it as it was in the original structure
+                  if (state is DocumentCreated) {
+                    try {
+                      final navigator =
+                          Navigator.of(context, rootNavigator: true);
+                      if (navigator.canPop()) {
+                        navigator.pop();
+                      }
+                    } catch (e) {
+                      debugPrint('HomeScreen: Failed to close dialog: $e');
+                    }
+                    context.read<DocumentBloc>().add(const LoadDocuments());
+                    context.pushDocumentDetail(state.document);
+                  } else if (state is DocumentError) {
+                    try {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    } catch (e) {
+                      debugPrint('HomeScreen: Failed to close dialog: $e');
+                    }
+                    ErrorSnackBar.show(context,
+                        error: state.error, locale: 'km');
+                  } else if (state is DocumentDeleted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.deletedSuccess)),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  if (state is DocumentLoading) {
+                    return _buildShimmerLoading(context);
+                  }
+                  if (state is DocumentLoaded) {
+                    if (state.documents.isEmpty) {
+                      return SliverFillRemaining(
+                        child: EmptyState.documents(
+                          context,
+                          onScan: onFabPressed,
+                        ),
+                      );
+                    }
+                    return _buildDocumentGrid(context, state, l10n);
+                  }
+                  if (state is DocumentError) {
+                    // Refactoring _buildErrorState to be inline or helper
+                    return _buildErrorState(context, state.error, l10n);
+                  }
+                  return _buildShimmerLoading(context);
+                },
+              ),
+              if (isBannerAdReady && bannerAd != null)
+                SliverToBoxAdapter(
+                  child: SizedBox(height: bannerAd.size.height.toDouble() + 8),
+                ),
+            ],
+          ),
+          if (isBannerAdReady && bannerAd != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                width: bannerAd.size.width.toDouble(),
+                height: bannerAd.size.height.toDouble(),
+                color: Theme.of(context).colorScheme.surface,
+                child: AdWidget(ad: bannerAd),
+              ).animate().fadeIn(duration: 300.ms),
+            ),
+        ],
+      ),
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) {
+          return ScaleTransition(
+            scale: animation,
+            child: child,
+          );
+        },
+        child: isFabExtended
+            ? FloatingActionButton.extended(
+                key: const ValueKey('extended'),
+                onPressed: onFabPressed,
+                icon: const Icon(Icons.document_scanner),
+                label: Text(l10n.scanDocument),
+                elevation: 2,
+              )
+            : FloatingActionButton(
+                key: const ValueKey('collapsed'),
+                onPressed: onFabPressed,
+                elevation: 2,
+                tooltip: l10n.scanDocument,
+                child: const Icon(Icons.document_scanner),
+              ),
+      ),
+    );
   }
 
   void _showLoadingDialog(BuildContext context) {
@@ -184,144 +362,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
-  }
-
-  Future<void> _onFabPressed() async {
-    final l10n = AppLocalizations.of(context)!;
-
-    // Show bottom sheet with options
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // Title
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  l10n.chooseImageSource,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              // Scan Document option
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.document_scanner,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                title: Text(l10n.scanDocumentOption),
-                subtitle: Text(l10n.scanDocumentOptionDescription),
-                onTap: () {
-                  Navigator.pop(context);
-                  _scanDocument();
-                },
-              ),
-              // Choose from Gallery option
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.photo_library,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                ),
-                title: Text(l10n.chooseFromGallery),
-                onTap: () {
-                  Navigator.pop(context);
-                  _chooseFromGallery();
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _scanDocument() async {
-    try {
-      // Explicitly request camera permission on iOS to ensure the prompt appears
-      if (Platform.isIOS) {
-        final status = await Permission.camera.request();
-        if (status.isPermanentlyDenied) {
-          if (mounted) {
-            _showPermissionDeniedDialog(context);
-          }
-          return;
-        }
-        if (!status.isGranted) {
-          return; // User denied
-        }
-      }
-
-      final imagePaths = await CunningDocumentScanner.getPictures() ?? [];
-      if (imagePaths.isNotEmpty) {
-        await _processNewDocument(imagePaths);
-      }
-    } catch (e) {
-      debugPrint('Error scanning document: $e');
-      if (mounted) {
-        ErrorSnackBar.show(
-          context,
-          error: e,
-          locale: 'km',
-        );
-      }
-    }
-  }
-
-  Future<void> _chooseFromGallery() async {
-    try {
-      final picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage(
-        imageQuality: 85,
-      );
-
-      if (images.isNotEmpty) {
-        final imagePaths = images.map((img) => img.path).toList();
-        await _processNewDocument(imagePaths);
-      }
-    } catch (e) {
-      debugPrint('Error picking images: $e');
-      if (mounted) {
-        ErrorSnackBar.show(
-          context,
-          error: e,
-          locale: 'km',
-        );
-      }
-    }
   }
 
   void _showPermissionDeniedDialog(BuildContext context) {
@@ -348,194 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Main scrollable content
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-          // Modern app bar
-          SliverAppBar.large(
-            expandedHeight: 120,
-            floating: true,
-            pinned: true,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                l10n.myDocuments,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () => context.pushSearch(),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-
-          // Documents grid - BLoC Consumer
-          BlocConsumer<DocumentBloc, DocumentState>(
-            listener: (context, state) {
-              debugPrint(
-                  'HomeScreen BlocConsumer: Received state: ${state.runtimeType}');
-
-              if (!mounted) {
-                debugPrint('HomeScreen: Widget not mounted, ignoring state');
-                return;
-              }
-
-              // Handle document created
-              if (state is DocumentCreated) {
-                debugPrint('HomeScreen: DocumentCreated state received');
-                debugPrint('HomeScreen: Document ID: ${state.document.id}');
-                debugPrint(
-                    'HomeScreen: Document has ${state.document.imagePaths.length} images');
-                debugPrint(
-                    'HomeScreen: Image paths: ${state.document.imagePaths}');
-
-                // Safely close loading dialog if open
-                try {
-                  final navigator = Navigator.of(context, rootNavigator: true);
-                  if (navigator.canPop()) {
-                    debugPrint('HomeScreen: Closing loading dialog');
-                    navigator.pop();
-                  }
-                } catch (e) {
-                  debugPrint('HomeScreen: Failed to close dialog: $e');
-                }
-
-                if (!mounted) return;
-
-                // Reload documents list and navigate to created document
-                debugPrint('HomeScreen: Reloading documents list');
-                context.read<DocumentBloc>().add(const LoadDocuments());
-
-                debugPrint('HomeScreen: Navigating to document detail');
-                context.pushDocumentDetail(state.document);
-              }
-
-              // Handle errors
-              if (state is DocumentError) {
-                debugPrint(
-                    'HomeScreen: DocumentError state received: ${state.error}');
-
-                // Try to close loading dialog if open
-                try {
-                  if (Navigator.of(context).canPop()) {
-                    debugPrint('HomeScreen: Closing loading dialog after error');
-                    Navigator.of(context).pop();
-                  }
-                } catch (e) {
-                  debugPrint('HomeScreen: Failed to close dialog: $e');
-                }
-
-                if (!mounted) return;
-
-                ErrorSnackBar.show(
-                  context,
-                  error: state.error,
-                  locale: 'km',
-                );
-              }
-
-              // Handle document deleted
-              if (state is DocumentDeleted) {
-                debugPrint('HomeScreen: Document deleted: ${state.documentId}');
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.deletedSuccess)),
-                );
-              }
-            },
-            builder: (context, state) {
-              if (state is DocumentLoading) {
-                return _buildShimmerLoading();
-              }
-
-              if (state is DocumentLoaded) {
-                if (state.documents.isEmpty) {
-                  return SliverFillRemaining(
-                    child: EmptyState.documents(
-                      context,
-                      onScan: _onFabPressed,
-                    ),
-                  );
-                }
-                return _buildDocumentGrid(state, l10n);
-              }
-
-              if (state is DocumentError) {
-                return _buildErrorState(state.error, l10n);
-              }
-
-              return _buildShimmerLoading();
-            },
-          ),
-
-          // Add bottom padding to accommodate banner ad
-          if (_isBannerAdReady)
-            SliverToBoxAdapter(
-              child: SizedBox(height: _bannerAd!.size.height.toDouble() + 8),
-            ),
-        ],
-          ),
-
-          // Banner ad positioned at bottom
-          if (_isBannerAdReady)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                width: _bannerAd!.size.width.toDouble(),
-                height: _bannerAd!.size.height.toDouble(),
-                color: Theme.of(context).colorScheme.surface,
-                child: AdWidget(ad: _bannerAd!),
-              ).animate().fadeIn(duration: 300.ms),
-            ),
-        ],
-      ),
-
-      // FAB - shrinks on scroll down, extends on scroll up
-      floatingActionButton: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        transitionBuilder: (child, animation) {
-          return ScaleTransition(
-            scale: animation,
-            child: child,
-          );
-        },
-        child: _isFabExtended
-            ? FloatingActionButton.extended(
-                key: const ValueKey('extended'),
-                onPressed: _onFabPressed,
-                icon: const Icon(Icons.document_scanner),
-                label: Text(l10n.scanDocument),
-                elevation: 2,
-              )
-            : FloatingActionButton(
-                key: const ValueKey('collapsed'),
-                onPressed: _onFabPressed,
-                elevation: 2,
-                tooltip: l10n.scanDocument,
-                child: const Icon(Icons.document_scanner),
-              ),
-      ), // Removed heavy FAB animation for better performance
-    );
-  }
-
-  Widget _buildShimmerLoading() {
+  Widget _buildShimmerLoading(BuildContext context) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
       sliver: SliverMasonryGrid.count(
@@ -565,7 +418,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildErrorState(dynamic error, AppLocalizations l10n) {
+  Widget _buildErrorState(
+      BuildContext context, dynamic error, AppLocalizations l10n) {
     final errorMessage = ErrorHandler.getMessage(error, locale: 'km');
     final recoverySuggestion =
         ErrorHandler.getRecoverySuggestion(error, locale: 'km');
@@ -621,7 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDocumentGrid(DocumentLoaded state, AppLocalizations l10n) {
+  Widget _buildDocumentGrid(
+      BuildContext context, DocumentLoaded state, AppLocalizations l10n) {
     final documents = state.documents;
 
     // Responsive grid
@@ -646,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Limit animations to first 6 items for better performance on old phones
               final shouldAnimate = index < 6;
               final card = DocumentGridCard(
-                key: ValueKey(document.id), // Add key for better list performance
+                key: ValueKey(document.id),
                 document: document,
                 index: index,
                 onTap: () async {
@@ -681,14 +536,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               );
 
-              // Reduced animation for better performance - only first 6 items with shorter delay
               return shouldAnimate
-                  ? card.animate().fadeIn(delay: (20 * index).ms, duration: 150.ms)
+                  ? card
+                      .animate()
+                      .fadeIn(delay: (20 * index).ms, duration: 150.ms)
                   : card;
             },
           ),
         ),
-        // Loading indicator for pagination
         if (state.isLoadingMore)
           SliverToBoxAdapter(
             child: Padding(
@@ -705,7 +560,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        // "Load more" hint when there are more documents
         if (state.hasMore && !state.isLoadingMore)
           SliverToBoxAdapter(
             child: Padding(
