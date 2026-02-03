@@ -21,8 +21,7 @@ class DatabaseService {
   static const String colMetadata = 'metadata';
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database ??= await _initDatabase();
     return _database!;
   }
 

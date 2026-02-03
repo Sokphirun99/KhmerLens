@@ -19,6 +19,7 @@ import 'bloc/theme/theme_cubit.dart';
 import 'repositories/document_repository.dart';
 import 'router/app_router.dart';
 import 'services/ad_service.dart';
+import 'services/storage_service.dart';
 import 'utils/error_handler.dart';
 import 'utils/theme.dart';
 
@@ -55,6 +56,13 @@ void main() async {
           debugPrint('Firebase initialization failed: $e');
           ErrorHandler.logError(e, stackTrace: stackTrace);
         }
+      }
+
+      // Initialize Storage Service (Sync support)
+      try {
+        await StorageService().init();
+      } catch (e) {
+        debugPrint('StorageService initialization failed: $e');
       }
 
       // Initialize AdMob (Non-blocking)

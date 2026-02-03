@@ -118,6 +118,10 @@ class StorageService {
   // Cached storage size for performance
   int? _cachedStorageSize;
 
+  Future<void> init() async {
+    await _ensureDirectories();
+  }
+
   Future<void> _ensureDirectories() async {
     try {
       _appDocDir ??= await getApplicationDocumentsDirectory();
@@ -138,6 +142,26 @@ class StorageService {
         originalError: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  /// Synchronous version of getAbsolutePath. Requires init() to be called first.
+  String getAbsolutePathSync(String inputPath) {
+    if (_appDocDir == null || _imageDir == null) {
+      throw StorageException(
+        'StorageService not initialized. Call init() first.',
+        code: 'STORAGE_NOT_INITIALIZED',
+      );
+    }
+
+    if (inputPath.startsWith('/')) {
+      return inputPath; // Already absolute
+    }
+
+    if (inputPath.contains(Platform.pathSeparator)) {
+      return path.join(_appDocDir!.path, inputPath);
+    } else {
+      return path.join(_imageDir!.path, inputPath);
     }
   }
 
