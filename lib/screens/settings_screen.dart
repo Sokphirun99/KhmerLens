@@ -14,6 +14,8 @@ import '../utils/constants.dart';
 import '../utils/theme.dart';
 import '../services/rating_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 import '../widgets/success_action_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -95,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text(l10n.settings),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Iconify(Mdi.arrow_left, color: Colors.black54),
           onPressed: () => context.pop(),
           tooltip: l10n.back,
         ),
@@ -106,7 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Appearance section
           _buildSectionHeader(
             context,
-            icon: Icons.palette_outlined,
+            icon: Mdi.palette_outline,
             title: l10n.appearance,
           ),
           _buildAppearanceSection(context, colorScheme, l10n),
@@ -116,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Storage section
           _buildSectionHeader(
             context,
-            icon: Icons.storage_outlined,
+            icon: Mdi.database_outline,
             title: l10n.storage,
           ),
           _buildStorageSection(context, colorScheme, l10n),
@@ -126,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // About section
           _buildSectionHeader(
             context,
-            icon: Icons.info_outline,
+            icon: Mdi.information_outline,
             title: l10n.aboutApp,
           ),
           _buildAboutSection(context, colorScheme, l10n),
@@ -136,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Support section
           _buildSectionHeader(
             context,
-            icon: Icons.support_outlined,
+            icon: Mdi.lifebuoy,
             title: l10n.support,
           ),
           _buildSupportSection(context, colorScheme, l10n),
@@ -149,14 +151,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionHeader(
     BuildContext context, {
-    required IconData icon,
+    required String icon,
     required String title,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(
+          Iconify(
             icon,
             size: 20,
             color: Theme.of(context).colorScheme.primary,
@@ -190,7 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   _buildSettingsTile(
                     context,
-                    icon: Icons.brightness_6_outlined,
+                    icon: Mdi.theme_light_dark,
                     title: l10n.displayMode,
                     subtitle: _getThemeModeLabel(state.mode, l10n),
                     onTap: () => _showThemePicker(context, state.mode, l10n),
@@ -207,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             builder: (context, state) {
               return _buildSettingsTile(
                 context,
-                icon: Icons.text_fields,
+                icon: Mdi.format_size,
                 title: l10n.textSize,
                 subtitle: _getTextSizeLabel(state.textScaleFactor, l10n),
                 onTap: () =>
@@ -221,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             builder: (context, state) {
               return _buildSettingsTile(
                 context,
-                icon: Icons.language_outlined,
+                icon: Mdi.web,
                 title: l10n.language,
                 subtitle: _getLanguageLabel(state.language, l10n),
                 onTap: () => _showLanguagePicker(context, state.language, l10n),
@@ -243,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildThemeOption(
             context,
             label: l10n.light,
-            icon: Icons.light_mode,
+            icon: Mdi.weather_sunny,
             isSelected: mode == AppThemeMode.light,
             onTap: () =>
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.light),
@@ -251,7 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildThemeOption(
             context,
             label: l10n.dark,
-            icon: Icons.dark_mode,
+            icon: Mdi.weather_night,
             isSelected: mode == AppThemeMode.dark,
             onTap: () =>
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.dark),
@@ -259,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildThemeOption(
             context,
             label: l10n.system,
-            icon: Icons.settings_suggest,
+            icon: Mdi.cog,
             isSelected: mode == AppThemeMode.system,
             onTap: () =>
                 context.read<ThemeCubit>().setThemeMode(AppThemeMode.system),
@@ -272,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildThemeOption(
     BuildContext context, {
     required String label,
-    required IconData icon,
+    required String icon,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
@@ -297,7 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            Iconify(
               icon,
               color: isSelected
                   ? colorScheme.onPrimary
@@ -356,7 +358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.light_mode),
+              leading: const Iconify(Mdi.weather_sunny),
               title: Text(l10n.light),
               trailing: currentMode == AppThemeMode.light
                   ? Icon(Icons.check,
@@ -368,7 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.dark_mode),
+              leading: const Iconify(Mdi.weather_night),
               title: Text(l10n.dark),
               trailing: currentMode == AppThemeMode.dark
                   ? Icon(Icons.check,
@@ -380,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings_suggest),
+              leading: const Iconify(Mdi.cog),
               title: Text(l10n.system),
               subtitle: Text(l10n.useDeviceSettings),
               trailing: currentMode == AppThemeMode.system
@@ -453,7 +455,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSettingsTile(
             context,
-            icon: Icons.folder_outlined,
+            icon: Mdi.file_document_outline,
             title: l10n.documentCount,
             subtitle: _isLoadingStorage
                 ? l10n.counting
@@ -462,7 +464,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.pie_chart_outline,
+            icon: Mdi.chart_pie,
             title: l10n.storageUsed,
             subtitle:
                 _storageUsed.isEmpty ? l10n.unableToCalculate : _storageUsed,
@@ -470,7 +472,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.cleaning_services_outlined,
+            icon: Mdi.delete_sweep_outline,
             title: l10n.clearCache,
             subtitle: l10n.clearCacheSubtitle,
             onTap: () => _showClearCacheDialog(context, l10n),
@@ -545,21 +547,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSettingsTile(
             context,
-            icon: Icons.apps,
+            icon: Mdi.apps,
             title: l10n.app,
             subtitle: AppConstants.appName,
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.numbers,
+            icon: Mdi.numeric,
             title: l10n.version,
             subtitle: AppConstants.appVersion,
           ),
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.description_outlined,
+            icon: Mdi.license,
             title: l10n.license,
             subtitle: l10n.tapToViewLicense,
             onTap: () => _showLicensesPage(context),
@@ -596,7 +598,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           _buildSettingsTile(
             context,
-            icon: Icons.rate_review_outlined,
+            icon: Mdi.star_outline,
             title: l10n.rateApp,
             subtitle: l10n.rateAppSubtitle,
             onTap: () => _rateApp(l10n),
@@ -604,7 +606,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.share_outlined,
+            icon: Mdi.share_variant_outline,
             title: l10n.shareApp,
             subtitle: l10n.shareAppSubtitle,
             onTap: () => _shareApp(l10n),
@@ -612,7 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.bug_report_outlined,
+            icon: Mdi.bug_outline,
             title: l10n.reportBug,
             subtitle: l10n.reportBugSubtitle,
             onTap: () => _reportBug(),
@@ -620,7 +622,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 1, indent: 56),
           _buildSettingsTile(
             context,
-            icon: Icons.privacy_tip_outlined,
+            icon: Mdi.shield_account_outline,
             title: l10n.privacyPolicy,
             onTap: () => _openPrivacyPolicy(),
           ),
@@ -631,7 +633,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSettingsTile(
     BuildContext context, {
-    required IconData icon,
+    required String icon,
     required String title,
     String? subtitle,
     VoidCallback? onTap,
@@ -646,7 +648,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: colorScheme.primaryContainer.withValues(alpha: 0.5),
           borderRadius: AppRadius.borderRadiusSm,
         ),
-        child: Icon(
+        child: Iconify(
           icon,
           size: 20,
           color: colorScheme.primary,
@@ -667,8 +669,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : null,
       trailing: trailing ??
           (onTap != null
-              ? Icon(
-                  Icons.chevron_right,
+              ? Iconify(
+                  Mdi.chevron_right,
                   color: colorScheme.onSurfaceVariant,
                 )
               : null),
@@ -732,7 +734,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.text_fields, size: 18),
+              leading: const Iconify(Mdi.format_size, size: 18),
               title: Text(l10n.textSizeSmall),
               trailing: currentScale < 1.0
                   ? Icon(Icons.check,
@@ -744,7 +746,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.text_fields, size: 24),
+              leading: const Iconify(Mdi.format_size, size: 24),
               title: Text(l10n.textSizeMedium),
               trailing: currentScale == 1.0
                   ? Icon(Icons.check,
@@ -756,7 +758,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.text_fields, size: 30),
+              leading: const Iconify(Mdi.format_size, size: 30),
               title: Text(l10n.textSizeLarge),
               trailing: currentScale > 1.0
                   ? Icon(Icons.check,

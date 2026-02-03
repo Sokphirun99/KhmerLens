@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
@@ -54,7 +56,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
     return [
       if (query.isNotEmpty)
         IconButton(
-          icon: const Icon(Icons.clear),
+          icon: const Iconify(Mdi.close, color: Colors.black54),
           onPressed: () {
             query = '';
             showSuggestions(context);
@@ -66,7 +68,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
   @override
   Widget buildLeading(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.arrow_back),
+      icon: const Iconify(Mdi.arrow_left, color: Colors.black54),
       onPressed: () {
         close(context, null);
       },
@@ -248,14 +250,15 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
             const SizedBox(height: 8),
             ..._recentSearches.map(
               (search) => ListTile(
-                leading: const Icon(Icons.history),
+                leading: const Iconify(Mdi.history, color: Colors.black54),
                 title: Text(search),
                 onTap: () {
                   query = search;
                   showResults(context);
                 },
                 trailing: IconButton(
-                  icon: const Icon(Icons.north_west, size: 18),
+                  icon: const Iconify(Mdi.arrow_top_left,
+                      size: 18, color: Colors.black54),
                   onPressed: () {
                     query = search;
                   },
@@ -348,7 +351,7 @@ class DocumentSearchDelegate extends SearchDelegate<Document?> {
               fontSize: 11,
             ),
           ),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const Iconify(Mdi.chevron_right, color: Colors.black54),
           onTap: () {
             // Save to recent searches
             if (!_recentSearches.contains(query) && query.isNotEmpty) {

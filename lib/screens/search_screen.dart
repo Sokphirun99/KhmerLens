@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -147,7 +149,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: IconButton(
-                    icon: const Icon(Icons.clear),
+                    icon: const Iconify(Mdi.close, color: Colors.black54),
                     onPressed: _clearSearch,
                   ),
                 );
@@ -230,7 +232,7 @@ class _SearchScreenState extends State<SearchScreen> {
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: () => _onSearchChanged(_searchController.text),
-            icon: const Icon(Icons.refresh),
+            icon: const Iconify(Mdi.refresh),
             label: Text(AppLocalizations.of(context)!.retry),
           ),
         ],

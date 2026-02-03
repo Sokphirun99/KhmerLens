@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../l10n/arb/app_localizations.dart';
 import '../router/app_router.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 import '../widgets/dashboard_feature_card.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -15,28 +17,28 @@ class DashboardScreen extends StatelessWidget {
       // Morning: 5 AM - 11:59 AM - Light orange/yellow
       return _GreetingInfo(
         type: _GreetingType.morning,
-        icon: Icons.wb_sunny_outlined,
+        icon: Mdi.weather_sunny,
         colors: [const Color(0xFFFFD9A3), const Color(0xFFFFE599)],
       );
     } else if (hour >= 12 && hour < 17) {
       // Afternoon: 12 PM - 4:59 PM - Light orange
       return _GreetingInfo(
         type: _GreetingType.afternoon,
-        icon: Icons.wb_sunny,
+        icon: Mdi.white_balance_sunny,
         colors: [const Color(0xFFFFC680), const Color(0xFFFFB599)],
       );
     } else if (hour >= 17 && hour < 21) {
       // Evening: 5 PM - 8:59 PM - Light pink/rose
       return _GreetingInfo(
         type: _GreetingType.evening,
-        icon: Icons.wb_twilight,
+        icon: Mdi.weather_sunset,
         colors: [const Color(0xFFFFB5B5), const Color(0xFFE2A2B4)],
       );
     } else {
       // Night: 9 PM - 4:59 AM - Light blue/purple
       return _GreetingInfo(
         type: _GreetingType.night,
-        icon: Icons.nightlight_round,
+        icon: Mdi.weather_night,
         colors: [const Color(0xFFB3BFF5), const Color(0xFFBBA5D1)],
       );
     }
@@ -68,7 +70,7 @@ class DashboardScreen extends StatelessWidget {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Iconify(Mdi.cog_outline, color: Colors.black54),
             onPressed: () => context.push(AppRoutes.settings),
             tooltip: l10n.settings,
           ),
@@ -128,7 +130,7 @@ class DashboardScreen extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: Iconify(
                     greetingInfo.icon,
                     color: Colors.white,
                     size: 32,
@@ -162,7 +164,7 @@ class DashboardScreen extends StatelessWidget {
               DashboardFeatureCard(
                 title: l10n.scanDocument,
                 description: l10n.scanDocumentDescription,
-                icon: Icons.document_scanner,
+                icon: Mdi.scanner,
                 color: theme.colorScheme.secondary,
                 onTap: () => context.push(AppRoutes.documents),
               ),
@@ -171,7 +173,7 @@ class DashboardScreen extends StatelessWidget {
               DashboardFeatureCard(
                 title: l10n.scanProduct,
                 description: l10n.scanProductDescription,
-                icon: Icons.qr_code_2,
+                icon: Mdi.qrcode_scan,
                 color: Colors.purple,
                 onTap: () => context.push(AppRoutes.productScan),
               ),
@@ -180,7 +182,7 @@ class DashboardScreen extends StatelessWidget {
               DashboardFeatureCard(
                 title: l10n.moreFeatures,
                 description: l10n.moreFeaturesDescription,
-                icon: Icons.auto_awesome,
+                icon: Mdi.auto_fix,
                 color: Colors.grey,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -200,7 +202,7 @@ enum _GreetingType { morning, afternoon, evening, night }
 
 class _GreetingInfo {
   final _GreetingType type;
-  final IconData icon;
+  final String icon;
   final List<Color> colors;
 
   _GreetingInfo({

@@ -97,7 +97,12 @@ void main() async {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final DocumentRepository? documentRepository;
+
+  const MyApp({
+    super.key,
+    this.documentRepository,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -109,7 +114,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _documentRepository = DocumentRepository();
+    _documentRepository = widget.documentRepository ?? DocumentRepository();
   }
 
   @override
