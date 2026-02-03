@@ -1,5 +1,6 @@
-// widgets/empty_state.dart
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
 import 'package:khmerscan/l10n/arb/app_localizations.dart';
@@ -7,7 +8,7 @@ import 'package:khmerscan/l10n/arb/app_localizations.dart';
 /// Reusable empty state widget
 class EmptyState extends StatelessWidget {
   final String? animationAsset;
-  final IconData? icon;
+  final String? icon; // Changed from IconData? to String? for Iconify
   final String title;
   final String? subtitle;
   final String? actionLabel;
@@ -36,7 +37,11 @@ class EmptyState extends StatelessWidget {
             if (animationAsset != null)
               Lottie.asset(animationAsset!, width: 150, height: 150)
             else if (icon != null)
-              Icon(icon, size: 80, color: colorScheme.onSurfaceVariant),
+              Iconify(
+                icon!,
+                size: 80,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
             const SizedBox(height: 24),
             Text(
               title,
@@ -59,7 +64,7 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: onAction,
-                icon: const Icon(Icons.add),
+                icon: const Iconify(Mdi.plus, color: Colors.white),
                 label: Text(actionLabel!),
               ),
             ],
@@ -75,7 +80,7 @@ class EmptyState extends StatelessWidget {
       animationAsset: 'assets/animations/empty_documents.json',
       title: l10n.emptyStateMessage,
       subtitle: l10n.emptyStateDescription,
-      actionLabel: onScan != null ? l10n.scanDocument : null,
+      actionLabel: l10n.scanDocument,
       onAction: onScan,
     );
   }
@@ -92,7 +97,7 @@ class EmptyState extends StatelessWidget {
   static Widget searchInitial(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return EmptyState(
-      icon: Icons.search,
+      icon: Mdi.magnify,
       title: l10n.typeToSearch,
       subtitle: l10n.searchByNameOrText,
     );

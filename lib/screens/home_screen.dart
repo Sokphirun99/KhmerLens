@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:flutter/material.dart';
+import 'package:iconify_flutter/iconify_flutter.dart';
+import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -243,7 +245,7 @@ class HomeScreen extends HookWidget {
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.search),
+                    icon: const Iconify(Mdi.magnify, color: Colors.black54),
                     onPressed: () => context.pushSearch(),
                   ),
                   const SizedBox(width: 8),
@@ -337,7 +339,7 @@ class HomeScreen extends HookWidget {
             ? FloatingActionButton.extended(
                 key: const ValueKey('extended'),
                 onPressed: onFabPressed,
-                icon: const Icon(Icons.document_scanner),
+                icon: const Iconify(Mdi.scanner, color: Colors.white),
                 label: Text(l10n.scanDocument),
                 elevation: 2,
               )
@@ -346,7 +348,7 @@ class HomeScreen extends HookWidget {
                 onPressed: onFabPressed,
                 elevation: 2,
                 tooltip: l10n.scanDocument,
-                child: const Icon(Icons.document_scanner),
+                child: const Iconify(Mdi.scanner),
               ),
       ),
     );
@@ -466,7 +468,7 @@ class HomeScreen extends HookWidget {
               onPressed: () {
                 context.read<DocumentBloc>().add(const RefreshDocuments());
               },
-              icon: const Icon(Icons.refresh),
+              icon: const Iconify(Mdi.refresh),
               label: Text(l10n.retry),
             ),
           ],

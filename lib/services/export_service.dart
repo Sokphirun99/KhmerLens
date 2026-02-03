@@ -95,7 +95,7 @@ class ExportService {
       if (!kIsWeb) {
         await Share.shareXFiles(
           [XFile(outputPath)],
-          text: 'Exported from KhmerScan',
+          text: 'Exported from KhmerLens',
           sharePositionOrigin: sharePositionOrigin,
         );
       } else {
