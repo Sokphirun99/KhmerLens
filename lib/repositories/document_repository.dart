@@ -79,7 +79,7 @@ class DocumentRepository {
       final document = await _dbService.getDocument(id);
       if (document == null) return null;
 
-      return await _resolveAbsolutePathsForDocument(document);
+      return _resolveAbsolutePathsForDocument(document);
     } catch (e, stackTrace) {
       if (e is AppException) rethrow;
       throw DocumentException(
@@ -140,16 +140,17 @@ class DocumentRepository {
       // CLEANUP: If we fail here, delete the images we just saved to avoid storage clutter
       if (savedPaths.isNotEmpty) {
         debugPrint('DocumentRepository: Cleaning up orphaned images...');
-        for (final path in savedPaths) {
+        await Future.wait(savedPaths.map((path) async {
           try {
             // Reconstruct absolute path for deletion during cleanup
-            final absolutePath = await _storageService.getAbsolutePath(path);
+            // Use sync path resolution since we optimized it earlier
+            final absolutePath = _storageService.getAbsolutePathSync(path);
             await _storageService.deleteImage(absolutePath);
           } catch (cleanupError) {
             debugPrint(
-                'DocumentRepository: Failed to delete orphaned image: $path');
+                'DocumentRepository: Failed to delete orphaned image: $path ($cleanupError)');
           }
-        }
+        }));
       }
 
       if (e is AppException) rethrow;
@@ -348,7 +349,7 @@ class DocumentRepository {
 
   // --- Helpers ---
 
-  Future<Document> _resolveAbsolutePathsForDocument(Document doc) async {
+  Document _resolveAbsolutePathsForDocument(Document doc) {
     // Optimization: Use synchronous path resolution
     // This assumes StorageService.init() has been called in main.dart
     final absolutePaths = doc.imagePaths
@@ -360,16 +361,7 @@ class DocumentRepository {
   Future<List<Document>> _resolveAbsolutePathsForDocuments(
       List<Document> docs) async {
     // Resolve all documents
-    // Since _resolveAbsolutePathsForDocument is now effectively synchronous in its heavy lifting (string concatenation),
-    // we can just map it. We keep the method signature async for API stability if needed,
-    // or just process them linearly.
-
-    // Actually, since _resolveAbsolutePathsForDocument is defined as Future<Document> above,
-    // we should wait for it. But the internal work is now sync.
-    // Let's optimize further: avoiding Future creation for each if possible?
-    // For now, let's keep the structure but benefit from the sync internal call.
-    return await Future.wait(
-      docs.map((doc) => _resolveAbsolutePathsForDocument(doc)),
-    );
+    // Optimized: No longer async mapping needed, just linear transformation
+    return docs.map((doc) => _resolveAbsolutePathsForDocument(doc)).toList();
   }
 }
