@@ -349,16 +349,25 @@ class DocumentRepository {
   // --- Helpers ---
 
   Future<Document> _resolveAbsolutePathsForDocument(Document doc) async {
-    // Resolve all paths in parallel for better performance
-    final absolutePaths = await Future.wait(
-      doc.imagePaths.map((path) => _storageService.getAbsolutePath(path)),
-    );
+    // Optimization: Use synchronous path resolution
+    // This assumes StorageService.init() has been called in main.dart
+    final absolutePaths = doc.imagePaths
+        .map((path) => _storageService.getAbsolutePathSync(path))
+        .toList();
     return doc.copyWith(imagePaths: absolutePaths);
   }
 
   Future<List<Document>> _resolveAbsolutePathsForDocuments(
       List<Document> docs) async {
-    // Resolve all documents in parallel for better performance
+    // Resolve all documents
+    // Since _resolveAbsolutePathsForDocument is now effectively synchronous in its heavy lifting (string concatenation),
+    // we can just map it. We keep the method signature async for API stability if needed,
+    // or just process them linearly.
+
+    // Actually, since _resolveAbsolutePathsForDocument is defined as Future<Document> above,
+    // we should wait for it. But the internal work is now sync.
+    // Let's optimize further: avoiding Future creation for each if possible?
+    // For now, let's keep the structure but benefit from the sync internal call.
     return await Future.wait(
       docs.map((doc) => _resolveAbsolutePathsForDocument(doc)),
     );
