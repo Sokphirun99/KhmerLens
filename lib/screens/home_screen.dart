@@ -25,6 +25,7 @@ import '../models/document.dart';
 import '../router/app_router.dart';
 import '../services/ad_service.dart';
 import '../services/rating_service.dart';
+import '../services/storage_service.dart';
 import '../utils/constants.dart';
 import '../utils/error_handler.dart';
 import '../widgets/destructive_action_sheet.dart';
@@ -39,7 +40,8 @@ class HomeScreen extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final scansCount = useState(0);
+    // Removed local scan count state in favor of persistent storage
+    // final scansCount = useState(0);
 
     // BLoC State for pagination
     final documentState = context.watch<DocumentBloc>().state;
@@ -85,8 +87,8 @@ class HomeScreen extends HookWidget {
               ),
             );
 
-        scansCount.value++;
-        if (scansCount.value % AppConstants.scansBeforeInterstitial == 0) {
+        final newScanCount = await StorageService().incrementScanCount();
+        if (newScanCount % AppConstants.scansBeforeInterstitial == 0) {
           AdService().showInterstitialAd();
         }
 
@@ -253,10 +255,6 @@ class HomeScreen extends HookWidget {
               ),
               BlocConsumer<DocumentBloc, DocumentState>(
                 listener: (context, state) {
-                  // ... logic for listener remains mostly similar ...
-                  // Since we are in build, we can define listener logic here or keep it inline
-                  // But separating it might be cleaner if it's complex.
-                  // For now, I'll inline it as it was in the original structure
                   if (state is DocumentCreated) {
                     try {
                       final navigator =
@@ -307,9 +305,17 @@ class HomeScreen extends HookWidget {
                   return _buildShimmerLoading(context);
                 },
               ),
-              if (isBannerAdReady && bannerAd != null)
+              if (bannerAd != null)
                 SliverToBoxAdapter(
-                  child: SizedBox(height: bannerAd.size.height.toDouble() + 8),
+                  child: AnimatedSize(
+                    duration: 300.ms,
+                    curve: Curves.easeInOut,
+                    child: SizedBox(
+                      height: isBannerAdReady
+                          ? bannerAd.size.height.toDouble() + 8
+                          : 0,
+                    ),
+                  ),
                 ),
             ],
           ),

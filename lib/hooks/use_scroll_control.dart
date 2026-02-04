@@ -14,6 +14,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
   final scrollController = useScrollController();
   final isFabExtended = useState(true);
   final lastScrollOffset = useRef(0.0);
+  final isMounted = useIsMounted();
 
   useEffect(() {
     void onScroll() {
@@ -26,7 +27,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
       // Only trigger state change if scroll delta is significant (avoid jitter)
       if (scrollDelta.abs() > 5) {
         final shouldExtend = scrollDelta < 0 || currentOffset <= 0;
-        if (isFabExtended.value != shouldExtend) {
+        if (isFabExtended.value != shouldExtend && isMounted()) {
           isFabExtended.value = shouldExtend;
         }
         lastScrollOffset.value = currentOffset;
