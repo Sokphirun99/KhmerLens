@@ -178,5 +178,7 @@
     "dragToReorder": "Long press and drag to reorder images",
     "chooseImageSource": "Add Document",
     "scanDocumentOption": "Scan Document",
-    "scanDocumentOptionDescription": "Use camera to scan multiple pages"
+    "scanDocumentOptionDescription": "Use camera to scan multiple pages",
+    "scanModeBarcode": "Barcode",
+    "scanModeVisual": "Visual"
 }
