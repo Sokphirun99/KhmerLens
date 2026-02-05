@@ -84,3 +84,4 @@ flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
   adaptive_icon_background: "#2196F3"
   adaptive_icon_foreground: "assets/icon/foreground.png"
+nutrition_ai: ^3.2.14

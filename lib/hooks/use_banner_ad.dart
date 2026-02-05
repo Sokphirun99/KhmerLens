@@ -9,18 +9,18 @@ import '../services/ad_service.dart';
 (BannerAd?, bool) useBannerAd() {
   final bannerAd = useState<BannerAd?>(null);
   final isBannerAdReady = useState(false);
-  final isMounted = useIsMounted();
+  final context = useContext();
 
   useEffect(() {
     debugPrint('useBannerAd: Initializing Banner Ad');
     final ad = AdService().createBannerAd()
       ..load().then((_) {
-        if (isMounted()) {
+        if (context.mounted) {
           debugPrint('useBannerAd: Ad loaded successfully');
           isBannerAdReady.value = true;
         }
       }).catchError((e) {
-        if (isMounted()) {
+        if (context.mounted) {
           debugPrint('useBannerAd: Failed to load ad: $e');
         }
       });

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -9,6 +9,9 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../l10n/arb/app_localizations.dart';
+import '../services/usda_service.dart';
+import '../services/spoonacular_service.dart';
+import '../services/open_fda_service.dart';
 
 enum ScanMode { barcode, visual }
 
@@ -48,6 +51,9 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
 
   // Visual Search Deps
   final ImagePicker _picker = ImagePicker();
+  final UsdaService _usdaService = UsdaService();
+  final SpoonacularService _spoonacularService = SpoonacularService();
+  final OpenFdaService _openFdaService = OpenFdaService();
 
   @override
   void dispose() {
@@ -96,7 +102,28 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       return;
     }
 
-    // 3. Fallback to UPCitemdb (General items)
+    // 3. Try USDA API (Additional food data)
+    final usdaData = await _usdaService.fetchProductByUpc(code);
+    if (mounted && usdaData != null) {
+      _showProductDetails(usdaData);
+      return;
+    }
+
+    // 4. Try Spoonacular API (Recipes/Food)
+    final spoonData = await _spoonacularService.fetchProductByUpc(code);
+    if (mounted && spoonData != null) {
+      _showProductDetails(spoonData);
+      return;
+    }
+
+    // 5. Try openFDA (Drugs)
+    final drugData = await _openFdaService.fetchProductByUpc(code);
+    if (mounted && drugData != null) {
+      _showProductDetails(drugData);
+      return;
+    }
+
+    // 6. Fallback to UPCitemdb (General items)
     final generalData = await _fetchUPCItemDB(code);
     if (mounted && generalData != null) {
       _showProductDetails(generalData);
@@ -541,13 +568,12 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
             Container(
               color: Colors.black,
               width: double.infinity,
-              child: Column(
+              child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.image_search,
-                      size: 80, color: Colors.white70),
-                  const SizedBox(height: 20),
-                  const Text(
+                  Icon(Icons.image_search, size: 80, color: Colors.white70),
+                  SizedBox(height: 20),
+                  Text(
                       'Snap a photo or pick from gallery\nto find similar items on Google',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white70, fontSize: 16)),
