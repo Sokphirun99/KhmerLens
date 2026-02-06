@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/scanned_product.dart';
 import '../services/database_service.dart';
+import '../widgets/product_details_sheet.dart';
 
 class ProductHistoryScreen extends StatefulWidget {
   const ProductHistoryScreen({super.key});
@@ -338,52 +339,12 @@ class _ProductHistoryScreenState extends State<ProductHistoryScreen> {
                                   _toggleSelection(product.id);
                                 } else {
                                   // Existing tap logic (show details)
-                                  showDialog(
+                                  showModalBottomSheet(
                                     context: context,
-                                    builder: (c) => AlertDialog(
-                                      title: Text(product.title),
-                                      content: SingleChildScrollView(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            if (product.imageUrl != null)
-                                              Center(
-                                                  child: Image.network(
-                                                      product.imageUrl!,
-                                                      height: 150)),
-                                            const SizedBox(height: 10),
-                                            Text('Barcode: ${product.barcode}'),
-                                            const SizedBox(height: 5),
-                                            Text('Source: ${product.source}'),
-                                            const SizedBox(height: 10),
-                                            if (product.description !=
-                                                null) ...[
-                                              const Text('Description:',
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                              Text(product.description!),
-                                              const SizedBox(height: 10),
-                                            ],
-                                            if (product.details != null) ...[
-                                              const Text('Details:',
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                              ...product.details!.entries.map(
-                                                  (e) => Text(
-                                                      '${e.key}: ${e.value}')),
-                                            ]
-                                          ],
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                            onPressed: () => Navigator.pop(c),
-                                            child: const Text('Close'))
-                                      ],
-                                    ),
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    builder: (context) =>
+                                        ProductDetailsSheet(product: product),
                                   );
                                 }
                               },

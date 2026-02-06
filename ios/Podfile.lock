@@ -116,18 +116,18 @@ PODS:
     - Flutter
   - Google-Mobile-Ads-SDK (12.14.0):
     - GoogleUserMessagingPlatform (>= 1.1)
-  - google_mlkit_commons (0.9.0):
+  - google_mlkit_commons (0.11.1):
     - Flutter
-    - MLKitVision
-  - google_mlkit_image_labeling (0.13.0):
-    - Flutter
-    - google_mlkit_commons
-    - GoogleMLKit/ImageLabeling (~> 7.0.0)
-    - GoogleMLKit/ImageLabelingCustom (~> 7.0.0)
-  - google_mlkit_text_recognition (0.14.0):
+    - MLKitVision (~> 10.0.0)
+  - google_mlkit_image_labeling (0.14.2):
     - Flutter
     - google_mlkit_commons
-    - GoogleMLKit/TextRecognition (~> 7.0.0)
+    - GoogleMLKit/ImageLabeling (~> 9.0.0)
+    - GoogleMLKit/ImageLabelingCustom (~> 9.0.0)
+  - google_mlkit_text_recognition (0.15.1):
+    - Flutter
+    - google_mlkit_commons
+    - GoogleMLKit/TextRecognition (~> 9.0.0)
   - google_mobile_ads (7.0.0):
     - Flutter
     - Google-Mobile-Ads-SDK (~> 12.14.0)
@@ -162,20 +162,17 @@ PODS:
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
-  - GoogleMLKit/BarcodeScanning (7.0.0):
+  - GoogleMLKit/ImageLabeling (9.0.0):
     - GoogleMLKit/MLKitCore
-    - MLKitBarcodeScanning (~> 6.0.0)
-  - GoogleMLKit/ImageLabeling (7.0.0):
+    - MLKitImageLabeling (~> 8.0.0)
+  - GoogleMLKit/ImageLabelingCustom (9.0.0):
     - GoogleMLKit/MLKitCore
-    - MLKitImageLabeling (~> 6.0.0)
-  - GoogleMLKit/ImageLabelingCustom (7.0.0):
+    - MLKitImageLabelingCustom (~> 8.0.0)
+  - GoogleMLKit/MLKitCore (9.0.0):
+    - MLKitCommon (~> 14.0.0)
+  - GoogleMLKit/TextRecognition (9.0.0):
     - GoogleMLKit/MLKitCore
-    - MLKitImageLabelingCustom (~> 6.0.0)
-  - GoogleMLKit/MLKitCore (7.0.0):
-    - MLKitCommon (~> 12.0.0)
-  - GoogleMLKit/TextRecognition (7.0.0):
-    - GoogleMLKit/MLKitCore
-    - MLKitTextRecognition (~> 5.0.0)
+    - MLKitTextRecognition (~> 7.0.0)
   - GoogleToolboxForMac/Defines (4.2.1)
   - GoogleToolboxForMac/Logger (4.2.1):
     - GoogleToolboxForMac/Defines (= 4.2.1)
@@ -214,54 +211,51 @@ PODS:
     - Flutter
   - in_app_review (2.0.0):
     - Flutter
-  - MLImage (1.0.0-beta6)
-  - MLKitBarcodeScanning (6.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitVision (~> 8.0)
-  - MLKitCommon (12.0.0):
+  - MLImage (1.0.0-beta8)
+  - MLKitCommon (14.0.0):
     - GoogleDataTransport (~> 10.0)
     - GoogleToolboxForMac/Logger (< 5.0, >= 4.2.1)
     - "GoogleToolboxForMac/NSData+zlib (< 5.0, >= 4.2.1)"
     - GoogleUtilities/Logger (~> 8.0)
     - GoogleUtilities/UserDefaults (~> 8.0)
     - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
-  - MLKitImageLabeling (6.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitImageLabelingCommon (~> 8.0)
-    - MLKitVision (~> 8.0)
-    - MLKitVisionKit (~> 9.0)
-  - MLKitImageLabelingCommon (8.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitVision (~> 8.0)
-  - MLKitImageLabelingCustom (6.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitImageLabelingCommon (~> 8.0)
-    - MLKitVision (~> 8.0)
-    - MLKitVisionKit (~> 9.0)
-  - MLKitObjectDetectionCommon (8.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitVision (~> 8.0)
-  - MLKitTextRecognition (5.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitTextRecognitionCommon (= 4.0.0)
-    - MLKitVision (~> 8.0)
-  - MLKitTextRecognitionCommon (4.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitVision (~> 8.0)
-  - MLKitVision (8.0.0):
+  - MLKitImageLabeling (8.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitImageLabelingCommon (~> 10.0)
+    - MLKitVision (~> 10.0)
+    - MLKitVisionKit (~> 11.0)
+  - MLKitImageLabelingCommon (10.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitVision (~> 10.0)
+  - MLKitImageLabelingCustom (8.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitImageLabelingCommon (~> 10.0)
+    - MLKitVision (~> 10.0)
+    - MLKitVisionKit (~> 11.0)
+  - MLKitObjectDetectionCommon (10.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitVision (~> 10.0)
+  - MLKitTextRecognition (7.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitTextRecognitionCommon (= 6.0.0)
+    - MLKitVision (~> 10.0)
+  - MLKitTextRecognitionCommon (6.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitVision (~> 10.0)
+  - MLKitVision (10.0.0):
     - GoogleToolboxForMac/Logger (< 5.0, >= 4.2.1)
     - "GoogleToolboxForMac/NSData+zlib (< 5.0, >= 4.2.1)"
     - GTMSessionFetcher/Core (< 4.0, >= 3.3.2)
-    - MLImage (= 1.0.0-beta6)
-    - MLKitCommon (~> 12.0)
-  - MLKitVisionKit (9.0.0):
-    - MLKitCommon (~> 12.0)
-    - MLKitImageLabelingCommon (~> 8.0)
-    - MLKitObjectDetectionCommon (~> 8.0)
-    - MLKitVision (~> 8.0)
-  - mobile_scanner (6.0.2):
+    - MLImage (= 1.0.0-beta8)
+    - MLKitCommon (~> 14.0)
+  - MLKitVisionKit (11.0.0):
+    - MLKitCommon (~> 14.0)
+    - MLKitImageLabelingCommon (~> 10.0)
+    - MLKitObjectDetectionCommon (~> 10.0)
+    - MLKitVision (~> 10.0)
+  - mobile_scanner (7.0.0):
     - Flutter
-    - GoogleMLKit/BarcodeScanning (~> 7.0.0)
+    - FlutterMacOS
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
@@ -306,7 +300,7 @@ DEPENDENCIES:
   - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - in_app_review (from `.symlinks/plugins/in_app_review/ios`)
-  - mobile_scanner (from `.symlinks/plugins/mobile_scanner/ios`)
+  - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - printing (from `.symlinks/plugins/printing/ios`)
@@ -342,7 +336,6 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMSessionFetcher
     - MLImage
-    - MLKitBarcodeScanning
     - MLKitCommon
     - MLKitImageLabeling
     - MLKitImageLabelingCommon
@@ -386,7 +379,7 @@ EXTERNAL SOURCES:
   in_app_review:
     :path: ".symlinks/plugins/in_app_review/ios"
   mobile_scanner:
-    :path: ".symlinks/plugins/mobile_scanner/ios"
+    :path: ".symlinks/plugins/mobile_scanner/darwin"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
@@ -428,39 +421,38 @@ SPEC CHECKSUMS:
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
   Google-Mobile-Ads-SDK: 4534fd2dfcd3f705c5485a6633c5188d03d4eed2
-  google_mlkit_commons: 384e4e206e122b6dad430d3158205e0b2fac6789
-  google_mlkit_image_labeling: d5b60af262f4920caa9e860c5a1b674c17d2ada4
-  google_mlkit_text_recognition: e540f2aff997f2b0daaa1b4fd5ead3b0b7030adc
+  google_mlkit_commons: 1e6ef6605d7281f35baf2b355e6049b9984fd624
+  google_mlkit_image_labeling: e7279d59a954183b81b3223fa06d3f1fab09bd8d
+  google_mlkit_text_recognition: 309a3a493765ea17c7368cadb4a710391e73902c
   google_mobile_ads: 2ba32ffef4a026aa94f526774a40a14ca9662adf
   GoogleAdsOnDeviceConversion: d68c69dd9581a0f5da02617b6f377e5be483970f
   GoogleAppMeasurement: 72c9a682fec6290327ea5e3c4b829b247fcb2c17
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
-  GoogleMLKit: eff9e23ec1d90ea4157a1ee2e32a4f610c5b3318
+  GoogleMLKit: b1eee21a41c57704fe72483b15c85cb2c0cd7444
   GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
   GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   image_picker_ios: 4f2f91b01abdb52842a8e277617df877e40f905b
   in_app_review: 436034b18594851a7328d7f1c2ed5ec235b79cfc
-  MLImage: 0ad1c5f50edd027672d8b26b0fee78a8b4a0fc56
-  MLKitBarcodeScanning: 0a3064da0a7f49ac24ceb3cb46a5bc67496facd2
-  MLKitCommon: 07c2c33ae5640e5380beaaa6e4b9c249a205542d
-  MLKitImageLabeling: 7f052589de9ffde213bc2c26854d212ea4dde17a
-  MLKitImageLabelingCommon: 23f0c9037c2c6433784db594bd1bb87173172fe9
-  MLKitImageLabelingCustom: 594c49fa1bb809ec05215bb4ac1c15729c7a601a
-  MLKitObjectDetectionCommon: 0198709a728984e3b6fac98a5fa53a8042880336
-  MLKitTextRecognition: 3b41f3ff084a79afb214408d25d2068d77ab322c
-  MLKitTextRecognitionCommon: cd44577a8c506fc6bba065096de03bec0d01a213
-  MLKitVision: 45e79d68845a2de77e2dd4d7f07947f0ed157b0e
-  MLKitVisionKit: 8a7abd5f11aeb1add2942a694c2685eca422a849
-  mobile_scanner: fd0054c52ede661e80bf5a4dea477a2467356bee
+  MLImage: 0de5c6c2bf9e93b80ef752e2797f0836f03b58c0
+  MLKitCommon: 47d47b50a031d00db62f1b0efe5a1d8b09a3b2e6
+  MLKitImageLabeling: 739591b1b69ebab735e97fa1b4ce37cea8361bb7
+  MLKitImageLabelingCommon: 616b0c69b3e302720cfb65903da50dc2e697b915
+  MLKitImageLabelingCustom: 43cf5d49fb762adb93e3108cb55c81a8ec005d57
+  MLKitObjectDetectionCommon: 0639341c7cbb44327dac9a23c473d2484d3169dd
+  MLKitTextRecognition: c0ad24510481dfc8893ad15dfcb8a5f05ed9e826
+  MLKitTextRecognitionCommon: 234ceb1cfdfb5fceb4fd664943046609a2961cc2
+  MLKitVision: 39a5a812db83c4a0794445088e567f3631c11961
+  MLKitVisionKit: 316cd349468797ef4e7fd785bf658ca838984de3
+  mobile_scanner: 77265f3dc8d580810e91849d4a0811a90467ed5e
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   printing: 233e1b73bd1f4a05615548e9b5a324c98588640b
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
-  share_plus: c3fef564749587fc939ef86ffb283ceac0baf9f5
+  share_plus: 8b6f8b3447e494cca5317c8c3073de39b3600d1f
   shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
   sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
   url_launcher_ios: bb13df5870e8c4234ca12609d04010a21be43dfa
