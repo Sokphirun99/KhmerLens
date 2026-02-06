@@ -12,6 +12,9 @@ import '../l10n/arb/app_localizations.dart';
 import '../services/usda_service.dart';
 import '../services/spoonacular_service.dart';
 import '../services/open_fda_service.dart';
+import '../services/database_service.dart';
+import 'product_history_screen.dart';
+import 'package:uuid/uuid.dart';
 
 enum ScanMode { barcode, visual }
 
@@ -61,6 +64,24 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     super.dispose();
   }
 
+  Future<void> _saveToHistory(ProductInfo product, String barcode) async {
+    try {
+      final db = DatabaseService();
+      await db.insertScannedProduct({
+        'id': const Uuid().v4(),
+        'barcode': barcode,
+        'title': product.title,
+        'description': product.description,
+        'imageUrl': product.imageUrl,
+        'source': product.source,
+        'scannedAt': DateTime.now().toIso8601String(),
+        'details': json.encode(product.details),
+      });
+    } catch (e) {
+      debugPrint('Error saving to history: $e');
+    }
+  }
+
   // --- Barcode Logic ---
 
   Future<void> _onDetect(BarcodeCapture capture) async {
@@ -90,6 +111,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     if (code.startsWith('978') || code.startsWith('979')) {
       final bookData = await _fetchGoogleBook(code);
       if (mounted && bookData != null) {
+        _saveToHistory(bookData, code);
         _showProductDetails(bookData);
         return;
       }
@@ -98,6 +120,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     // 2. Try OpenFoodFacts (Best for food/cosmetics)
     final foodData = await _fetchOpenFoodFacts(code);
     if (mounted && foodData != null) {
+      _saveToHistory(foodData, code);
       _showProductDetails(foodData);
       return;
     }
@@ -105,6 +128,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     // 3. Try USDA API (Additional food data)
     final usdaData = await _usdaService.fetchProductByUpc(code);
     if (mounted && usdaData != null) {
+      _saveToHistory(usdaData, code);
       _showProductDetails(usdaData);
       return;
     }
@@ -112,6 +136,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     // 4. Try Spoonacular API (Recipes/Food)
     final spoonData = await _spoonacularService.fetchProductByUpc(code);
     if (mounted && spoonData != null) {
+      _saveToHistory(spoonData, code);
       _showProductDetails(spoonData);
       return;
     }
@@ -119,6 +144,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     // 5. Try openFDA (Drugs)
     final drugData = await _openFdaService.fetchProductByUpc(code);
     if (mounted && drugData != null) {
+      _saveToHistory(drugData, code);
       _showProductDetails(drugData);
       return;
     }
@@ -126,6 +152,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     // 6. Fallback to UPCitemdb (General items)
     final generalData = await _fetchUPCItemDB(code);
     if (mounted && generalData != null) {
+      _saveToHistory(generalData, code);
       _showProductDetails(generalData);
       return;
     }
@@ -553,6 +580,16 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
               ),
               onPressed: () => _controller.toggleTorch(),
             ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ProductHistoryScreen()),
+              );
+            },
+          ),
         ],
       ),
       body: Stack(
