@@ -12,6 +12,8 @@ class DatabaseService {
 
   // CONSTANTS
   static const String tableDocuments = 'documents';
+  static const String tableScannedProducts = 'scanned_products';
+
   static const String colId = 'id';
   static const String colTitle = 'title';
   static const String colImagePaths = 'imagePaths';
@@ -19,6 +21,14 @@ class DatabaseService {
   static const String colCreatedAt = 'createdAt';
   static const String colExpiryDate = 'expiryDate';
   static const String colMetadata = 'metadata';
+
+  // Scanned Product Columns
+  static const String colBarcode = 'barcode';
+  static const String colDescription = 'description';
+  static const String colImageUrl = 'imageUrl';
+  static const String colSource = 'source';
+  static const String colScannedAt = 'scannedAt';
+  static const String colDetails = 'details';
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -32,7 +42,7 @@ class DatabaseService {
 
       return await openDatabase(
         path,
-        version: 2,
+        version: 3, // Increment version
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -48,7 +58,7 @@ class DatabaseService {
 
   Future<void> _onCreate(Database db, int version) async {
     try {
-      // Using constants in SQL creation string
+      // Documents table
       await db.execute('''
         CREATE TABLE $tableDocuments (
           $colId TEXT PRIMARY KEY,
@@ -63,6 +73,23 @@ class DatabaseService {
 
       await db.execute(
           'CREATE INDEX idx_created_at ON $tableDocuments($colCreatedAt DESC)');
+
+      // Scanned Products table
+      await db.execute('''
+        CREATE TABLE $tableScannedProducts (
+          $colId TEXT PRIMARY KEY,
+          $colBarcode TEXT NOT NULL,
+          $colTitle TEXT NOT NULL,
+          $colDescription TEXT,
+          $colImageUrl TEXT,
+          $colSource TEXT NOT NULL,
+          $colScannedAt TEXT NOT NULL,
+          $colDetails TEXT
+        )
+      ''');
+
+      await db.execute(
+          'CREATE INDEX idx_scanned_at ON $tableScannedProducts($colScannedAt DESC)');
     } catch (e, stackTrace) {
       throw DatabaseException(
         'Failed to create database tables',
@@ -76,7 +103,7 @@ class DatabaseService {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     try {
       if (oldVersion < 2) {
-        // Migration logic...
+        // ... (existing migration to v2)
         // Note: Keeping raw strings here for the "old" table is usually safer
         // to avoid accidental changes if constants change in the future.
         final existingDocs = await db.query('documents');
@@ -113,10 +140,155 @@ class DatabaseService {
         await db.execute(
             'CREATE INDEX idx_created_at ON $tableDocuments($colCreatedAt DESC)');
       }
+
+      if (oldVersion < 3) {
+        // Add scanned_products table
+        await db.execute('''
+        CREATE TABLE $tableScannedProducts (
+          $colId TEXT PRIMARY KEY,
+          $colBarcode TEXT NOT NULL,
+          $colTitle TEXT NOT NULL,
+          $colDescription TEXT,
+          $colImageUrl TEXT,
+          $colSource TEXT NOT NULL,
+          $colScannedAt TEXT NOT NULL,
+          $colDetails TEXT
+        )
+      ''');
+        await db.execute(
+            'CREATE INDEX idx_scanned_at ON $tableScannedProducts($colScannedAt DESC)');
+      }
     } catch (e, stackTrace) {
       throw DatabaseException(
         'Failed to upgrade database',
         code: 'DATABASE_UPGRADE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  // ... (Existing Document CRUD) ...
+
+  // Scanned Product CRUD
+
+  Future<String> insertScannedProduct(Map<String, dynamic> productMap) async {
+    try {
+      final db = await database;
+      await db.insert(
+        tableScannedProducts,
+        productMap,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return productMap['id'];
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to insert scanned product',
+        code: 'DATABASE_INSERT_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllScannedProducts({int? limit}) async {
+    try {
+      final db = await database;
+      return await db.query(
+        tableScannedProducts,
+        orderBy: '$colScannedAt DESC',
+        limit: limit,
+      );
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to get scanned products',
+        code: 'DATABASE_QUERY_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> getScannedProductByBarcode(
+      String barcode) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        tableScannedProducts,
+        where: '$colBarcode = ?',
+        whereArgs: [barcode],
+        limit: 1,
+      );
+      if (maps.isNotEmpty) {
+        return maps.first;
+      }
+      return null;
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to get scanned product by barcode',
+        code: 'DATABASE_QUERY_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<int> deleteScannedProduct(String id) async {
+    try {
+      final db = await database;
+      return await db.delete(
+        tableScannedProducts,
+        where: '$colId = ?',
+        whereArgs: [id],
+      );
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to delete scanned product',
+        code: 'DATABASE_DELETE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<int> deleteScannedProducts(List<String> ids) async {
+    if (ids.isEmpty) return 0;
+    try {
+      final db = await database;
+      // Using whereIn for batch delete
+      // SQLite limit for host parameters is usually 999, so for very large lists
+      // this might need chunking, but for manual selection likely fine.
+      // Safe implementation using multiple parameters.
+      final placeholders = List.filled(ids.length, '?').join(',');
+      return await db.delete(
+        tableScannedProducts,
+        where: '$colId IN ($placeholders)',
+        whereArgs: ids,
+      );
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to delete scanned products',
+        code: 'DATABASE_DELETE_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<int> deleteAllScannedProducts() async {
+    try {
+      final db = await database;
+      return await db.delete(tableScannedProducts);
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to delete all scanned products',
+        code: 'DATABASE_DELETE_FAILED',
         originalError: e,
         stackTrace: stackTrace,
       );

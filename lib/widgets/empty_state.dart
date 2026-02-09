@@ -35,7 +35,12 @@ class EmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (animationAsset != null)
-              Lottie.asset(animationAsset!, width: 150, height: 150)
+              Lottie.asset(
+                animationAsset!,
+                width: 150,
+                height: 150,
+                repeat: false,
+              )
             else if (icon != null)
               Iconify(
                 icon!,

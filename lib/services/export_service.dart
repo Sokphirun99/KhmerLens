@@ -93,6 +93,7 @@ class ExportService {
       await file.writeAsBytes(pdfBytes);
 
       if (!kIsWeb) {
+        // Use Share.shareXFiles (Deprecated but working)
         await Share.shareXFiles(
           [XFile(outputPath)],
           text: 'Exported from KhmerLens',
@@ -218,6 +219,7 @@ class ExportService {
       if (imageFiles.isEmpty) return;
 
       if (!kIsWeb) {
+        // Use Share.shareXFiles (Deprecated but working)
         await Share.shareXFiles(
           imageFiles,
           text: doc.title,

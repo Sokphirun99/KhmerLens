@@ -73,7 +73,8 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
       // Check if there are more documents after this batch
       bool hasMore = false;
       if (newDocuments.isNotEmpty) {
-        hasMore = await repository.hasMoreDocuments(newDocuments.last.createdAt);
+        hasMore =
+            await repository.hasMoreDocuments(newDocuments.last.createdAt);
       }
 
       emit(DocumentLoaded(

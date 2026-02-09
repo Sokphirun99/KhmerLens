@@ -461,4 +461,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scanDocumentOptionDescription =>
       'Use camera to scan multiple pages';
+
+  @override
+  String get scanModeBarcode => 'Barcode';
+
+  @override
+  String get scanModeVisual => 'Visual';
 }

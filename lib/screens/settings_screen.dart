@@ -691,6 +691,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _shareApp(AppLocalizations l10n) {
+    // Use Share.share (Deprecated but working)
     Share.share(
       'Check out ${AppConstants.appName} - the best document scanner app! https://khmerscan.app',
       subject: 'Check out ${AppConstants.appName}',
