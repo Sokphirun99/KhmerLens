@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
 import 'firebase_options.dart';
 import 'package:flutter/foundation.dart';
 import 'services/notification_service.dart';
@@ -81,6 +82,10 @@ void main() async {
       } catch (e) {
         debugPrint('NotificationService initialization failed: $e');
       }
+
+      // Set OpenFoodFacts UserAgent
+      OpenFoodAPIConfiguration.userAgent =
+          UserAgent(name: 'KhmerLens', url: 'https://khmerscan.app');
 
       runApp(const MyApp());
     },

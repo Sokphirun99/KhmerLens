@@ -260,7 +260,7 @@ class _ProductHistoryScreenState extends State<ProductHistoryScreen> {
                               selectedTileColor: Theme.of(context)
                                   .colorScheme
                                   .primaryContainer
-                                  .withOpacity(0.2),
+                                  .withValues(alpha: 0.2),
                               leading: Stack(
                                 children: [
                                   CircleAvatar(

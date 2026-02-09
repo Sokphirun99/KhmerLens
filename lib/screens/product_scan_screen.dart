@@ -84,6 +84,10 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
 
   // --- Barcode Logic ---
 
+  // Debounce state
+  String? _lastScannedCode;
+  DateTime? _lastScanTime;
+
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_isLoading || _scanMode != ScanMode.barcode) return;
 
@@ -92,6 +96,17 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
 
     final String? code = barcodes.first.rawValue;
     if (code == null) return;
+
+    // Debounce: Ignore if same code scanned within 2 seconds
+    final now = DateTime.now();
+    if (code == _lastScannedCode &&
+        _lastScanTime != null &&
+        now.difference(_lastScanTime!) < const Duration(seconds: 2)) {
+      return;
+    }
+
+    _lastScannedCode = code;
+    _lastScanTime = now;
 
     setState(() => _isLoading = true);
 
@@ -107,12 +122,55 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
   }
 
   Future<void> _fetchProductInfo(String code) async {
+    // 0. Check local history (Cache)
+    try {
+      final db = DatabaseService();
+      final existingMap = await db.getScannedProductByBarcode(code);
+
+      if (existingMap != null) {
+        // Found in cache! Update timestamp and show details.
+        debugPrint('Product found in local history: $code');
+
+        // Update timestamp to now
+        final updatedMap = Map<String, dynamic>.from(existingMap);
+        updatedMap['scannedAt'] = DateTime.now().toIso8601String();
+        await db.insertScannedProduct(updatedMap);
+
+        // Convert to ProductInfo for UI
+        final details = existingMap['details'] != null
+            ? json.decode(existingMap['details'] as String)
+                as Map<String, dynamic>
+            : <String,
+                dynamic>{}; // Fix: Explicitly case to Map<String, dynamic> or use empty map
+
+        // Ensure Map<String, String> for ProductInfo.details
+        final stringDetails = details
+            .map((key, value) => MapEntry(key.toString(), value.toString()));
+
+        final cachedProduct = ProductInfo(
+          title: existingMap['title'] as String,
+          description: existingMap['description'] as String?,
+          imageUrl: existingMap['imageUrl'] as String?,
+          source: existingMap['source'] as String,
+          details: stringDetails,
+        );
+
+        if (mounted) {
+          await _showProductDetails(cachedProduct);
+        }
+        return; // Skip API calls
+      }
+    } catch (e) {
+      debugPrint('Error checking local history: $e');
+      // Continue to API calls if cache check fails
+    }
+
     // 1. Check if it looks like a Book (ISBN usually starts with 978 or 979)
     if (code.startsWith('978') || code.startsWith('979')) {
       final bookData = await _fetchGoogleBook(code);
       if (mounted && bookData != null) {
         _saveToHistory(bookData, code);
-        _showProductDetails(bookData);
+        await _showProductDetails(bookData);
         return;
       }
     }
@@ -121,7 +179,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final foodData = await _fetchOpenFoodFacts(code);
     if (mounted && foodData != null) {
       _saveToHistory(foodData, code);
-      _showProductDetails(foodData);
+      await _showProductDetails(foodData);
       return;
     }
 
@@ -129,7 +187,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final usdaData = await _usdaService.fetchProductByUpc(code);
     if (mounted && usdaData != null) {
       _saveToHistory(usdaData, code);
-      _showProductDetails(usdaData);
+      await _showProductDetails(usdaData);
       return;
     }
 
@@ -137,7 +195,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final spoonData = await _spoonacularService.fetchProductByUpc(code);
     if (mounted && spoonData != null) {
       _saveToHistory(spoonData, code);
-      _showProductDetails(spoonData);
+      await _showProductDetails(spoonData);
       return;
     }
 
@@ -145,7 +203,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final drugData = await _openFdaService.fetchProductByUpc(code);
     if (mounted && drugData != null) {
       _saveToHistory(drugData, code);
-      _showProductDetails(drugData);
+      await _showProductDetails(drugData);
       return;
     }
 
@@ -153,7 +211,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final generalData = await _fetchUPCItemDB(code);
     if (mounted && generalData != null) {
       _saveToHistory(generalData, code);
-      _showProductDetails(generalData);
+      await _showProductDetails(generalData);
       return;
     }
 
@@ -436,8 +494,15 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     );
   }
 
-  void _showProductDetails(ProductInfo product) {
-    showModalBottomSheet(
+  Future<void> _showProductDetails(ProductInfo product) async {
+    // Stop scanner to prevent background scans
+    if (_scanMode == ScanMode.barcode) {
+      await _controller.stop();
+    }
+
+    if (!mounted) return;
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -545,6 +610,11 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
         ),
       ),
     );
+
+    // Restart scanner
+    if (mounted && _scanMode == ScanMode.barcode) {
+      await _controller.start();
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {

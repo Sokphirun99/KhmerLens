@@ -34,7 +34,6 @@
         </activity>
         <!-- AdMob App ID
              This matches the production ID configured in lib/config/ad_config.dart.
-             Get your App ID from: https://apps.admob.com/ -->
              Also update the corresponding value in lib/config/ad_config.dart -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

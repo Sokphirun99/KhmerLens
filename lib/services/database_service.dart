@@ -211,6 +211,31 @@ class DatabaseService {
     }
   }
 
+  Future<Map<String, dynamic>?> getScannedProductByBarcode(
+      String barcode) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        tableScannedProducts,
+        where: '$colBarcode = ?',
+        whereArgs: [barcode],
+        limit: 1,
+      );
+      if (maps.isNotEmpty) {
+        return maps.first;
+      }
+      return null;
+    } catch (e, stackTrace) {
+      if (e is DatabaseException) rethrow;
+      throw DatabaseException(
+        'Failed to get scanned product by barcode',
+        code: 'DATABASE_QUERY_FAILED',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<int> deleteScannedProduct(String id) async {
     try {
       final db = await database;
