@@ -461,4 +461,10 @@ class AppLocalizationsKm extends AppLocalizations {
   @override
   String get scanDocumentOptionDescription =>
       'ប្រើកាមេរ៉ាដើម្បីស្កេនច្រើនទំព័រ';
+
+  @override
+  String get scanModeBarcode => 'បាកូដ';
+
+  @override
+  String get scanModeVisual => 'រូបភាព';
 }

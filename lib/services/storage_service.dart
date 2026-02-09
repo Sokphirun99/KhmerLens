@@ -105,6 +105,7 @@ class StorageService {
   factory StorageService() => _instance;
   StorageService._internal();
 
+  static const String _scanCountKey = 'scan_count';
   static const String _imageFolder = 'documents';
   static const String _thumbnailFolder = 'thumbnails';
   static const int _thumbnailSize = 200;
@@ -117,6 +118,9 @@ class StorageService {
 
   // Cached storage size for performance
   int? _cachedStorageSize;
+
+  // Cached scan count
+  int? _cachedScanCount;
 
   Future<void> init() async {
     await _ensureDirectories();
@@ -678,6 +682,40 @@ class StorageService {
     }
 
     return absolutePath; // Could not convert, return original
+  }
+
+  /// Increments the scan count and returns the new value.
+  Future<int> incrementScanCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      int currentCount = _cachedScanCount ?? prefs.getInt(_scanCountKey) ?? 0;
+
+      currentCount++;
+
+      await prefs.setInt(_scanCountKey, currentCount);
+      _cachedScanCount = currentCount;
+
+      return currentCount;
+    } catch (e) {
+      debugPrint('Failed to increment scan count: $e');
+      // If persistence fails, still return an incremented memory value for this session
+      _cachedScanCount = (_cachedScanCount ?? 0) + 1;
+      return _cachedScanCount!;
+    }
+  }
+
+  /// Gets the current scan count.
+  Future<int> getScanCount() async {
+    try {
+      if (_cachedScanCount != null) return _cachedScanCount!;
+
+      final prefs = await SharedPreferences.getInstance();
+      _cachedScanCount = prefs.getInt(_scanCountKey) ?? 0;
+      return _cachedScanCount!;
+    } catch (e) {
+      debugPrint('Failed to get scan count: $e');
+      return _cachedScanCount ?? 0;
+    }
   }
 }
 

@@ -979,6 +979,18 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'ប្រើកាមេរ៉ាដើម្បីស្កេនច្រើនទំព័រ'**
   String get scanDocumentOptionDescription;
+
+  /// No description provided for @scanModeBarcode.
+  ///
+  /// In km, this message translates to:
+  /// **'បាកូដ'**
+  String get scanModeBarcode;
+
+  /// No description provided for @scanModeVisual.
+  ///
+  /// In km, this message translates to:
+  /// **'រូបភាព'**
+  String get scanModeVisual;
 }
 
 class _AppLocalizationsDelegate
