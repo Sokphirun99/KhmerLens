@@ -16,6 +16,7 @@ import '../services/spoonacular_service.dart';
 import '../services/open_fda_service.dart';
 import '../services/database_service.dart';
 import '../services/storage_service.dart';
+import '../services/server_product_service.dart';
 import '../config/app_config.dart';
 import 'product_history_screen.dart';
 import 'package:uuid/uuid.dart';
@@ -63,6 +64,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
 
   // Visual Search Deps
   final ImagePicker _picker = ImagePicker();
+  final ServerProductService _serverProductService = ServerProductService();
   final UsdaService _usdaService = UsdaService();
   final SpoonacularService _spoonacularService = SpoonacularService();
   final OpenFdaService _openFdaService = OpenFdaService();
@@ -157,7 +159,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
   }
 
   Future<void> _fetchProductInfo(String code) async {
-    // 0. Check local history (Cache)
+    // 1. Check local history (Cache)
     try {
       final db = DatabaseService();
       final existingMap = await db.getScannedProductByBarcode(code);
@@ -197,10 +199,28 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       }
     } catch (e) {
       debugPrint('Error checking local history: $e');
-      // Continue to API calls if cache check fails
+      // Continue to server/API calls
     }
 
-    // 1. Check if it looks like a Book (ISBN usually starts with 978 or 979)
+    // 2. NEW: Check server cache + external APIs
+    try {
+      final serverData =
+          await _serverProductService.fetchProductByBarcode(code);
+      if (mounted && serverData != null) {
+        debugPrint('Product found via server: $code');
+        _saveToHistory(serverData, code);
+        await _showProductDetails(serverData);
+        return;
+      }
+    } catch (e) {
+      debugPrint('Server fetch failed, falling back to direct APIs: $e');
+      // Continue to direct API fallback
+    }
+
+    // 3. FALLBACK: Direct API calls (only if server fails)
+    debugPrint('Using direct API fallback for: $code');
+
+    // Check if it looks like a Book (ISBN usually starts with 978 or 979)
     if (code.startsWith('978') || code.startsWith('979')) {
       final bookData = await _fetchGoogleBook(code);
       if (mounted && bookData != null) {
