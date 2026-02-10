@@ -93,6 +93,8 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
     CreateDocument event,
     Emitter<DocumentState> emit,
   ) async {
+    // Capture state before emitting DocumentCreating, so we can optimistically update the list later
+    final previousState = state;
     emit(DocumentCreating());
 
     try {
@@ -116,14 +118,13 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
 
       // OPTIMIZATION: Manually update the list instead of reloading from DB
       // Check if we have the previous list in memory
-      if (state is DocumentLoaded && createdDocument != null) {
-        final currentState = state as DocumentLoaded;
-        final updatedDocuments = List<Document>.from(currentState.documents)
+      if (previousState is DocumentLoaded && createdDocument != null) {
+        final updatedDocuments = List<Document>.from(previousState.documents)
           ..insert(0, createdDocument); // Insert new doc at the top
 
         emit(DocumentLoaded(
           documents: updatedDocuments,
-          hasMore: currentState.hasMore,
+          hasMore: previousState.hasMore,
         ));
       } else {
         // Fallback: reload everything if we weren't in a loaded state
@@ -181,8 +182,8 @@ class DocumentBloc extends Bloc<DocumentEvent, DocumentState> {
       int pageSize = 20;
       if (state is DocumentLoaded) {
         final loadedCount = (state as DocumentLoaded).documents.length;
-        // Keep at least the same number of documents loaded, or minimum 20
-        pageSize = loadedCount > 20 ? loadedCount : 20;
+        // Cap at 50 to avoid slow queries on large lists
+        pageSize = loadedCount.clamp(20, 50);
       }
 
       final documents = await repository.getDocumentsPaginated(limit: pageSize);

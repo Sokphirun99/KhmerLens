@@ -143,3 +143,6 @@ token.json
 .env
 .env.*
 !.env.example
+# Project Memory
+memory.md/
+memory.md
