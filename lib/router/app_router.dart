@@ -10,6 +10,9 @@ import '../screens/home_screen.dart';
 import '../screens/product_scan_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/web_view_screen.dart';
+
+import '../features/ocr/ocr_scan_screen.dart';
 
 /// App route paths
 class AppRoutes {
@@ -20,6 +23,8 @@ class AppRoutes {
   static const String search = '/search';
   static const String settings = '/settings';
   static const String productScan = '/product-scan';
+  static const String ocrScan = '/ocr-scan';
+  static const String webView = '/webview';
 }
 
 /// GoRouter configuration for the app
@@ -76,6 +81,26 @@ class AppRouter {
         path: AppRoutes.productScan,
         name: 'product-scan',
         builder: (context, state) => const ProductScanScreen(),
+      ),
+
+      // OCR Scan screen
+      GoRoute(
+        path: AppRoutes.ocrScan,
+        name: 'ocr-scan',
+        builder: (context, state) => const OcrScanScreen(),
+      ),
+
+      // WebView Screen
+      GoRoute(
+        path: AppRoutes.webView,
+        name: 'webview',
+        builder: (context, state) {
+          final args = state.extra as WebViewScreenArgs;
+          return WebViewScreen(
+            url: args.url,
+            title: args.title,
+          );
+        },
       ),
     ],
 
@@ -164,6 +189,20 @@ extension AppRouterExtension on BuildContext {
   /// Push to product scan (preserves back stack)
   void pushProductScan() => push(AppRoutes.productScan);
 
+  /// Navigate to OCR scan
+  void goToOcrScan() => go(AppRoutes.ocrScan);
+
+  /// Push to OCR scan
+  void pushOcrScan() => push(AppRoutes.ocrScan);
+
   /// Navigate to home (dashboard)
   void goToHome() => go(AppRoutes.dashboard);
+
+  /// Push to WebView
+  void pushWebView({required String url, required String title}) {
+    push(
+      AppRoutes.webView,
+      extra: WebViewScreenArgs(url: url, title: title),
+    );
+  }
 }

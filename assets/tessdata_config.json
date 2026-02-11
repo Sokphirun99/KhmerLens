@@ -1,5 +1,6 @@
 {
-  "tessdata": [
-    "khm.traineddata"
+  "files": [
+    "khm.traineddata",
+    "eng.traineddata"
   ]
 }

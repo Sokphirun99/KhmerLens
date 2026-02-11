@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+
+import '../router/app_router.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:khmerscan/l10n/arb/app_localizations.dart';
@@ -705,12 +708,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _openPrivacyPolicy() async {
-    final uri = Uri.parse(
-        'https://docs.google.com/document/d/1yT6oBjz7ktdnJnzW61m7eY8HTEaLN33q-J8oKqL97is/edit?usp=sharing');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+  void _openPrivacyPolicy() {
+    context.pushWebView(
+      url:
+          'https://docs.google.com/document/d/1yT6oBjz7ktdnJnzW61m7eY8HTEaLN33q-J8oKqL97is/edit?usp=sharing',
+      title: AppLocalizations.of(context)!.privacyPolicy,
+    );
   }
 
   String _getTextSizeLabel(double scale, AppLocalizations l10n) {
