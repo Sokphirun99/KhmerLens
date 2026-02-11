@@ -3,7 +3,7 @@
 
 A powerful document scanner and OCR application built with Flutter.
 
-![App Screenshot](screenshot_image/IMG_1234.png)
+<img src="screenshot_image/IMG_1234.png" width="300" />
 
 ## Gets Started
 
