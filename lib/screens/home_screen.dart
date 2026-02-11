@@ -265,7 +265,6 @@ class HomeScreen extends HookWidget {
                     } catch (e) {
                       debugPrint('HomeScreen: Failed to close dialog: $e');
                     }
-                    context.read<DocumentBloc>().add(const LoadDocuments());
                     context.pushDocumentDetail(state.document);
                   } else if (state is DocumentError) {
                     try {

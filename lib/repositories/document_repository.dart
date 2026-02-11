@@ -232,6 +232,11 @@ class DocumentRepository {
         );
       }
 
+      assert(
+        document.imagePaths.any((p) => p == imagePath),
+        'imagePath not found in document.imagePaths — path mismatch? Incoming: $imagePath',
+      );
+
       // Remove image from storage (resolve to absolute first if needed)
       // Note: imagePath coming from UI model should already be absolute if we mapped it correctly on load.
       // But we should be safe.

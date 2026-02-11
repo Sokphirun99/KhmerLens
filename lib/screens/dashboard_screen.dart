@@ -7,11 +7,46 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
 import '../widgets/dashboard_feature_card.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
-  /// Returns greeting info based on current hour
-  /// Returns (greeting key, icon, gradient colors)
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
+  late int _currentHour;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _currentHour = DateTime.now().hour;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _updateGreeting();
+    }
+  }
+
+  void _updateGreeting() {
+    final newHour = DateTime.now().hour;
+    if (_currentHour != newHour) {
+      setState(() {
+        _currentHour = newHour;
+      });
+    }
+  }
+
   _GreetingInfo _getGreetingInfo(int hour) {
     if (hour >= 5 && hour < 12) {
       // Morning: 5 AM - 11:59 AM - Light orange/yellow
@@ -61,8 +96,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final hour = DateTime.now().hour;
-    final greetingInfo = _getGreetingInfo(hour);
+    final greetingInfo = _getGreetingInfo(_currentHour);
 
     return Scaffold(
       appBar: AppBar(

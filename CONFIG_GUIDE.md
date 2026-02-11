@@ -123,17 +123,26 @@ static const String defaultLanguage = 'km'; // Khmer
 static const double minConfidence = 0.5;
 ```
 
-## 🔑 Adding API Keys
+## 🔑 API Keys
 
-To add API keys for external services (Firebase, cloud storage, etc.):
+API keys are no longer hardcoded in `lib/config/app_config.dart`. Pass them at build/run time to keep them secure:
 
-1. Open [lib/config/app_config.dart](file:///Users/phirun/Projects_Personal/KhmerScan/lib/config/app_config.dart)
-2. Add your API keys in the "API Keys & External Services" section:
+**Command Line:**
+```bash
+flutter run \
+  --dart-define=USDA_API_KEY=your_key \
+  --dart-define=SPOONACULAR_API_KEY=your_key \
+  --dart-define=OPEN_FDA_API_KEY=your_key  # Optional
+```
 
-```dart
-// API Keys & External Services
-static const String firebaseApiKey = 'YOUR_FIREBASE_API_KEY';
-static const String cloudStorageUrl = 'YOUR_CLOUD_STORAGE_URL';
+**VS Code (`launch.json`):**
+Add to your configuration's `toolArgs`:
+```json
+"toolArgs": [
+    "--dart-define=USDA_API_KEY=your_key",
+    "--dart-define=SPOONACULAR_API_KEY=your_key",
+    "--dart-define=OPEN_FDA_API_KEY=your_key"  // Optional
+]
 ```
 
 ## 📝 Notes

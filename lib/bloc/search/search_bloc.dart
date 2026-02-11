@@ -1,6 +1,7 @@
 // bloc/search/search_bloc.dart
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import '../../repositories/document_repository.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/exceptions.dart';
@@ -10,15 +11,15 @@ import 'search_state.dart';
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
   final DocumentRepository repository;
 
-  // Track the current search operation to cancel if needed
-  Completer<void>? _currentSearchCompleter;
   Timer? _debounceTimer;
-  bool _isClosed = false;
 
   SearchBloc({required this.repository}) : super(SearchInitial()) {
     on<SearchDocuments>(_onSearchDocuments);
     on<ClearSearch>(_onClearSearch);
-    on<_PerformSearch>(_onPerformSearch);
+    on<_PerformSearch>(
+      _onPerformSearch,
+      transformer: restartable(),
+    );
   }
 
   Future<void> _onSearchDocuments(
@@ -36,8 +37,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
     // Debounce: schedule the actual search after 500ms
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      // Only add the event if the bloc is not closed
-      if (!_isClosed) {
+      if (!isClosed) {
         add(_PerformSearch(event.query));
       }
     });
@@ -47,20 +47,10 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     _PerformSearch event,
     Emitter<SearchState> emit,
   ) async {
-    // Cancel any previous search operation
-    _currentSearchCompleter?.complete();
-    _currentSearchCompleter = Completer<void>();
-    final thisSearchCompleter = _currentSearchCompleter!;
-
     emit(SearchLoading());
 
     try {
       final results = await repository.searchDocuments(event.query);
-
-      // Check if this search was cancelled or bloc was closed
-      if (thisSearchCompleter.isCompleted || _isClosed) {
-        return;
-      }
 
       if (results.isEmpty) {
         emit(SearchEmpty(event.query));
@@ -68,11 +58,6 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         emit(SearchLoaded(results: results, query: event.query));
       }
     } catch (e, stackTrace) {
-      // Check if this search was cancelled or bloc was closed
-      if (thisSearchCompleter.isCompleted || _isClosed) {
-        return;
-      }
-
       ErrorHandler.logError(e, stackTrace: stackTrace);
 
       final message = e is AppException
@@ -87,15 +72,12 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     Emitter<SearchState> emit,
   ) async {
     _debounceTimer?.cancel();
-    _currentSearchCompleter?.complete();
     emit(SearchInitial());
   }
 
   @override
   Future<void> close() {
-    _isClosed = true;
     _debounceTimer?.cancel();
-    _currentSearchCompleter?.complete();
     return super.close();
   }
 }

@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import '../services/ad_service.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +15,9 @@ import '../services/usda_service.dart';
 import '../services/spoonacular_service.dart';
 import '../services/open_fda_service.dart';
 import '../services/database_service.dart';
+import '../services/storage_service.dart';
+import '../services/server_product_service.dart';
+import '../config/app_config.dart';
 import 'product_history_screen.dart';
 import 'package:uuid/uuid.dart';
 
@@ -47,20 +52,52 @@ class ProductScanScreen extends StatefulWidget {
 class _ProductScanScreenState extends State<ProductScanScreen> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
+    autoStart: false,
   );
 
   ScanMode _scanMode = ScanMode.barcode;
   bool _isLoading = false;
 
+  // AdMob State
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
+
   // Visual Search Deps
   final ImagePicker _picker = ImagePicker();
+  final ServerProductService _serverProductService = ServerProductService();
   final UsdaService _usdaService = UsdaService();
   final SpoonacularService _spoonacularService = SpoonacularService();
   final OpenFdaService _openFdaService = OpenFdaService();
 
   @override
+  void initState() {
+    super.initState();
+    // Start manually since autoStart is disabled to prevent race conditions
+    _controller.start();
+
+    // Initialize Banner Ad
+    _bannerAd = AdService().createBannerAd(
+      onAdLoaded: () {
+        if (mounted) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        }
+      },
+      onAdFailedToLoad: (error) {
+        if (mounted) {
+          setState(() {
+            _isBannerAdReady = false;
+          });
+        }
+      },
+    )..load();
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
+    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -122,7 +159,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
   }
 
   Future<void> _fetchProductInfo(String code) async {
-    // 0. Check local history (Cache)
+    // 1. Check local history (Cache)
     try {
       final db = DatabaseService();
       final existingMap = await db.getScannedProductByBarcode(code);
@@ -162,10 +199,28 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       }
     } catch (e) {
       debugPrint('Error checking local history: $e');
-      // Continue to API calls if cache check fails
+      // Continue to server/API calls
     }
 
-    // 1. Check if it looks like a Book (ISBN usually starts with 978 or 979)
+    // 2. NEW: Check server cache + external APIs
+    try {
+      final serverData =
+          await _serverProductService.fetchProductByBarcode(code);
+      if (mounted && serverData != null) {
+        debugPrint('Product found via server: $code');
+        _saveToHistory(serverData, code);
+        await _showProductDetails(serverData);
+        return;
+      }
+    } catch (e) {
+      debugPrint('Server fetch failed, falling back to direct APIs: $e');
+      // Continue to direct API fallback
+    }
+
+    // 3. FALLBACK: Direct API calls (only if server fails)
+    debugPrint('Using direct API fallback for: $code');
+
+    // Check if it looks like a Book (ISBN usually starts with 978 or 979)
     if (code.startsWith('978') || code.startsWith('979')) {
       final bookData = await _fetchGoogleBook(code);
       if (mounted && bookData != null) {
@@ -611,6 +666,18 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       ),
     );
 
+    // Increment scan count and check for interstitial
+    try {
+      final newScanCount = await StorageService().incrementScanCount();
+      if (newScanCount % AppConfig.scansBeforeInterstitial == 0) {
+        if (mounted) {
+          await AdService().showInterstitialAd();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error handling ad logic: $e');
+    }
+
     // Restart scanner
     if (mounted && _scanMode == ScanMode.barcode) {
       await _controller.start();
@@ -703,7 +770,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
 
           // Mode Switcher & Visual Actions
           Positioned(
-            bottom: 30,
+            bottom: _isBannerAdReady ? 90 : 30, // Adjust for ad
             left: 20,
             right: 20,
             child: Column(
@@ -747,6 +814,19 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
               ],
             ),
           ),
+
+          // Banner Ad
+          if (_isBannerAdReady && _bannerAd != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            ),
 
           if (_isLoading)
             Container(

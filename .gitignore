@@ -143,3 +143,16 @@ token.json
 .env
 .env.*
 !.env.example
+# Project Memory
+memory.md/
+memory.md
+
+# Firebase - specific
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebaserc
+firestore.indexes.json
+firestore.rules
+

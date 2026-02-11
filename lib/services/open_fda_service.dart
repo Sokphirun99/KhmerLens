@@ -17,8 +17,12 @@ class OpenFdaService {
       // The openFDA often stores UPCs inside the `openfda.upc` array.
       // Query syntax: search=openfda.upc:"<UPC>"
       final query = 'openfda.upc:"$upc"';
-      final uri = Uri.parse(
-          '$_baseUrl/label.json?api_key=${AppConfig.openFdaApiKey}&search=${Uri.encodeComponent(query)}&limit=1');
+      String url =
+          '$_baseUrl/label.json?search=${Uri.encodeComponent(query)}&limit=1';
+      if (AppConfig.openFdaApiKey.isNotEmpty) {
+        url += '&api_key=${AppConfig.openFdaApiKey}';
+      }
+      final uri = Uri.parse(url);
 
       final response = await http.get(uri);
 
