@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/mdi.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../bloc/document/document_bloc.dart';
 import '../bloc/document/document_event.dart';
@@ -383,11 +385,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             ),
           ],
         ),
-        body: Column(
+        body: Stack(
           children: [
-            // Image viewer with PageView for multiple images
-            Expanded(
-              flex: 2,
+            // Image viewer with PageView for multiple images (Takes full height but leaves space for bottom sheet)
+            Positioned.fill(
+              bottom: 80, // Keep some space visible for the sheet header
               child: Container(
                 color: Theme.of(context).colorScheme.surfaceContainerLowest,
                 child: _document.imagePaths.isEmpty
@@ -564,70 +566,75 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
             ),
 
-            // Bottom section with document info
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
+            // Draggable Bottom Sheet
+            DraggableScrollableSheet(
+              initialChildSize: 0.4,
+              minChildSize: 0.15,
+              maxChildSize: 0.9,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Handle bar
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
+                  child: Column(
+                    children: [
+                      // Handle bar
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ),
 
-                    // Section header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Row(
-                        children: [
-                          Iconify(
-                            Mdi.information_outline,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.documentInfo,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
+                      // Section header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Row(
+                          children: [
+                            Iconify(
+                              Mdi.information_outline,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.documentInfo,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    // Info content
-                    Expanded(
-                      child: _buildInfoContent(),
-                    ),
-                  ],
-                ),
-              ),
+                      // Info content
+                      Expanded(
+                        child: _buildInfoContent(scrollController),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -635,8 +642,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     );
   }
 
-  Widget _buildInfoContent() {
+  Widget _buildInfoContent(ScrollController scrollController) {
     return ListView(
+      controller: scrollController,
       padding: const EdgeInsets.all(16),
       children: [
         _buildInfoCard(
@@ -655,6 +663,12 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               ),
           ],
         ),
+        const SizedBox(height: 16),
+        if (_document.extractedText != null &&
+            _document.extractedText!.isNotEmpty) ...[
+          _buildExtractedTextCard(),
+          const SizedBox(height: 16),
+        ],
         const SizedBox(height: 16),
         _buildInfoCard(
           l10n.technicalInfo,
@@ -744,6 +758,67 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExtractedTextCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Extracted Text',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Iconify(Mdi.content_copy, size: 20),
+                      onPressed: () {
+                        if (_document.extractedText != null) {
+                          Clipboard.setData(
+                              ClipboardData(text: _document.extractedText!));
+                          _showSnackBar('Copied to clipboard');
+                        }
+                      },
+                      tooltip: 'Copy',
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                    IconButton(
+                      icon: const Iconify(Mdi.share_variant, size: 20),
+                      onPressed: () {
+                        if (_document.extractedText != null) {
+                          Share.share(_document.extractedText!);
+                        }
+                      },
+                      tooltip: l10n.share,
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              _document.extractedText!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontFamily: 'GoogleFonts.kantumruyPro().fontFamily',
+                    height: 1.5,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

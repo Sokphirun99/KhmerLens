@@ -212,15 +212,27 @@ class _DashboardScreenState extends State<DashboardScreen>
                 onTap: () => context.push(AppRoutes.productScan),
               ),
 
-              // Feature 3: Coming Soon
+              // Feature 3: Khmer OCR (New)
               DashboardFeatureCard(
-                title: l10n.moreFeatures,
-                description: l10n.moreFeaturesDescription,
-                icon: Mdi.auto_fix,
-                color: Colors.grey,
+                title: 'Khmer OCR',
+                description: 'Extract text from images',
+                icon: Mdi.text_recognition,
+                color: Colors.orange,
+                onTap: () => context.pushOcrScan(),
+              ),
+
+              // Feature 4: Coming Soon
+              DashboardFeatureCard(
+                title: 'Coming Soon',
+                description: 'More exciting features',
+                icon: Mdi.rocket_launch_outline,
+                color: Colors.blueGrey,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.featureComingSoon)),
+                    const SnackBar(
+                      content: Text('Stay tuned! This feature is coming soon.'),
+                      duration: Duration(seconds: 2),
+                    ),
                   );
                 },
               ),

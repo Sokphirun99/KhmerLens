@@ -66,6 +66,8 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.1
   nutrition_ai: ^3.2.14
   bloc_concurrency: ^0.3.0
+  flutter_tesseract_ocr: ^0.4.30
+  webview_flutter: ^4.13.1
 
 
 dev_dependencies:
@@ -82,6 +84,8 @@ flutter:
   assets:
     - assets/animations/
     - assets/icon/
+    - assets/tessdata/
+    - assets/tessdata_config.json
 
 flutter_launcher_icons:
   android: true
