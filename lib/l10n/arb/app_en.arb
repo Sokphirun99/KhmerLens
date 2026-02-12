@@ -180,5 +180,11 @@
     "scanDocumentOption": "Scan Document",
     "scanDocumentOptionDescription": "Use camera to scan multiple pages",
     "scanModeBarcode": "Barcode",
-    "scanModeVisual": "Visual"
+    "scanModeVisual": "Visual",
+    "copyText": "Copy Text",
+    "copiedToClipboard": "Text copied to clipboard",
+    "khmerOCR": "Khmer OCR",
+    "extractTextFromImages": "Extract text from images",
+    "comingSoon": "Coming Soon",
+    "comingSoonDescription": "More exciting features"
 }

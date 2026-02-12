@@ -185,7 +185,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       if (source == ImageSource.camera) {
         // Use document scanner for capture
         if (!mounted) return;
-        final paths = await CunningDocumentScanner.getPictures();
+        final paths = await CunningDocumentScanner.getPictures(noOfPages: 24);
         if (paths != null && paths.isNotEmpty) {
           newImagePaths = paths;
         }

@@ -991,6 +991,42 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'រូបភាព'**
   String get scanModeVisual;
+
+  /// No description provided for @copyText.
+  ///
+  /// In km, this message translates to:
+  /// **'ចម្លងអត្ថបទ'**
+  String get copyText;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In km, this message translates to:
+  /// **'បានចម្លងអត្ថបទ'**
+  String get copiedToClipboard;
+
+  /// No description provided for @khmerOCR.
+  ///
+  /// In km, this message translates to:
+  /// **'ស្កេនអក្សរខ្មែរ'**
+  String get khmerOCR;
+
+  /// No description provided for @extractTextFromImages.
+  ///
+  /// In km, this message translates to:
+  /// **'ទាញយកអត្ថបទពីរូបភាព'**
+  String get extractTextFromImages;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In km, this message translates to:
+  /// **'ឆាប់ៗនេះ'**
+  String get comingSoon;
+
+  /// No description provided for @comingSoonDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'មុខងារថ្មីៗជាច្រើនទៀត'**
+  String get comingSoonDescription;
 }
 
 class _AppLocalizationsDelegate

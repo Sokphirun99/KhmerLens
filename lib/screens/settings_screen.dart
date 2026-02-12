@@ -100,7 +100,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text(l10n.settings),
         leading: IconButton(
-          icon: const Iconify(Mdi.arrow_left, color: Colors.black54),
+          icon: Iconify(
+            Mdi.arrow_left,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: () => context.pop(),
           tooltip: l10n.back,
         ),

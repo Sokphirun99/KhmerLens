@@ -100,11 +100,17 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appTitle),
+        title: Image.asset(
+          'assets/icon/profile_avatar.png',
+          height: 40,
+        ),
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Iconify(Mdi.cog_outline, color: Colors.black54),
+            icon: Iconify(
+              Mdi.cog_outline,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             onPressed: () => context.push(AppRoutes.settings),
             tooltip: l10n.settings,
           ),
@@ -214,8 +220,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
               // Feature 3: Khmer OCR (New)
               DashboardFeatureCard(
-                title: 'Khmer OCR',
-                description: 'Extract text from images',
+                title: l10n.khmerOCR,
+                description: l10n.extractTextFromImages,
                 icon: Mdi.text_recognition,
                 color: Colors.orange,
                 onTap: () => context.pushOcrScan(),
@@ -223,15 +229,15 @@ class _DashboardScreenState extends State<DashboardScreen>
 
               // Feature 4: Coming Soon
               DashboardFeatureCard(
-                title: 'Coming Soon',
-                description: 'More exciting features',
+                title: l10n.comingSoon,
+                description: l10n.comingSoonDescription,
                 icon: Mdi.rocket_launch_outline,
                 color: Colors.blueGrey,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Stay tuned! This feature is coming soon.'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(l10n.featureComingSoon),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 },

@@ -467,4 +467,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scanModeVisual => 'Visual';
+
+  @override
+  String get copyText => 'Copy Text';
+
+  @override
+  String get copiedToClipboard => 'Text copied to clipboard';
+
+  @override
+  String get khmerOCR => 'Khmer OCR';
+
+  @override
+  String get extractTextFromImages => 'Extract text from images';
+
+  @override
+  String get comingSoon => 'Coming Soon';
+
+  @override
+  String get comingSoonDescription => 'More exciting features';
 }

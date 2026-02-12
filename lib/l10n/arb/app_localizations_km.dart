@@ -467,4 +467,22 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get scanModeVisual => 'រូបភាព';
+
+  @override
+  String get copyText => 'ចម្លងអត្ថបទ';
+
+  @override
+  String get copiedToClipboard => 'បានចម្លងអត្ថបទ';
+
+  @override
+  String get khmerOCR => 'ស្កេនអក្សរខ្មែរ';
+
+  @override
+  String get extractTextFromImages => 'ទាញយកអត្ថបទពីរូបភាព';
+
+  @override
+  String get comingSoon => 'ឆាប់ៗនេះ';
+
+  @override
+  String get comingSoonDescription => 'មុខងារថ្មីៗជាច្រើនទៀត';
 }

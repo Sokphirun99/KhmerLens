@@ -7,6 +7,9 @@ import 'package:iconify_flutter/icons/mdi.dart';
 import 'package:share_plus/share_plus.dart';
 import 'khmer_ocr_service.dart';
 
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../services/ad_service.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../bloc/document/document_bloc.dart';
@@ -26,6 +29,10 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
   String? _extractedText;
   bool _isScanning = false;
 
+  // AdMob
+  BannerAd? _bannerAd;
+  bool _isBannerAdReady = false;
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +40,26 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scanDocument();
     });
+    _loadBannerAd();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadBannerAd() {
+    _bannerAd = AdService().createBannerAd()
+      ..load().then((_) {
+        if (mounted) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        }
+      }).catchError((e) {
+        debugPrint('Failed to load banner ad: $e');
+      });
   }
 
   Future<void> _scanDocument() async {
@@ -247,6 +274,13 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
               ),
             ),
           ),
+          if (_isBannerAdReady && _bannerAd != null)
+            Container(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              alignment: Alignment.center,
+              child: AdWidget(ad: _bannerAd!),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

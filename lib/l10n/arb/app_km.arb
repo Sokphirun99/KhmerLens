@@ -180,5 +180,11 @@
     "scanDocumentOption": "ស្កេនឯកសារ",
     "scanDocumentOptionDescription": "ប្រើកាមេរ៉ាដើម្បីស្កេនច្រើនទំព័រ",
     "scanModeBarcode": "បាកូដ",
-    "scanModeVisual": "រូបភាព"
+    "scanModeVisual": "រូបភាព",
+    "copyText": "ចម្លងអត្ថបទ",
+    "copiedToClipboard": "បានចម្លងអត្ថបទ",
+    "khmerOCR": "ស្កេនអក្សរខ្មែរ",
+    "extractTextFromImages": "ទាញយកអត្ថបទពីរូបភាព",
+    "comingSoon": "ឆាប់ៗនេះ",
+    "comingSoonDescription": "មុខងារថ្មីៗជាច្រើនទៀត"
 }
