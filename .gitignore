@@ -155,5 +155,3 @@ ui-debug.log
 .firebaserc
 firestore.indexes.json
 firestore.rules
-
-assets/
