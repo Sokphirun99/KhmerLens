@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -57,6 +58,16 @@ void main() async {
           debugPrint('Firebase initialization failed: $e');
           ErrorHandler.logError(e, stackTrace: stackTrace);
         }
+      }
+
+      // Initialize Anonymous Auth
+      try {
+        await FirebaseAuth.instance.signInAnonymously();
+        debugPrint(
+            'Signed in anonymously: ${FirebaseAuth.instance.currentUser?.uid}');
+      } catch (e) {
+        debugPrint('Anonymous sign-in failed: $e');
+        // Non-fatal, app can still function (read-only for products)
       }
 
       // Initialize Storage Service (Sync support)

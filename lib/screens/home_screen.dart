@@ -342,11 +342,6 @@ class HomeScreen extends HookWidget {
                                         .replaceFirst(':id', document.id),
                                     extra: document,
                                   );
-                                  if (context.mounted) {
-                                    context
-                                        .read<DocumentBloc>()
-                                        .add(const RefreshDocuments());
-                                  }
                                 },
                                 onDelete: () async {
                                   final confirmed =

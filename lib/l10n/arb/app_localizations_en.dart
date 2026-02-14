@@ -122,6 +122,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete all temporary data? This will not delete your documents.';
 
   @override
+  String get deleteAllDocuments => 'Delete All Documents';
+
+  @override
+  String get deleteAllDocumentsSubtitle => 'Delete all scanned documents';
+
+  @override
+  String get deleteAllDocumentsTitle => 'Delete All Documents';
+
+  @override
+  String get deleteAllDocumentsMessage =>
+      'Are you sure you want to delete ALL documents? This action cannot be undone and you will lose all your scanned files.';
+
+  @override
+  String get documentsDeleted => 'All documents deleted';
+
+  @override
   String get clear => 'Clear';
 
   @override
@@ -472,9 +488,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copyText => 'Copy Text';
 
   @override
-  String get copiedToClipboard => 'Text copied to clipboard';
-
-  @override
   String get khmerOCR => 'Khmer OCR';
 
   @override
@@ -485,4 +498,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get comingSoonDescription => 'More exciting features';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get scanNew => 'Scan New';
+
+  @override
+  String get extractedText => 'Extracted Text';
+
+  @override
+  String get processing => 'Processing...';
+
+  @override
+  String get noTextExtracted => 'No text extracted yet.';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get documentTitle => 'Document Title';
+
+  @override
+  String get enterDocumentTitle => 'Enter a title for this scan';
+
+  @override
+  String get documentSaved => 'Document saved successfully';
+
+  @override
+  String failedToExtractText(Object error) {
+    return 'Failed to extract text: $error';
+  }
 }

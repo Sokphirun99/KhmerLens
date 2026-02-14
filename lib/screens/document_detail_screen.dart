@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -67,6 +68,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
   void initState() {
     super.initState();
     _currentDocument = widget.document;
+    debugPrint('DocumentDetailScreen: Document ID: ${_currentDocument.id}');
+    debugPrint(
+        'DocumentDetailScreen: Extracted Text Length: ${_currentDocument.extractedText?.length}');
     _pageController = PageController();
   }
 
@@ -773,7 +777,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Extracted Text',
+                  l10n.extractedText,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -786,10 +790,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                         if (_document.extractedText != null) {
                           Clipboard.setData(
                               ClipboardData(text: _document.extractedText!));
-                          _showSnackBar('Copied to clipboard');
+                          _showSnackBar(l10n.copiedToClipboard);
                         }
                       },
-                      tooltip: 'Copy',
+                      tooltip: l10n.copy,
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(8),
                     ),
@@ -813,7 +817,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
             Text(
               _document.extractedText!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontFamily: 'GoogleFonts.kantumruyPro().fontFamily',
+                    fontFamily: GoogleFonts.kantumruyPro().fontFamily,
                     height: 1.5,
                   ),
             ),

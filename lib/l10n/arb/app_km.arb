@@ -37,6 +37,11 @@
     "clearCacheSubtitle": "លុបទិន្នន័យបណ្ដោះអាសន្ន",
     "clearCacheTitle": "សម្អាតឃ្លាំង",
     "clearCacheMessage": "តើអ្នកពិតជាចង់លុបទិន្នន័យបណ្ដោះអាសន្នទាំងអស់មែនទេ? សកម្មភាពនេះនឹងមិនលុបឯកសាររបស់អ្នកទេ។",
+    "deleteAllDocuments": "លុបឯកសារទាំងអស់",
+    "deleteAllDocumentsSubtitle": "លុបឯកសារដែលបានស្កែនទាំងអស់",
+    "deleteAllDocumentsTitle": "លុបឯកសារទាំងអស់",
+    "deleteAllDocumentsMessage": "តើអ្នកពិតជាចង់លុបឯកសារទាំងអស់មែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ ហើយអ្នកនឹងបាត់បង់ឯកសារទាំងអស់។",
+    "documentsDeleted": "ឯកសារទាំងអស់ត្រូវបានលុប",
     "clear": "សម្អាត",
     "cacheCleared": "បានសម្អាតឃ្លាំង",
     "unableToCalculate": "មិនអាចគណនាបាន",
@@ -182,9 +187,27 @@
     "scanModeBarcode": "បាកូដ",
     "scanModeVisual": "រូបភាព",
     "copyText": "ចម្លងអត្ថបទ",
-    "copiedToClipboard": "បានចម្លងអត្ថបទ",
     "khmerOCR": "ស្កេនអក្សរខ្មែរ",
     "extractTextFromImages": "ទាញយកអត្ថបទពីរូបភាព",
     "comingSoon": "ឆាប់ៗនេះ",
-    "comingSoonDescription": "មុខងារថ្មីៗជាច្រើនទៀត"
+    "comingSoonDescription": "មុខងារថ្មីៗជាច្រើនទៀត",
+    "copiedToClipboard": "បានចម្លងទៅក្ដារតម្បៀតខ្ទាស់",
+    "save": "រក្សាទុក",
+    "scanNew": "ស្កេនថ្មី",
+    "extractedText": "អត្ថបទដែលបានទាញយក",
+    "processing": "កំពុងដំណើរការ...",
+    "noTextExtracted": "មិនទាន់មានអត្ថបទនៅឡើយទេ",
+    "copy": "ចម្លង",
+    "documentTitle": "ចំណងជើងឯកសារ",
+    "enterDocumentTitle": "បញ្ចូលចំណងជើងសម្រាប់ការស្កេននេះ",
+    "documentSaved": "ឯកសារត្រូវបានរក្សាទុកដោយជោគជ័យ",
+    "failedToExtractText": "បរាជ័យក្នុងការទាញយកអត្ថបទ៖ {error}",
+    "@failedToExtractText": {
+        "placeholders": {
+            "error": {
+                "type": "Object",
+                "example": "Network error"
+            }
+        }
+    }
 }

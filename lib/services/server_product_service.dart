@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../screens/product_scan_screen.dart';
 import 'spoonacular_service.dart';
@@ -31,10 +32,13 @@ class ServerProductService {
         debugPrint('ServerProductService: CACHE HIT for $barcode');
 
         // Update analytics (fire-and-forget)
-        docRef.update({
-          'scanCount': FieldValue.increment(1),
-          'lastScannedAt': FieldValue.serverTimestamp(),
-        }).catchError((e) => debugPrint('Error updating stats: $e'));
+        // Update analytics (fire-and-forget) - Only if authenticated
+        if (FirebaseAuth.instance.currentUser != null) {
+          docRef.update({
+            'scanCount': FieldValue.increment(1),
+            'lastScannedAt': FieldValue.serverTimestamp(),
+          }).catchError((e) => debugPrint('Error updating stats: $e'));
+        }
 
         final data = docSnap.data()!;
         return _mapFirestoreDataToProduct(data, 'Firestore Cache');
@@ -123,6 +127,12 @@ class ServerProductService {
 
   Future<void> _saveToFirestore(String barcode, ProductInfo product) async {
     try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        debugPrint(
+            'ServerProductService: Skipping Firestore write (Unauthenticated)');
+        return;
+      }
+
       await _firestore.collection('products').doc(barcode).set({
         'barcode': barcode,
         'title': product.title,

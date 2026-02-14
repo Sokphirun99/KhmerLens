@@ -37,6 +37,11 @@
     "clearCacheSubtitle": "Delete temporary data",
     "clearCacheTitle": "Clear Cache",
     "clearCacheMessage": "Are you sure you want to delete all temporary data? This will not delete your documents.",
+    "deleteAllDocuments": "Delete All Documents",
+    "deleteAllDocumentsSubtitle": "Delete all scanned documents",
+    "deleteAllDocumentsTitle": "Delete All Documents",
+    "deleteAllDocumentsMessage": "Are you sure you want to delete ALL documents? This action cannot be undone and you will lose all your scanned files.",
+    "documentsDeleted": "All documents deleted",
     "clear": "Clear",
     "cacheCleared": "Cache cleared",
     "unableToCalculate": "Unable to calculate",
@@ -182,9 +187,27 @@
     "scanModeBarcode": "Barcode",
     "scanModeVisual": "Visual",
     "copyText": "Copy Text",
-    "copiedToClipboard": "Text copied to clipboard",
     "khmerOCR": "Khmer OCR",
     "extractTextFromImages": "Extract text from images",
     "comingSoon": "Coming Soon",
-    "comingSoonDescription": "More exciting features"
+    "comingSoonDescription": "More exciting features",
+    "copiedToClipboard": "Copied to clipboard",
+    "save": "Save",
+    "scanNew": "Scan New",
+    "extractedText": "Extracted Text",
+    "processing": "Processing...",
+    "noTextExtracted": "No text extracted yet.",
+    "copy": "Copy",
+    "documentTitle": "Document Title",
+    "enterDocumentTitle": "Enter a title for this scan",
+    "documentSaved": "Document saved successfully",
+    "failedToExtractText": "Failed to extract text: {error}",
+    "@failedToExtractText": {
+        "placeholders": {
+            "error": {
+                "type": "Object",
+                "example": "Network error"
+            }
+        }
+    }
 }

@@ -123,6 +123,22 @@ class AppLocalizationsKm extends AppLocalizations {
       'តើអ្នកពិតជាចង់លុបទិន្នន័យបណ្ដោះអាសន្នទាំងអស់មែនទេ? សកម្មភាពនេះនឹងមិនលុបឯកសាររបស់អ្នកទេ។';
 
   @override
+  String get deleteAllDocuments => 'លុបឯកសារទាំងអស់';
+
+  @override
+  String get deleteAllDocumentsSubtitle => 'លុបឯកសារដែលបានស្កែនទាំងអស់';
+
+  @override
+  String get deleteAllDocumentsTitle => 'លុបឯកសារទាំងអស់';
+
+  @override
+  String get deleteAllDocumentsMessage =>
+      'តើអ្នកពិតជាចង់លុបឯកសារទាំងអស់មែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ ហើយអ្នកនឹងបាត់បង់ឯកសារទាំងអស់។';
+
+  @override
+  String get documentsDeleted => 'ឯកសារទាំងអស់ត្រូវបានលុប';
+
+  @override
   String get clear => 'សម្អាត';
 
   @override
@@ -472,9 +488,6 @@ class AppLocalizationsKm extends AppLocalizations {
   String get copyText => 'ចម្លងអត្ថបទ';
 
   @override
-  String get copiedToClipboard => 'បានចម្លងអត្ថបទ';
-
-  @override
   String get khmerOCR => 'ស្កេនអក្សរខ្មែរ';
 
   @override
@@ -485,4 +498,39 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get comingSoonDescription => 'មុខងារថ្មីៗជាច្រើនទៀត';
+
+  @override
+  String get copiedToClipboard => 'បានចម្លងទៅក្ដារតម្បៀតខ្ទាស់';
+
+  @override
+  String get save => 'រក្សាទុក';
+
+  @override
+  String get scanNew => 'ស្កេនថ្មី';
+
+  @override
+  String get extractedText => 'អត្ថបទដែលបានទាញយក';
+
+  @override
+  String get processing => 'កំពុងដំណើរការ...';
+
+  @override
+  String get noTextExtracted => 'មិនទាន់មានអត្ថបទនៅឡើយទេ';
+
+  @override
+  String get copy => 'ចម្លង';
+
+  @override
+  String get documentTitle => 'ចំណងជើងឯកសារ';
+
+  @override
+  String get enterDocumentTitle => 'បញ្ចូលចំណងជើងសម្រាប់ការស្កេននេះ';
+
+  @override
+  String get documentSaved => 'ឯកសារត្រូវបានរក្សាទុកដោយជោគជ័យ';
+
+  @override
+  String failedToExtractText(Object error) {
+    return 'បរាជ័យក្នុងការទាញយកអត្ថបទ៖ $error';
+  }
 }
