@@ -66,8 +66,14 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.1
   nutrition_ai: ^3.2.14
   bloc_concurrency: ^0.3.0
-  flutter_tesseract_ocr: ^0.4.30
+  flutter_tesseract_ocr:
+    path: packages/flutter_tesseract_ocr
   webview_flutter: ^4.13.1
+  firebase_auth: ^6.1.4
+  file_picker: ^10.3.10
+  pdf_render: ^1.4.7
+  archive: ^4.0.7
+  xml: ^6.6.1
 
 
 dev_dependencies:

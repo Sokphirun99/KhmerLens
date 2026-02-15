@@ -271,6 +271,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 },
                 onDelete: () => _deleteDocument(document, index),
                 onShare: () => _shareDocument(document),
+                searchQuery: _searchController.text,
               )
                   .animate()
                   .fadeIn(delay: (50 * index).ms)

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart'; // Added for Clipboard
 
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:flutter/material.dart';
@@ -115,7 +116,8 @@ class HomeScreen extends HookWidget {
           if (!status.isGranted) return;
         }
 
-        final imagePaths = await CunningDocumentScanner.getPictures() ?? [];
+        final imagePaths =
+            await CunningDocumentScanner.getPictures(noOfPages: 24) ?? [];
         if (imagePaths.isNotEmpty) {
           await processNewDocument(imagePaths);
         }
@@ -142,6 +144,23 @@ class HomeScreen extends HookWidget {
         if (context.mounted) {
           ErrorSnackBar.show(context, error: e, locale: 'km');
         }
+      }
+    }
+
+    Future<void> copyToClipboard(Document document) async {
+      if (document.extractedText == null || document.extractedText!.isEmpty) {
+        return;
+      }
+
+      await Clipboard.setData(ClipboardData(text: document.extractedText!));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.copiedToClipboard),
+            behavior: SnackBarBehavior.floating,
+            width: 200, // Compact snackbar
+          ),
+        );
       }
     }
 
@@ -295,7 +314,106 @@ class HomeScreen extends HookWidget {
                         ),
                       );
                     }
-                    return _buildDocumentGrid(context, state, l10n);
+                    return SliverMainAxisGroup(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.all(16),
+                          sliver: SliverMasonryGrid.count(
+                            crossAxisCount:
+                                MediaQuery.of(context).size.width > 900
+                                    ? 4
+                                    : MediaQuery.of(context).size.width > 600
+                                        ? 3
+                                        : 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childCount: state.documents.length,
+                            itemBuilder: (context, index) {
+                              final document = state.documents[index];
+                              // Limit animations to first 6 items for better performance on old phones
+                              final shouldAnimate = index < 6;
+                              final card = DocumentGridCard(
+                                key: ValueKey(document.id),
+                                document: document,
+                                index: index,
+                                onTap: () async {
+                                  await context.push(
+                                    AppRoutes.documentDetail
+                                        .replaceFirst(':id', document.id),
+                                    extra: document,
+                                  );
+                                },
+                                onDelete: () async {
+                                  final confirmed =
+                                      await DestructiveActionSheet.show(
+                                    context,
+                                    title: l10n.deleteDocument,
+                                    message: l10n.deleteDocumentConfirmation,
+                                    confirmLabel: l10n.deleteDocument,
+                                    icon: Icons.delete_forever,
+                                  );
+
+                                  if (confirmed && context.mounted) {
+                                    context.read<DocumentBloc>().add(
+                                          DeleteDocument(document),
+                                        );
+                                  }
+                                },
+                                onCopy: () => copyToClipboard(document),
+                                onShare: () async {
+                                  // Share implementation
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(l10n.shareComingSoon)),
+                                  );
+                                },
+                              );
+
+                              return shouldAnimate
+                                  ? card.animate().fadeIn(
+                                      delay: (20 * index).ms, duration: 150.ms)
+                                  : card;
+                            },
+                          ),
+                        ),
+                        if (state.isLoadingMore)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (state.hasMore && !state.isLoadingMore)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: Text(
+                                  l10n.scrollForMore,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
                   }
                   if (state is DocumentError) {
                     // Refactoring _buildErrorState to be inline or helper
@@ -479,109 +597,6 @@ class HomeScreen extends HookWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDocumentGrid(
-      BuildContext context, DocumentLoaded state, AppLocalizations l10n) {
-    final documents = state.documents;
-
-    // Responsive grid
-    final width = MediaQuery.of(context).size.width;
-    final int crossAxisCount = width > 900
-        ? 4
-        : width > 600
-            ? 3
-            : 2;
-
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverMasonryGrid.count(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childCount: documents.length,
-            itemBuilder: (context, index) {
-              final document = documents[index];
-              // Limit animations to first 6 items for better performance on old phones
-              final shouldAnimate = index < 6;
-              final card = DocumentGridCard(
-                key: ValueKey(document.id),
-                document: document,
-                index: index,
-                onTap: () async {
-                  await context.push(
-                    AppRoutes.documentDetail.replaceFirst(':id', document.id),
-                    extra: document,
-                  );
-                  if (context.mounted) {
-                    context.read<DocumentBloc>().add(const RefreshDocuments());
-                  }
-                },
-                onDelete: () async {
-                  final confirmed = await DestructiveActionSheet.show(
-                    context,
-                    title: l10n.deleteDocument,
-                    message: l10n.deleteDocumentConfirmation,
-                    confirmLabel: l10n.deleteDocument,
-                    icon: Icons.delete_forever,
-                  );
-
-                  if (confirmed && context.mounted) {
-                    context.read<DocumentBloc>().add(
-                          DeleteDocument(document),
-                        );
-                  }
-                },
-                onShare: () async {
-                  // Share implementation
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.shareComingSoon)),
-                  );
-                },
-              );
-
-              return shouldAnimate
-                  ? card
-                      .animate()
-                      .fadeIn(delay: (20 * index).ms, duration: 150.ms)
-                  : card;
-            },
-          ),
-        ),
-        if (state.isLoadingMore)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (state.hasMore && !state.isLoadingMore)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Center(
-                child: Text(
-                  l10n.scrollForMore,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
