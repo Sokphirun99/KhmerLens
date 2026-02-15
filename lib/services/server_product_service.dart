@@ -32,12 +32,20 @@ class ServerProductService {
         debugPrint('ServerProductService: CACHE HIT for $barcode');
 
         // Update analytics (fire-and-forget)
-        // Update analytics (fire-and-forget) - Only if authenticated
-        if (FirebaseAuth.instance.currentUser != null) {
-          docRef.update({
-            'scanCount': FieldValue.increment(1),
-            'lastScannedAt': FieldValue.serverTimestamp(),
-          }).catchError((e) => debugPrint('Error updating stats: $e'));
+        try {
+          // Lazy Sign-in for stats
+          if (FirebaseAuth.instance.currentUser == null) {
+            await FirebaseAuth.instance.signInAnonymously();
+          }
+
+          if (FirebaseAuth.instance.currentUser != null) {
+            docRef.update({
+              'scanCount': FieldValue.increment(1),
+              'lastScannedAt': FieldValue.serverTimestamp(),
+            }).catchError((e) => debugPrint('Error updating stats: $e'));
+          }
+        } catch (e) {
+          debugPrint('Error ensuring auth for stats: $e');
         }
 
         final data = docSnap.data()!;
@@ -52,7 +60,7 @@ class ServerProductService {
 
       if (product != null) {
         // 3. Save to Firestore
-        await _saveToFirestore(barcode, product);
+        await saveProductToFirestore(barcode, product);
         return product;
       }
 
@@ -125,11 +133,26 @@ class ServerProductService {
     return null;
   }
 
-  Future<void> _saveToFirestore(String barcode, ProductInfo product) async {
+  Future<void> saveProductToFirestore(
+      String barcode, ProductInfo product) async {
     try {
+      // Lazy Sign-in: Ensure we have a user before writing
       if (FirebaseAuth.instance.currentUser == null) {
         debugPrint(
-            'ServerProductService: Skipping Firestore write (Unauthenticated)');
+            'ServerProductService: User unauthenticated. Attempting anonymous sign-in...');
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+          debugPrint(
+              'ServerProductService: Signed in anonymously for write operation.');
+        } catch (e) {
+          debugPrint('ServerProductService: Failed to sign in anonymously: $e');
+          return;
+        }
+      }
+
+      if (FirebaseAuth.instance.currentUser == null) {
+        debugPrint(
+            'ServerProductService: Still unauthenticated after attempt. Skipping write.');
         return;
       }
 

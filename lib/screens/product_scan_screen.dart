@@ -193,6 +193,8 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
         );
 
         if (mounted) {
+          // Sync local hit to Firestore (fire-and-forget to not block UI)
+          _serverProductService.saveProductToFirestore(code, cachedProduct);
           await _showProductDetails(cachedProduct);
         }
         return; // Skip API calls

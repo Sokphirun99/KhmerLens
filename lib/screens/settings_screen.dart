@@ -577,23 +577,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _deleteAllDocuments() async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final documentsDir = Directory('${appDir.path}/documents');
-
-      if (await documentsDir.exists()) {
-        final entities = await documentsDir.list().toList();
-        for (final entity in entities) {
-          try {
-            if (entity is File) {
-              await entity.delete();
-            } else if (entity is Directory) {
-              await entity.delete(recursive: true);
-            }
-          } catch (e) {
-            debugPrint('Failed to delete document item ${entity.path}: $e');
-          }
-        }
-      }
+      await context.read<DocumentRepository>().clearAllDocuments();
     } catch (e) {
       debugPrint('Error deleting all documents: $e');
     }
