@@ -15,6 +15,7 @@ class ModernDocumentCard extends StatelessWidget {
   final String? thumbnailPath;
   final int index;
   final bool isDeleting;
+  final String? searchQuery;
 
   const ModernDocumentCard({
     super.key,
@@ -25,6 +26,7 @@ class ModernDocumentCard extends StatelessWidget {
     this.thumbnailPath,
     this.index = 0,
     this.isDeleting = false,
+    this.searchQuery,
   });
 
   @override
@@ -101,14 +103,24 @@ class ModernDocumentCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        document.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      // Title with optional highlighting
+                      searchQuery != null && searchQuery!.isNotEmpty
+                          ? _buildHighlightedText(
+                              document.title,
+                              searchQuery!,
+                              theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              theme.colorScheme.primaryContainer,
+                            )
+                          : Text(
+                              document.title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                       const SizedBox(height: 4),
                       Text(
                         Helpers.formatDate(document.createdAt),
@@ -116,6 +128,15 @@ class ModernDocumentCard extends StatelessWidget {
                           color: theme.colorScheme.outline,
                         ),
                       ),
+                      // Text snippet if search query matches body
+                      if (searchQuery != null &&
+                          searchQuery!.isNotEmpty &&
+                          document.extractedText != null)
+                        _buildTextSnippet(
+                          context,
+                          document.extractedText!,
+                          searchQuery!,
+                        ),
                     ],
                   ),
                 ),
@@ -181,6 +202,91 @@ class ModernDocumentCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildHighlightedText(
+      String text, String query, TextStyle? style, Color highlightColor) {
+    if (query.isEmpty) {
+      return Text(text,
+          style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+
+    final lowerText = text.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    final matches = <TextSpan>[];
+    int start = 0;
+
+    while (true) {
+      final index = lowerText.indexOf(lowerQuery, start);
+      if (index == -1) {
+        if (start < text.length) {
+          matches.add(TextSpan(text: text.substring(start)));
+        }
+        break;
+      }
+
+      if (index > start) {
+        matches.add(TextSpan(text: text.substring(start, index)));
+      }
+
+      matches.add(
+        TextSpan(
+          text: text.substring(index, index + query.length),
+          style: style?.copyWith(
+                backgroundColor: highlightColor,
+                fontWeight: FontWeight.bold,
+              ) ??
+              const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      );
+
+      start = index + query.length;
+    }
+
+    return RichText(
+      text: TextSpan(
+        children: matches,
+        style: style ?? const TextStyle(color: Colors.black),
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildTextSnippet(BuildContext context, String text, String query) {
+    if (text.isEmpty || query.isEmpty) return const SizedBox.shrink();
+
+    final lowerText = text.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    final index = lowerText.indexOf(lowerQuery);
+
+    if (index == -1) return const SizedBox.shrink();
+
+    // Create snippet: ...[20 chars] MATCH [50 chars]...
+    final start = (index - 20).clamp(0, text.length);
+    final end = (index + query.length + 50).clamp(0, text.length);
+
+    var snippet = text.substring(start, end);
+    if (start > 0) snippet = '...$snippet';
+    if (end < text.length) snippet = '$snippet...';
+
+    // Normalize snippets to single line to avoid huge cards
+    snippet = snippet.replaceAll('\n', ' ');
+
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: _buildHighlightedText(
+        snippet,
+        query,
+        theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontStyle: FontStyle.italic,
+        ),
+        theme.colorScheme.secondaryContainer,
       ),
     );
   }

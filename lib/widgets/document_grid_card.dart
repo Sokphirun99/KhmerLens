@@ -12,6 +12,7 @@ class DocumentGridCard extends StatelessWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
   final VoidCallback? onShare;
+  final VoidCallback? onCopy; // Added callback
   final String? thumbnailPath;
   final int index;
   final bool isDeleting;
@@ -23,6 +24,7 @@ class DocumentGridCard extends StatelessWidget {
     this.onLongPress,
     this.onDelete,
     this.onShare,
+    this.onCopy, // Added parameter
     this.thumbnailPath,
     this.index = 0,
     this.isDeleting = false,
@@ -31,6 +33,8 @@ class DocumentGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasText =
+        document.extractedText != null && document.extractedText!.isNotEmpty;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -111,27 +115,49 @@ class DocumentGridCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  const SizedBox(height: 4),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 12,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          Helpers.formatDate(document.createdAt),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 12,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                Helpers.formatDate(document.createdAt),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      // Quick copy button
+                      if (hasText)
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: onCopy,
+                            icon: Icon(
+                              Icons.copy,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                            tooltip: AppLocalizations.of(context)!.copyText,
+                          ),
+                        ),
                     ],
                   ),
                   if (document.expiryDate != null) ...[

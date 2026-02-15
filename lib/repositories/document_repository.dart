@@ -1,6 +1,8 @@
 // repositories/document_repository.dart
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import 'package:flutter/foundation.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
@@ -245,12 +247,11 @@ class DocumentRepository {
 
       // Update document by removing the image path
       // We need to check against both potential stored formats to be safe
+      // Use canonicalize to handle path differences (relative vs absolute, symlinks, etc.)
+      final targetPath = p.canonicalize(imagePath);
+
       final updatedImagePaths = document.imagePaths.where((path) {
-        // This logic is tricky because document.imagePaths loaded in memory are ABSOLUTE (mapped).
-        // But we need to save what?
-        // Actually, if we update the document using its existing imagePaths, we might be saving back absolute paths!
-        // CRITICAL: We must re-relativize ALL paths before saving updateDocument.
-        return path != imagePath;
+        return p.canonicalize(path) != targetPath;
       }).toList();
 
       // Re-construct document with normalized RELATIVE paths for storage
