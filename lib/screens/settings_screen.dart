@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:khmerscan/l10n/arb/app_localizations.dart';
 
+import '../../repositories/document_repository.dart';
 import '../bloc/locale/locale_cubit.dart';
 import '../bloc/theme/theme_cubit.dart';
 import '../utils/constants.dart';
@@ -41,40 +42,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadStorageInfo() async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final documentsDir = Directory('${appDir.path}/documents');
+      final repository = context.read<DocumentRepository>();
+      final count = await repository.getDocumentCount();
+      final size = await repository.getTotalStorageUsed();
 
-      if (await documentsDir.exists()) {
-        int totalSize = 0;
-        int fileCount = 0;
-
-        await for (final entity in documentsDir.list(recursive: true)) {
-          if (entity is File) {
-            totalSize += await entity.length();
-            fileCount++;
-          }
-        }
-
-        if (mounted) {
-          setState(() {
-            _documentCount = fileCount;
-            _storageUsed = _formatBytes(totalSize);
-            _isLoadingStorage = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _documentCount = 0;
-            _storageUsed = '0 B';
-            _isLoadingStorage = false;
-          });
-        }
-      }
-    } catch (e) {
       if (mounted) {
         setState(() {
-          _storageUsed = '';
+          _documentCount = count;
+          _storageUsed = _formatBytes(size);
+          _isLoadingStorage = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading storage info: $e');
+      if (mounted) {
+        setState(() {
+          _documentCount = 0;
+          _storageUsed = '0 B';
           _isLoadingStorage = false;
         });
       }
@@ -100,7 +84,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text(l10n.settings),
         leading: IconButton(
-          icon: const Iconify(Mdi.arrow_left, color: Colors.black54),
+          icon: Iconify(
+            Mdi.arrow_left,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
           onPressed: () => context.pop(),
           tooltip: l10n.back,
         ),
@@ -480,6 +467,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: l10n.clearCacheSubtitle,
             onTap: () => _showClearCacheDialog(context, l10n),
           ),
+          const Divider(height: 1, indent: 56),
+          _buildSettingsTile(
+            context,
+            icon: Mdi.delete_forever_outline,
+            title: l10n.deleteAllDocuments,
+            subtitle: l10n.deleteAllDocumentsSubtitle,
+            onTap: () => _showDeleteAllDocumentsDialog(context, l10n),
+          ),
         ],
       ),
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1, end: 0);
@@ -539,6 +534,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       debugPrint('Error clearing cache: $e');
+    }
+  }
+
+  void _showDeleteAllDocumentsDialog(
+      BuildContext context, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteAllDocumentsTitle),
+        content: Text(l10n.deleteAllDocumentsMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _deleteAllDocuments();
+              if (context.mounted) {
+                SuccessActionSheet.show(
+                  context,
+                  title: 'Success',
+                  message: l10n.documentsDeleted,
+                  confirmLabel: 'OK',
+                );
+                // Reload storage info to update UI
+                _loadStorageInfo();
+              }
+            },
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAllDocuments() async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final documentsDir = Directory('${appDir.path}/documents');
+
+      if (await documentsDir.exists()) {
+        final entities = await documentsDir.list().toList();
+        for (final entity in entities) {
+          try {
+            if (entity is File) {
+              await entity.delete();
+            } else if (entity is Directory) {
+              await entity.delete(recursive: true);
+            }
+          } catch (e) {
+            debugPrint('Failed to delete document item ${entity.path}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error deleting all documents: $e');
     }
   }
 

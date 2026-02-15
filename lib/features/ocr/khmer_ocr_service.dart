@@ -28,6 +28,11 @@ class KhmerOcrService {
           args: {
             "preserve_interword_spaces": "1",
             "tessdata": tessDataPath,
+            // Optimization:
+            // PSM 6: Assume a single uniform block of text. Great for cropped document blocks.
+            // OEM 1: Neural nets LSTM only. Best accuracy.
+            "psm": "6",
+            "oem": "1",
           });
 
       return text;
@@ -52,6 +57,8 @@ class KhmerOcrService {
   /// Copies tessdata files from assets to ApplicationDocumentsDirectory
   /// Returns the path to the directory containing tessdata
   Future<String> _copyTessDataToAppDocuments() async {
+    // Tesseract expects the PARENT directory of "tessdata", not "tessdata" itself.
+    // e.g. if we pass "/path/to/docs", it looks for "/path/to/docs/tessdata/khm.traineddata"
     final appDocDir = await getApplicationDocumentsDirectory();
     final tessDataDir = Directory(path.join(appDocDir.path, 'tessdata'));
 

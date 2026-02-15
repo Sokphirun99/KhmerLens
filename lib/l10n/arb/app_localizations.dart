@@ -320,6 +320,36 @@ abstract class AppLocalizations {
   /// **'តើអ្នកពិតជាចង់លុបទិន្នន័យបណ្ដោះអាសន្នទាំងអស់មែនទេ? សកម្មភាពនេះនឹងមិនលុបឯកសាររបស់អ្នកទេ។'**
   String get clearCacheMessage;
 
+  /// No description provided for @deleteAllDocuments.
+  ///
+  /// In km, this message translates to:
+  /// **'លុបឯកសារទាំងអស់'**
+  String get deleteAllDocuments;
+
+  /// No description provided for @deleteAllDocumentsSubtitle.
+  ///
+  /// In km, this message translates to:
+  /// **'លុបឯកសារដែលបានស្កែនទាំងអស់'**
+  String get deleteAllDocumentsSubtitle;
+
+  /// No description provided for @deleteAllDocumentsTitle.
+  ///
+  /// In km, this message translates to:
+  /// **'លុបឯកសារទាំងអស់'**
+  String get deleteAllDocumentsTitle;
+
+  /// No description provided for @deleteAllDocumentsMessage.
+  ///
+  /// In km, this message translates to:
+  /// **'តើអ្នកពិតជាចង់លុបឯកសារទាំងអស់មែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ ហើយអ្នកនឹងបាត់បង់ឯកសារទាំងអស់។'**
+  String get deleteAllDocumentsMessage;
+
+  /// No description provided for @documentsDeleted.
+  ///
+  /// In km, this message translates to:
+  /// **'ឯកសារទាំងអស់ត្រូវបានលុប'**
+  String get documentsDeleted;
+
   /// No description provided for @clear.
   ///
   /// In km, this message translates to:
@@ -991,6 +1021,102 @@ abstract class AppLocalizations {
   /// In km, this message translates to:
   /// **'រូបភាព'**
   String get scanModeVisual;
+
+  /// No description provided for @copyText.
+  ///
+  /// In km, this message translates to:
+  /// **'ចម្លងអត្ថបទ'**
+  String get copyText;
+
+  /// No description provided for @khmerOCR.
+  ///
+  /// In km, this message translates to:
+  /// **'ស្កេនអក្សរខ្មែរ'**
+  String get khmerOCR;
+
+  /// No description provided for @extractTextFromImages.
+  ///
+  /// In km, this message translates to:
+  /// **'ទាញយកអត្ថបទពីរូបភាព'**
+  String get extractTextFromImages;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In km, this message translates to:
+  /// **'ឆាប់ៗនេះ'**
+  String get comingSoon;
+
+  /// No description provided for @comingSoonDescription.
+  ///
+  /// In km, this message translates to:
+  /// **'មុខងារថ្មីៗជាច្រើនទៀត'**
+  String get comingSoonDescription;
+
+  /// No description provided for @copiedToClipboard.
+  ///
+  /// In km, this message translates to:
+  /// **'បានចម្លងទៅក្ដារតម្បៀតខ្ទាស់'**
+  String get copiedToClipboard;
+
+  /// No description provided for @save.
+  ///
+  /// In km, this message translates to:
+  /// **'រក្សាទុក'**
+  String get save;
+
+  /// No description provided for @scanNew.
+  ///
+  /// In km, this message translates to:
+  /// **'ស្កេនថ្មី'**
+  String get scanNew;
+
+  /// No description provided for @extractedText.
+  ///
+  /// In km, this message translates to:
+  /// **'អត្ថបទដែលបានទាញយក'**
+  String get extractedText;
+
+  /// No description provided for @processing.
+  ///
+  /// In km, this message translates to:
+  /// **'កំពុងដំណើរការ...'**
+  String get processing;
+
+  /// No description provided for @noTextExtracted.
+  ///
+  /// In km, this message translates to:
+  /// **'មិនទាន់មានអត្ថបទនៅឡើយទេ'**
+  String get noTextExtracted;
+
+  /// No description provided for @copy.
+  ///
+  /// In km, this message translates to:
+  /// **'ចម្លង'**
+  String get copy;
+
+  /// No description provided for @documentTitle.
+  ///
+  /// In km, this message translates to:
+  /// **'ចំណងជើងឯកសារ'**
+  String get documentTitle;
+
+  /// No description provided for @enterDocumentTitle.
+  ///
+  /// In km, this message translates to:
+  /// **'បញ្ចូលចំណងជើងសម្រាប់ការស្កេននេះ'**
+  String get enterDocumentTitle;
+
+  /// No description provided for @documentSaved.
+  ///
+  /// In km, this message translates to:
+  /// **'ឯកសារត្រូវបានរក្សាទុកដោយជោគជ័យ'**
+  String get documentSaved;
+
+  /// No description provided for @failedToExtractText.
+  ///
+  /// In km, this message translates to:
+  /// **'បរាជ័យក្នុងការទាញយកអត្ថបទ៖ {error}'**
+  String failedToExtractText(Object error);
 }
 
 class _AppLocalizationsDelegate
