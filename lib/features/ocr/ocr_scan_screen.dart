@@ -102,9 +102,11 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
     }
   }
 
@@ -147,9 +149,11 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
       }
     } catch (e) {
       debugPrint('Error picking file: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to pick file: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick file: $e')),
+        );
+      }
     }
   }
 
@@ -178,13 +182,13 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
 
       final content = documentXml.content;
       String xmlContent;
-      if (content is List<int>) {
-        debugPrint('Decoding content from bytes (length: ${content.length})');
-        xmlContent = utf8.decode(content);
-      } else {
-        debugPrint('Content is not List<int>, trying toString()');
-        xmlContent = content.toString();
-      }
+      // if (content is List<int>) { // Analyzer says always true
+      debugPrint('Decoding content from bytes (length: ${content.length})');
+      xmlContent = utf8.decode(content as List<int>);
+      // } else {
+      //   debugPrint('Content is not List<int>, trying toString()');
+      //   xmlContent = content.toString();
+      // }
 
       final document = XmlDocument.parse(xmlContent);
 
@@ -374,6 +378,7 @@ class _OcrScanScreenState extends State<OcrScanScreen> {
 
   void _shareText() {
     if (_extractedText != null) {
+      // ignore: deprecated_member_use
       Share.share(_extractedText!);
     }
   }

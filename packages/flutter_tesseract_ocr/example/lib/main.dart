@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -34,12 +33,12 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
   String _ocrText = '';
-  final String _ocrHocr = '';
+
   Map<String, String> tessimgs = {
     "kor":
         "https://raw.githubusercontent.com/khjde1207/tesseract_ocr/master/example/assets/test1.png",
@@ -47,7 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
     "ch_sim": "https://tesseract.projectnaptha.com/img/chi_sim.png",
     "ru": "https://tesseract.projectnaptha.com/img/rus.png",
   };
-  var LangList = ["kor", "eng", "deu", "chi_sim"];
+  var langList = ["kor", "eng", "deu", "chi_sim"];
   var selectList = ["eng", "kor"];
   String path = "";
   bool bload = false;
@@ -74,7 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _ocr(url) async {
     if (selectList.isEmpty) {
-      print("Please select language");
+      debugPrint("Please select language");
       return;
     }
     path = url;
@@ -86,7 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
       HttpClientResponse response = await request.close();
       Uint8List bytes = await consolidateHttpClientResponseBytes(response);
       String dir = tempDir.path;
-      print('$dir/test.jpg');
+      debugPrint('$dir/test.jpg');
       File file = File('$dir/test.jpg');
       await file.writeAsBytes(bytes);
       url = file.path;
@@ -149,41 +148,39 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      child: ElevatedButton(
-                          onPressed: () {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return SimpleDialog(
-                                    title: const Text('Select Url'),
-                                    children: tessimgs
-                                        .map((key, value) {
-                                          return MapEntry(
-                                              key,
-                                              SimpleDialogOption(
-                                                  onPressed: () {
-                                                    urlEditController.text =
-                                                        value;
-                                                    setState(() {});
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: Row(
-                                                    children: [
-                                                      Text(key),
-                                                      Text(" : "),
-                                                      Flexible(
-                                                          child: Text(value)),
-                                                    ],
-                                                  )));
-                                        })
-                                        .values
-                                        .toList(),
-                                  );
-                                });
-                          },
-                          child: Text("urls")),
-                    ),
+                    ElevatedButton(
+                        onPressed: () {
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return SimpleDialog(
+                                  title: const Text('Select Url'),
+                                  children: tessimgs
+                                      .map((key, value) {
+                                        return MapEntry(
+                                            key,
+                                            SimpleDialogOption(
+                                                onPressed: () {
+                                                  urlEditController.text =
+                                                      value;
+                                                  setState(() {});
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Row(
+                                                  children: [
+                                                    Text(key),
+                                                    Text(" : "),
+                                                    Flexible(
+                                                        child: Text(value)),
+                                                  ],
+                                                )));
+                                      })
+                                      .values
+                                      .toList(),
+                                );
+                              });
+                        },
+                        child: Text("urls")),
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
@@ -202,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 Row(
                   children: [
-                    ...LangList.map((e) {
+                    ...langList.map((e) {
                       return Row(children: [
                         Checkbox(
                             value: selectList.contains(e),
@@ -237,13 +234,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                           response);
                                   String dir = await FlutterTesseractOcr
                                       .getTessdataPath();
-                                  print('$dir/$e.traineddata');
+                                  debugPrint('$dir/$e.traineddata');
                                   File file = File('$dir/$e.traineddata');
                                   await file.writeAsBytes(bytes);
                                   bDownloadtessFile = false;
                                   setState(() {});
                                 }
-                                print(isInstalled);
+                                debugPrint(isInstalled.toString());
                               }
                               if (!selectList.contains(e)) {
                                 selectList.add(e);

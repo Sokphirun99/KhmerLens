@@ -24,7 +24,7 @@ class KhmerOcrService {
       // "eng" is usually built-in or can be added for dual-language support like "khm+eng"
       final text = await FlutterTesseractOcr.extractText(
           processedImagePath ?? imagePath,
-          language: 'khm',
+          language: 'khm+eng',
           args: {
             "preserve_interword_spaces": "1",
             "tessdata": tessDataPath,

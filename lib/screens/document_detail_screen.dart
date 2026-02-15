@@ -801,6 +801,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                       icon: const Iconify(Mdi.share_variant, size: 20),
                       onPressed: () {
                         if (_document.extractedText != null) {
+                          // ignore: deprecated_member_use
                           Share.share(_document.extractedText!);
                         }
                       },

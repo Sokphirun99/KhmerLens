@@ -94,6 +94,7 @@ class ExportService {
 
       if (!kIsWeb) {
         // Use Share.shareXFiles (Deprecated but working)
+        // ignore: deprecated_member_use
         await Share.shareXFiles(
           [XFile(outputPath)],
           text: 'Exported from KhmerLens',
@@ -220,6 +221,7 @@ class ExportService {
 
       if (!kIsWeb) {
         // Use Share.shareXFiles (Deprecated but working)
+        // ignore: deprecated_member_use
         await Share.shareXFiles(
           imageFiles,
           text: doc.title,
