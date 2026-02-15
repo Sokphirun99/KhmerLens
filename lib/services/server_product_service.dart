@@ -120,8 +120,27 @@ class ServerProductService {
                 (item['images'] as List).isNotEmpty ? item['images'][0] : null,
             source: 'UPCitemdb',
             details: {
-              'category': item['category'] ?? '',
-              'ean': item['ean'] ?? '',
+              'Category': item['category'] ?? '',
+              'EAN': item['ean'] ?? '',
+              'Brand': item['brand'] ?? '',
+              if (item['model'] != null && item['model'].isNotEmpty)
+                'Model': item['model'],
+              if (item['color'] != null && item['color'].isNotEmpty)
+                'Color': item['color'],
+              if (item['size'] != null && item['size'].isNotEmpty)
+                'Size': item['size'],
+              if (item['dimension'] != null && item['dimension'].isNotEmpty)
+                'Dimension': item['dimension'],
+              if (item['weight'] != null && item['weight'].isNotEmpty)
+                'Weight': item['weight'],
+              if (item['lowest_recorded_price'] != null &&
+                  item['lowest_recorded_price'] > 0)
+                'Lowest Price':
+                    '${item['lowest_recorded_price']} ${item['currency'] ?? ''}',
+              if (item['highest_recorded_price'] != null &&
+                  item['highest_recorded_price'] > 0)
+                'Highest Price':
+                    '${item['highest_recorded_price']} ${item['currency'] ?? ''}',
             },
           );
         }
@@ -187,13 +206,13 @@ class ServerProductService {
     );
   }
 
-  Map<String, String> _convertDetails(dynamic details) {
+  Map<String, dynamic> _convertDetails(dynamic details) {
     if (details == null) return {};
-    if (details is Map<String, String>) return details;
+    if (details is Map<String, dynamic>) return details;
     if (details is Map) {
       return details.map((key, value) => MapEntry(
             key.toString(),
-            value?.toString() ?? '',
+            value, // Keep value as dynamic (String, Map, etc.)
           ));
     }
     return {};

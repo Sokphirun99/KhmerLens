@@ -19,6 +19,7 @@ import '../services/storage_service.dart';
 import '../services/server_product_service.dart';
 import '../config/app_config.dart';
 import 'product_history_screen.dart';
+import '../widgets/product_detail_row.dart';
 import 'package:uuid/uuid.dart';
 
 enum ScanMode { barcode, visual }
@@ -30,7 +31,7 @@ class ProductInfo {
   final String? imageUrl;
   final String
       source; // 'Google Books', 'OpenFoodFacts', 'UPCitemdb', 'Visual Search'
-  final Map<String, String> details;
+  final Map<String, dynamic> details;
 
   ProductInfo({
     required this.title,
@@ -52,11 +53,12 @@ class ProductScanScreen extends StatefulWidget {
 class _ProductScanScreenState extends State<ProductScanScreen> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
-    autoStart: false,
+    autoStart: true,
   );
 
   ScanMode _scanMode = ScanMode.barcode;
   bool _isLoading = false;
+  bool _isCameraActive = false;
 
   // AdMob State
   BannerAd? _bannerAd;
@@ -72,9 +74,6 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
   @override
   void initState() {
     super.initState();
-    // Start manually since autoStart is disabled to prevent race conditions
-    _controller.start();
-
     // Initialize Banner Ad
     _bannerAd = AdService().createBannerAd(
       onAdLoaded: () {
@@ -99,6 +98,10 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     _controller.dispose();
     _bannerAd?.dispose();
     super.dispose();
+  }
+
+  void _startScanning() {
+    setState(() => _isCameraActive = true);
   }
 
   Future<void> _saveToHistory(ProductInfo product, String barcode) async {
@@ -177,19 +180,14 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
         final details = existingMap['details'] != null
             ? json.decode(existingMap['details'] as String)
                 as Map<String, dynamic>
-            : <String,
-                dynamic>{}; // Fix: Explicitly case to Map<String, dynamic> or use empty map
-
-        // Ensure Map<String, String> for ProductInfo.details
-        final stringDetails = details
-            .map((key, value) => MapEntry(key.toString(), value.toString()));
+            : <String, dynamic>{};
 
         final cachedProduct = ProductInfo(
           title: existingMap['title'] as String,
           description: existingMap['description'] as String?,
           imageUrl: existingMap['imageUrl'] as String?,
           source: existingMap['source'] as String,
-          details: stringDetails,
+          details: details,
         );
 
         if (mounted) {
@@ -201,6 +199,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       }
     } catch (e) {
       debugPrint('Error checking local history: $e');
+      // Continue to server/API calls
       // Continue to server/API calls
     }
 
@@ -227,6 +226,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       final bookData = await _fetchGoogleBook(code);
       if (mounted && bookData != null) {
         _saveToHistory(bookData, code);
+        _serverProductService.saveProductToFirestore(code, bookData);
         await _showProductDetails(bookData);
         return;
       }
@@ -236,6 +236,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final foodData = await _fetchOpenFoodFacts(code);
     if (mounted && foodData != null) {
       _saveToHistory(foodData, code);
+      _serverProductService.saveProductToFirestore(code, foodData);
       await _showProductDetails(foodData);
       return;
     }
@@ -244,6 +245,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final usdaData = await _usdaService.fetchProductByUpc(code);
     if (mounted && usdaData != null) {
       _saveToHistory(usdaData, code);
+      _serverProductService.saveProductToFirestore(code, usdaData);
       await _showProductDetails(usdaData);
       return;
     }
@@ -252,6 +254,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final spoonData = await _spoonacularService.fetchProductByUpc(code);
     if (mounted && spoonData != null) {
       _saveToHistory(spoonData, code);
+      _serverProductService.saveProductToFirestore(code, spoonData);
       await _showProductDetails(spoonData);
       return;
     }
@@ -260,6 +263,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final drugData = await _openFdaService.fetchProductByUpc(code);
     if (mounted && drugData != null) {
       _saveToHistory(drugData, code);
+      _serverProductService.saveProductToFirestore(code, drugData);
       await _showProductDetails(drugData);
       return;
     }
@@ -268,6 +272,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     final generalData = await _fetchUPCItemDB(code);
     if (mounted && generalData != null) {
       _saveToHistory(generalData, code);
+      _serverProductService.saveProductToFirestore(code, generalData);
       await _showProductDetails(generalData);
       return;
     }
@@ -326,6 +331,16 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
           ProductField.IMAGE_FRONT_URL,
           ProductField.ORIGINS,
           ProductField.INGREDIENTS_TEXT,
+          ProductField.QUANTITY,
+          ProductField.PACKAGING,
+          ProductField.CATEGORIES,
+          ProductField.MANUFACTURING_PLACES,
+          ProductField.EMB_CODES,
+          ProductField.STORES,
+          ProductField.COUNTRIES,
+          ProductField.NUTRIENT_LEVELS,
+          ProductField.NUTRIMENTS,
+          ProductField.SERVING_SIZE,
         ],
       );
 
@@ -335,15 +350,81 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
       if (result.status == ProductResultV3.statusSuccess &&
           result.product != null) {
         final product = result.product!;
+
+        // Prepare Details Map
+        final Map<String, dynamic> details = {};
+
+        if (product.barcode != null) details['Barcode'] = product.barcode;
+        if (product.quantity != null) details['Quantity'] = product.quantity;
+        if (product.packaging != null) details['Packaging'] = product.packaging;
+        if (product.brands != null) details['Brands'] = product.brands;
+        if (product.categories != null) {
+          details['Categories'] = product.categories;
+        }
+        if (product.origins != null) details['Origin'] = product.origins;
+        if (product.manufacturingPlaces != null) {
+          details['Manufacturing Places'] = product.manufacturingPlaces;
+        }
+        if (product.embCodes != null) {
+          details['Traceability'] = product.embCodes;
+        }
+        if (product.stores != null) details['Stores'] = product.stores;
+        if (product.countries != null) details['Countries'] = product.countries;
+        if (product.servingSize != null) {
+          details['Serving Size'] = product.servingSize;
+        }
+
+        // Nutrient Levels
+        if (product.nutrientLevels != null) {
+          final Map<String, String> levels = {};
+          product.nutrientLevels!.levels.forEach((key, value) {
+            levels[key] = value.toString().split('.').last;
+          });
+          details['Nutrient Levels'] = levels;
+        }
+
+        // Nutrition Facts (Common Nutrients)
+        if (product.nutriments != null) {
+          final n = product.nutriments!;
+          final Map<String, dynamic> nutrition = {};
+
+          void addIfPresent(String name, double? value, {String unit = 'g'}) {
+            if (value != null) nutrition[name] = '$value$unit';
+          }
+
+          addIfPresent('Energy (kcal)',
+              n.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams),
+              unit: ' kcal');
+          addIfPresent('Energy (kj)',
+              n.getValue(Nutrient.energyKJ, PerSize.oneHundredGrams),
+              unit: ' kj');
+          addIfPresent(
+              'Fat', n.getValue(Nutrient.fat, PerSize.oneHundredGrams));
+          addIfPresent('Saturated Fat',
+              n.getValue(Nutrient.saturatedFat, PerSize.oneHundredGrams));
+          addIfPresent('Carbohydrates',
+              n.getValue(Nutrient.carbohydrates, PerSize.oneHundredGrams));
+          addIfPresent(
+              'Sugars', n.getValue(Nutrient.sugars, PerSize.oneHundredGrams));
+          addIfPresent(
+              'Fiber', n.getValue(Nutrient.fiber, PerSize.oneHundredGrams));
+          addIfPresent('Protein',
+              n.getValue(Nutrient.proteins, PerSize.oneHundredGrams));
+          addIfPresent(
+              'Salt', n.getValue(Nutrient.salt, PerSize.oneHundredGrams));
+          addIfPresent(
+              'Sodium', n.getValue(Nutrient.sodium, PerSize.oneHundredGrams));
+
+          details['Nutrition Facts'] = nutrition;
+        }
+
         return ProductInfo(
           title: product.productName ?? 'Unknown Product',
           subtitle: product.brands,
           description: product.ingredientsText,
           imageUrl: product.imageFrontUrl,
           source: 'Open Food Facts',
-          details: {
-            if (product.origins != null) 'Origin': product.origins!,
-          },
+          details: details,
         );
       }
     } catch (e) {
@@ -686,21 +767,8 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
     }
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(value),
-        ],
-      ),
-    );
+  Widget _buildDetailRow(String key, dynamic value) {
+    return ProductDetailRow(label: key, value: value);
   }
 
   @override
@@ -735,10 +803,58 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
         children: [
           // Render scanner only in Barcode mode to save resources and avoid active camera conflict
           if (_scanMode == ScanMode.barcode)
-            MobileScanner(
-              controller: _controller,
-              onDetect: _onDetect,
-            )
+            if (_isCameraActive)
+              MobileScanner(
+                controller: _controller,
+                onDetect: _onDetect,
+                errorBuilder: (context, error) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error, color: Colors.red, size: 40),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Camera Error: ${error.errorCode}',
+                            style: const TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (error.errorDetails != null)
+                            Text(
+                              error.errorDetails!.message ?? '',
+                              style: const TextStyle(color: Colors.white70),
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              )
+            else
+              Container(
+                color: Colors.black,
+                width: double.infinity,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.qr_code_scanner,
+                        size: 80, color: Colors.white70),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _startScanning,
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Tap to Scan'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              )
           else
             // Visual Search Info UI
             Container(
@@ -758,7 +874,7 @@ class _ProductScanScreenState extends State<ProductScanScreen> {
             ),
 
           // Scanner Overlay (Barcode)
-          if (_scanMode == ScanMode.barcode)
+          if (_scanMode == ScanMode.barcode && _isCameraActive)
             Center(
               child: Container(
                 width: 250,

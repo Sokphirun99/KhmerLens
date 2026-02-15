@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/scanned_product.dart';
+import 'product_detail_row.dart';
 
 class ProductDetailsSheet extends StatelessWidget {
   final ScannedProduct product;
@@ -103,29 +104,13 @@ class ProductDetailsSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: product.details!.entries.map((e) {
-                        // Use a flexible container instead of Chip to allow full text wrap
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${e.key}: ${e.value}',
-                            style: TextStyle(
-                              color: colorScheme.onSecondaryContainer,
-                              fontSize: 13,
-                              height: 1.3,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                    ...product.details!.entries.map((e) => Column(
+                          children: [
+                            ProductDetailRow(label: e.key, value: e.value),
+                            if (e.key != product.details!.keys.last)
+                              const Divider(),
+                          ],
+                        )),
                   ],
                 ],
               ),

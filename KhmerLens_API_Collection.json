@@ -1,0 +1,519 @@
+{
+    "info": {
+        "_postman_id": "b3e05a8f-287c-4712-a892-076136209581",
+        "name": "KhmerLens API Collection",
+        "description": "Comprehensive Postman collection for KhmerLens, including External APIs, Firestore, Realtime Database, and Authentication.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Authentication (Web API Key)",
+            "item": [
+                {
+                    "name": "Sign In Anonymously",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.idToken) {",
+                                    "    pm.collectionVariables.set(\"id_token\", jsonData.idToken);",
+                                    "    console.log(\"ID Token set successfully\");",
+                                    "}",
+                                    "else {",
+                                    "    console.error(\"Failed to get ID Token\", jsonData);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"returnSecureToken\": true\n}"
+                        },
+                        "url": {
+                            "raw": "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={{firebase_web_api_key}}",
+                            "protocol": "https",
+                            "host": [
+                                "identitytoolkit",
+                                "googleapis",
+                                "com"
+                            ],
+                            "path": [
+                                "v1",
+                                "accounts:signUp"
+                            ],
+                            "query": [
+                                {
+                                    "key": "key",
+                                    "value": "{{firebase_web_api_key}}",
+                                    "description": "Your Firebase Web API Key"
+                                }
+                            ]
+                        },
+                        "description": "Signs in anonymously to get an idToken for authenticated requests."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Use these requests first to generate an `id_token`."
+        },
+        {
+            "name": "2. Firebase Firestore (Products)",
+            "item": [
+                {
+                    "name": "List Products (GET) - Public",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://firestore.googleapis.com/v1/projects/{{firebase_project_id}}/databases/(default)/documents/products",
+                            "protocol": "https",
+                            "host": [
+                                "firestore",
+                                "googleapis",
+                                "com"
+                            ],
+                            "path": [
+                                "v1",
+                                "projects",
+                                "{{firebase_project_id}}",
+                                "databases",
+                                "(default)",
+                                "documents",
+                                "products"
+                            ]
+                        },
+                        "description": "Lists all documents in the 'products' collection. No Auth required (public read)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Product by ID (GET) - Public",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://firestore.googleapis.com/v1/projects/{{firebase_project_id}}/databases/(default)/documents/products/{{product_id}}",
+                            "protocol": "https",
+                            "host": [
+                                "firestore",
+                                "googleapis",
+                                "com"
+                            ],
+                            "path": [
+                                "v1",
+                                "projects",
+                                "{{firebase_project_id}}",
+                                "databases",
+                                "(default)",
+                                "documents",
+                                "products",
+                                "{{product_id}}"
+                            ]
+                        },
+                        "description": "Retrieves a specific product document by its ID (barcode). No Auth required."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create/Update Product (PATCH) - Auth Required",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{id_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fields\": {\n    \"title\": {\"stringValue\": \"Sample Product\"},\n    \"subtitle\": {\"stringValue\": \"Brand Name\"},\n    \"description\": {\"stringValue\": \"Product description goes here.\"},\n    \"imageUrl\": {\"stringValue\": \"https://example.com/image.jpg\"},\n    \"source\": {\"stringValue\": \"Postman API\"},\n    \"scanCount\": {\"integerValue\": \"1\"},\n    \"createdAt\": {\"timestampValue\": \"2023-10-27T10:00:00Z\"}\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "https://firestore.googleapis.com/v1/projects/{{firebase_project_id}}/databases/(default)/documents/products/{{product_id}}",
+                            "protocol": "https",
+                            "host": [
+                                "firestore",
+                                "googleapis",
+                                "com"
+                            ],
+                            "path": [
+                                "v1",
+                                "projects",
+                                "{{firebase_project_id}}",
+                                "databases",
+                                "(default)",
+                                "documents",
+                                "products",
+                                "{{product_id}}"
+                            ]
+                        },
+                        "description": "Creates or updates a product document. Requires valid ID Token."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Product (DELETE) - Auth Required",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{id_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "https://firestore.googleapis.com/v1/projects/{{firebase_project_id}}/databases/(default)/documents/products/{{product_id}}",
+                            "protocol": "https",
+                            "host": [
+                                "firestore",
+                                "googleapis",
+                                "com"
+                            ],
+                            "path": [
+                                "v1",
+                                "projects",
+                                "{{firebase_project_id}}",
+                                "databases",
+                                "(default)",
+                                "documents",
+                                "products",
+                                "{{product_id}}"
+                            ]
+                        },
+                        "description": "Deletes a product document. Will likely fail with 403 unless rules are changed."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "3. Firebase Realtime Database (Alternative)",
+            "item": [
+                {
+                    "name": "List Products (GET)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://{{firebase_project_id}}-default-rtdb.firebaseio.com/products.json?auth={{id_token}}",
+                            "protocol": "https",
+                            "host": [
+                                "{{firebase_project_id}}-default-rtdb",
+                                "firebaseio",
+                                "com"
+                            ],
+                            "path": [
+                                "products.json"
+                            ],
+                            "query": [
+                                {
+                                    "key": "auth",
+                                    "value": "{{id_token}}",
+                                    "description": "Auth token (optional if rules rely on it)"
+                                }
+                            ]
+                        },
+                        "description": "Lists all products from Realtime Database (if used)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Product (GET)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://{{firebase_project_id}}-default-rtdb.firebaseio.com/products/{{product_id}}.json?auth={{id_token}}",
+                            "protocol": "https",
+                            "host": [
+                                "{{firebase_project_id}}-default-rtdb",
+                                "firebaseio",
+                                "com"
+                            ],
+                            "path": [
+                                "products",
+                                "{{product_id}}.json"
+                            ],
+                            "query": [
+                                {
+                                    "key": "auth",
+                                    "value": "{{id_token}}",
+                                    "description": "Auth token"
+                                }
+                            ]
+                        },
+                        "description": "Get a single product from Realtime Database."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Product (PATCH)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Updated Title\",\n    \"description\": \"Updated description\"\n}"
+                        },
+                        "url": {
+                            "raw": "https://{{firebase_project_id}}-default-rtdb.firebaseio.com/products/{{product_id}}.json?auth={{id_token}}",
+                            "protocol": "https",
+                            "host": [
+                                "{{firebase_project_id}}-default-rtdb",
+                                "firebaseio",
+                                "com"
+                            ],
+                            "path": [
+                                "products",
+                                "{{product_id}}.json"
+                            ],
+                            "query": [
+                                {
+                                    "key": "auth",
+                                    "value": "{{id_token}}",
+                                    "description": "Auth token"
+                                }
+                            ]
+                        },
+                        "description": "Update product fields in Realtime Database."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Put Product (PUT)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"New Product\",\n    \"subtitle\": \"Brand\",\n    \"description\": \"Full replace\"\n}"
+                        },
+                        "url": {
+                            "raw": "https://{{firebase_project_id}}-default-rtdb.firebaseio.com/products/{{product_id}}.json?auth={{id_token}}",
+                            "protocol": "https",
+                            "host": [
+                                "{{firebase_project_id}}-default-rtdb",
+                                "firebaseio",
+                                "com"
+                            ],
+                            "path": [
+                                "products",
+                                "{{product_id}}.json"
+                            ],
+                            "query": [
+                                {
+                                    "key": "auth",
+                                    "value": "{{id_token}}",
+                                    "description": "Auth token"
+                                }
+                            ]
+                        },
+                        "description": "Replaces the entire product object in Realtime Database."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Product (DELETE)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "https://{{firebase_project_id}}-default-rtdb.firebaseio.com/products/{{product_id}}.json?auth={{id_token}}",
+                            "protocol": "https",
+                            "host": [
+                                "{{firebase_project_id}}-default-rtdb",
+                                "firebaseio",
+                                "com"
+                            ],
+                            "path": [
+                                "products",
+                                "{{product_id}}.json"
+                            ],
+                            "query": [
+                                {
+                                    "key": "auth",
+                                    "value": "{{id_token}}",
+                                    "description": "Auth token"
+                                }
+                            ]
+                        },
+                        "description": "Deletes product from Realtime Database."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "4. External APIs",
+            "item": [
+                {
+                    "name": "USDA: Search Foods",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://api.nal.usda.gov/fdc/v1/foods/search?api_key={{usda_api_key}}&query={{sample_upc}}",
+                            "protocol": "https",
+                            "host": [
+                                "api",
+                                "nal",
+                                "usda",
+                                "gov"
+                            ],
+                            "path": [
+                                "fdc",
+                                "v1",
+                                "foods",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "api_key",
+                                    "value": "{{usda_api_key}}",
+                                    "description": "Your USDA API Key"
+                                },
+                                {
+                                    "key": "query",
+                                    "value": "{{sample_upc}}",
+                                    "description": "UPC or barcode to search for"
+                                }
+                            ]
+                        },
+                        "description": "Searches for food items in the USDA database."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Spoonacular: Get Product",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "https://api.spoonacular.com/food/products/upc/{{sample_upc}}?apiKey={{spoonacular_api_key}}",
+                            "protocol": "https",
+                            "host": [
+                                "api",
+                                "spoonacular",
+                                "com"
+                            ],
+                            "path": [
+                                "food",
+                                "products",
+                                "upc",
+                                "{{sample_upc}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "apiKey",
+                                    "value": "{{spoonacular_api_key}}",
+                                    "description": "Your Spoonacular API Key"
+                                }
+                            ]
+                        },
+                        "description": "Retrieves product information from Spoonacular."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Open Food Facts: Get Product",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "User-Agent",
+                                "value": "KhmerLens - Android - Version 1.0 - www.khmerscan.app",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "https://world.openfoodfacts.org/api/v0/product/{{sample_upc}}.json",
+                            "protocol": "https",
+                            "host": [
+                                "world",
+                                "openfoodfacts",
+                                "org"
+                            ],
+                            "path": [
+                                "api",
+                                "v0",
+                                "product",
+                                "{{sample_upc}}.json"
+                            ]
+                        },
+                        "description": "Get product from Open Food Facts API (Public, no key needed)."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "firebase_project_id",
+            "value": "khmerscan-9c77a",
+            "type": "string"
+        },
+        {
+            "key": "firebase_web_api_key",
+            "value": "AIzaSyCn_9j_4dwQF-CCaDHZXdbZw2qVVrEgW0g",
+            "type": "string",
+            "description": "Found in firebase_options.dart (Android key used as default)"
+        },
+        {
+            "key": "product_id",
+            "value": "041190221408",
+            "type": "string",
+            "description": "Barcode ID of the product"
+        },
+        {
+            "key": "id_token",
+            "value": "",
+            "type": "string",
+            "description": "Auto-filled by Sign In request"
+        },
+        {
+            "key": "usda_api_key",
+            "value": "DEMO_KEY",
+            "type": "string"
+        },
+        {
+            "key": "spoonacular_api_key",
+            "value": "YOUR_API_KEY",
+            "type": "string"
+        },
+        {
+            "key": "sample_upc",
+            "value": "041190221408",
+            "type": "string"
+        }
+    ]
+}

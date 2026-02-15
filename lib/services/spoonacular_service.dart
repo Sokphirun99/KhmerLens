@@ -33,24 +33,71 @@ class SpoonacularService {
   }
 
   ProductInfo _mapToProductInfo(Map<String, dynamic> data) {
-    final details = <String, String>{
-      if (data['brand'] != null) 'Brand': data['brand'],
-      if (data['aisle'] != null) 'Aisle': data['aisle'],
-    };
+    print('Spoonacular Data: $data');
+    final details = <String, dynamic>{};
 
-    // Extract bad ingredients if any
-    if (data['badges'] != null) {
-      final badges = (data['badges'] as List).join(', ');
-      if (badges.isNotEmpty) {
-        details['Badges'] = badges;
+    if (data['brand'] != null) details['Brand'] = data['brand'];
+    if (data['aisle'] != null) details['Aisle'] = data['aisle'];
+
+    // Category
+    if (data['breadcrumbs'] != null &&
+        (data['breadcrumbs'] as List).isNotEmpty) {
+      details['Category'] = (data['breadcrumbs'] as List).join(' > ');
+    }
+
+    // Ingredients
+    if (data['ingredientList'] != null) {
+      details['Ingredients'] = data['ingredientList'];
+    }
+
+    // Nutrition
+    if (data['nutrition'] != null) {
+      final nutritionInfo = data['nutrition'];
+      final Map<String, dynamic> nutritionMap = {};
+
+      if (nutritionInfo['nutrients'] != null) {
+        for (var nutrient in nutritionInfo['nutrients']) {
+          nutritionMap[nutrient['name']] =
+              '${nutrient['amount']} ${nutrient['unit']}';
+        }
+      }
+
+      // Caloric Breakdown
+      if (nutritionInfo['caloricBreakdown'] != null) {
+        final breakdown = nutritionInfo['caloricBreakdown'];
+        nutritionMap['Carbs %'] = '${breakdown['percentCarbs']}%';
+        nutritionMap['Fat %'] = '${breakdown['percentFat']}%';
+        nutritionMap['Protein %'] = '${breakdown['percentProtein']}%';
+      }
+
+      if (nutritionMap.isNotEmpty) {
+        details['Nutrition Facts'] = nutritionMap;
       }
     }
 
+    // Badges (Health/Diet)
+    final List<String> badgeList = [];
+    if (data['badges'] != null) {
+      badgeList.addAll(List<String>.from(data['badges']));
+    }
     if (data['importantBadges'] != null) {
-      final impBadges = (data['importantBadges'] as List).join(', ');
-      if (impBadges.isNotEmpty) {
-        details['Important'] = impBadges;
+      badgeList.addAll(List<String>.from(data['importantBadges']));
+    }
+    if (badgeList.isNotEmpty) {
+      final Map<String, String> badgeMap = {};
+      for (var badge in badgeList) {
+        // Simple heuristic: 'free' or 'low' = green (good), others neutral
+        String level = 'Feature';
+        if (badge.contains('free') ||
+            badge.contains('low') ||
+            badge.contains('organic') ||
+            badge.contains('no_') ||
+            badge.contains('gluten_free')) {
+          level = 'good';
+        }
+        badgeMap[badge.replaceAll('_', ' ')] = level;
       }
+      details['Nutrient Levels'] = badgeMap;
     }
 
     // Serving info
@@ -58,12 +105,18 @@ class SpoonacularService {
       details['Serving Size'] =
           '${data['serving_size']} ${data['serving_size_unit'] ?? ''}';
     }
+    if (data['servings'] != null && data['servings']['number'] != null) {
+      details['Servings per container'] = data['servings']['number'].toString();
+    }
 
     return ProductInfo(
       title: data['title'] ?? 'Unknown Spoonacular Item',
       subtitle: data['brand'],
       description: data['description'] ?? data['generatedText'],
-      imageUrl: data['image'] ?? data['images']?.first,
+      imageUrl: data['image'] ??
+          (data['images'] != null && (data['images'] as List).isNotEmpty
+              ? data['images'].first
+              : null),
       source: 'Spoonacular',
       details: details,
     );
