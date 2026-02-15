@@ -1,0 +1,43 @@
+import 'dart:io';
+
+/// AdMob configuration for the app.
+/// 
+/// IMPORTANT: Replace test IDs with your production AdMob IDs before release.
+/// Get your AdMob IDs from: https://apps.admob.com/
+/// 
+/// This is a TEMPLATE file. Copy this to ad_config.dart and fill in your actual IDs.
+class AdConfig {
+  // AdMob App IDs (shown in AndroidManifest.xml and Info.plist)
+  static const String androidAppId = 'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX';
+  static const String iosAppId = 'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX';
+
+  // Banner Ad Unit IDs
+  // TODO: Replace with your actual banner ad unit IDs
+  static const String androidBannerAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+  static const String iosBannerAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+
+  // Interstitial Ad Unit IDs
+  // TODO: Replace with your actual interstitial ad unit IDs
+  static const String androidInterstitialAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+  static const String iosInterstitialAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+
+  /// Get the appropriate banner ad unit ID for the current platform
+  static String get bannerAdUnitId {
+    if (Platform.isAndroid) {
+      return androidBannerAdUnitId;
+    } else if (Platform.isIOS) {
+      return iosBannerAdUnitId;
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+
+  /// Get the appropriate interstitial ad unit ID for the current platform
+  static String get interstitialAdUnitId {
+    if (Platform.isAndroid) {
+      return androidInterstitialAdUnitId;
+    } else if (Platform.isIOS) {
+      return iosInterstitialAdUnitId;
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+}

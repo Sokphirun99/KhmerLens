@@ -53,7 +53,7 @@ secrets.json
 api_keys.json
 
 # Configuration files with sensitive IDs and API keys
-lib/config/
+# lib/config/
 
 
 # Android local properties
@@ -61,9 +61,9 @@ android/local.properties
 **/local.properties
 
 # Android Signing Keys & Configs
-*.jks
-*.keystore
-key.properties
+# *.jks
+# *.keystore
+# key.properties
 
 # iOS Signing
 *.p12
@@ -71,9 +71,9 @@ key.properties
 *.pem
 
 # Firebase
-**/google-services.json
-**/GoogleService-Info.plist
-firebase_options.dart
+# **/google-services.json
+# **/GoogleService-Info.plist
+# firebase_options.dart
 firebase.json
 
 # VS Code
@@ -127,10 +127,10 @@ README.md
 *.p12
 
 # Android additional exclusions
-**/*.keystore
-**/*.jks
-**/key.properties
-**/local.properties
+# **/*.keystore
+# **/*.jks
+# **/key.properties
+# **/local.properties
 
 # Web/Other Secrets
 client_secret.json
@@ -144,8 +144,8 @@ token.json
 .env.*
 !.env.example
 # Project Memory
-memory.md/
-memory.md
+# memory.md/
+# memory.md
 
 # Firebase - specific
 .firebase/

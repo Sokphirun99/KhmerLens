@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "834362405830",
+    "project_id": "khmerscan-9c77a",
+    "storage_bucket": "khmerscan-9c77a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:834362405830:android:2e088a4fde25f1aaf038c7",
+        "android_client_info": {
+          "package_name": "com.KRSTUDIO.khmerscan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCn_9j_4dwQF-CCaDHZXdbZw2qVVrEgW0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

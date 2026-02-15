@@ -1,0 +1,70 @@
+/// Application-wide configuration constants.
+/// 
+/// This file centralizes all app configuration values for easy management.
+/// Update values here instead of searching through multiple files.
+/// 
+/// This is a TEMPLATE file. Copy this to app_config.dart and customize as needed.
+class AppConfig {
+  // ============================================================================
+  // App Information
+  // ============================================================================
+  
+  static const String appName = 'KhmerScan';
+  static const String appVersion = '1.0.0';
+  static const String packageName = 'com.krstudio.khmerscan'; // TODO: Update if needed
+
+  // ============================================================================
+  // Storage Keys (SharedPreferences)
+  // ============================================================================
+  
+  static const String keyThemeMode = 'theme_mode';
+  static const String keyLanguage = 'language';
+  static const String keyFirstLaunch = 'first_launch';
+
+  // ============================================================================
+  // Database Configuration
+  // ============================================================================
+  
+  static const String databaseName = 'khmerscan.db';
+  static const int databaseVersion = 1;
+
+  // ============================================================================
+  // Storage Limits
+  // ============================================================================
+  
+  static const int maxDocuments = 999999; // Unlimited
+  static const int maxImageWidth = 1920;
+  static const int maxImageHeight = 2560;
+  static const int jpegQuality = 85;
+
+  // ============================================================================
+  // OCR Settings
+  // ============================================================================
+  
+  static const String defaultLanguage = 'km'; // Khmer
+  static const double minConfidence = 0.5;
+
+  // ============================================================================
+  // Ad Behavior Settings
+  // ============================================================================
+  
+  /// Number of scans before showing an interstitial ad
+  static const int scansBeforeInterstitial = 3;
+
+  // ============================================================================
+  // Animation Durations
+  // ============================================================================
+  
+  static const Duration shortAnimation = Duration(milliseconds: 200);
+  static const Duration mediumAnimation = Duration(milliseconds: 400);
+  static const Duration longAnimation = Duration(milliseconds: 600);
+
+  // ============================================================================
+  // API Keys & External Services
+  // ============================================================================
+  
+  // TODO: Add any API keys here (e.g., cloud storage, analytics, etc.)
+  // Example:
+  // static const String firebaseApiKey = 'YOUR_FIREBASE_API_KEY';
+  // static const String cloudStorageUrl = 'YOUR_CLOUD_STORAGE_URL';
+}
